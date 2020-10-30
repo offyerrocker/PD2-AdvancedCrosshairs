@@ -1,0 +1,9 @@
+{
+	"menu_id" : "ach_menu_hitmarkers",
+	"parent_menu_id" : "ach_menu_main",
+	"title" : "ach_hitmarkers_menu_title",
+	"back_callback" : "callback_ach_hitmarkers_close",
+	"focus_changed_callback" : "callback_ach_hitmarkers_focus",
+	"items" : [
+	]
+}
