@@ -1,11 +1,13 @@
---todo dynamic menu creation
 --todo localization
---todo bloom 
 --todo hitmarkers + positioning + queue
---todo super srs april fool's hitmarkers rain
 --todo alpha
+--todo bloom based on weapon kick
 --todo bloom delay for things like focus rifle
 --todo akimbo support
+--todo override by slot
+--todo override by weapon id
+--todo super srs april fool's hitmarkers rain
+--todo settings are multipliers/modifiers of crosshair/hitmarker-specific data, when possible
 
 --if you're looking for examples on how to add custom crosshairs, scroll down
 
@@ -16,6 +18,10 @@
 		--init mod data
 --************************************************--
 _G.AdvancedCrosshair = {}
+
+AdvancedCrosshair._animate_targets = {}
+AdvancedCrosshair._hitmarker_panel = nil
+AdvancedCrosshair._crosshair_panel = nil --todo both parented to one ach panel
 
 AdvancedCrosshair.valid_weapon_categories = {
 	"assault_rifle",
@@ -42,15 +48,18 @@ AdvancedCrosshair.valid_weapon_firemodes = {
 --init default settings values
 --these are later overwritten by values read from save data, if present
 AdvancedCrosshair.settings = {
+	crosshair_enabled = true,
+	hitmarker_enabled = true,
 	use_bloom = true,
 	use_shake = true,
 	use_color = true,
-	crosshair_stability = 10,
-	default_color = {1,1,1},
-	enemy_color = {1,0,0},
-	civ_color = {0,1,0},
-	teammate_color = {0,1,1},
-	misc_color = {1,0,1}
+	use_hitpos = true,
+	crosshair_stability = 1,
+	default_color = "ffffff",
+	enemy_color = "ff0000",
+	civ_color = "00ff00",
+	teammate_color = "00ffff",
+	misc_color = "ff00ff"
 	--crosshairs by weapon type are here
 }
 --init settings for every variation of weapon + firemode (even for combinations that don't exist in-game)
@@ -71,7 +80,9 @@ AdvancedCrosshair.save_path = SavePath .. "AdvancedCrosshair.txt"
 AdvancedCrosshair._cache = {
 	underbarrel = {},
 	weapon = {},
-	bloom = 0
+	bloom = 0,
+	hitmarkers = {},
+	num_hitmarkers = 0
 }
 
 _G.queued_delay_advanced_crosshair_data = {}
@@ -294,7 +305,7 @@ AdvancedCrosshair._crosshair_data = {
 		}
 	},
 	m319 = { --halo reach grenade launcher; circle with distance markers
-		name_id = "menu_m319",
+		name_id = "menu_crosshair_m319",
 		special_crosshair = "altimeter", --used for special altitude display for grenade launcher specifically
 		parts = {
 			{
@@ -1320,6 +1331,79 @@ AdvancedCrosshair._crosshair_data = {
 	}
 }
 
+AdvancedCrosshair._hitmarker_data = {
+	destiny = {
+		name_id = "menu_hitmarker_destiny",
+		hit_func = function(index,bitmap,data,t,dt,start_t,duration)
+			if data.result_type == "death" then 
+				--kill
+				local part_data = data.hitmarker_data and data.hitmarker_data.parts[index] or {}
+				
+				local ratio = math.min(1,(t - start_t) / duration)
+				
+				if ratio < 0.5 then 
+					local r_ratio = ratio * 2
+					local distance = (part_data.distance or 0) + (data.hitmarker_data.hit_anim_distance * r_ratio)
+					local angle = part_data.angle
+					local c_x = data.panel:w() / 2 --should these just get + use bitmap parent's panel size?
+					local c_y = data.panel:h() / 2
+					bitmap:set_center(c_x + math.sin(angle) * distance,c_y - (math.cos(angle) * distance))
+				else
+					local r_ratio = 2 - (ratio * 2)
+					bitmap:set_alpha(r_ratio * part_data.alpha)
+				end
+			else
+				--hit
+				local ratio = math.min(1,(t - start_t) / duration)
+				local part_data = data.hitmarker_data and data.hitmarker_data.parts[index] or {}
+				bitmap:set_alpha((1 - ratio) * part_data.alpha)
+			end
+		end,
+		hit_anim_distance = 12,
+	--for those of you looking to make your own hitmarkers- beware, these options generally override user settings,
+	--so don't set color in the part table, or alpha in your main hitmarker table, unless you want it to be unaffected by settings
+		parts = {
+			{ --reused from plasma rifle crosshairs
+				texture = "guis/textures/advanced_crosshairs/plasma_crosshair_1",
+				w = 4,
+				h = 12,
+				angle = -45,
+				rotation = 180,
+				distance = 12,
+				alpha = 0.75
+			},
+			{
+				texture = "guis/textures/advanced_crosshairs/plasma_crosshair_1",
+				w = 4,
+				h = 12,
+				angle = 45,
+				rotation = 180,
+				distance = 12,
+				alpha = 0.75
+			},
+			{
+				texture = "guis/textures/advanced_crosshairs/plasma_crosshair_1",
+				w = 4,
+				h = 12,
+				angle = 135,
+				rotation = 180,
+				distance = 12,
+				alpha = 0.75
+			},
+			{
+				texture = "guis/textures/advanced_crosshairs/plasma_crosshair_1",
+				w = 4,
+				h = 12,
+				angle = -135,
+				rotation = 180,
+				distance = 12,
+				alpha = 0.75
+			}
+		}
+	}
+}
+
+
 --************************************************--
 		--utils
 --************************************************--
@@ -1356,6 +1440,9 @@ function AdvancedCrosshair.concat_tbl_with_keys(a,pairsep,setsep,...)
 	return s
 end
 
+function AdvancedCrosshair.getst()
+	return string.format("%0.2f",Application:time())
+end
 --simple concat (just input, no options)
 function AdvancedCrosshair.concat_tbl(a)
 	local s = ""
@@ -1475,13 +1562,16 @@ function AdvancedCrosshair:UseDynamicColor()
 	return self.settings.use_color
 end
 function AdvancedCrosshair:IsCrosshairEnabled()
-
+	return self.settings.crosshair_enabled
 end
 function AdvancedCrosshair:IsHitmarkerEnabled()
-	
+	return self.settings.hitmarker_enabled
+end
+function AdvancedCrosshair:UseHitmarkerWorldPosition()
+	return true
 end
 function AdvancedCrosshair:UseHitmarkerHitPosition()
-
+	return self.settings.use_hitpos
 end
 function AdvancedCrosshair:GetColorByTeam(team)
 	local result = self.settings.misc_color
@@ -1500,55 +1590,96 @@ function AdvancedCrosshair:GetColorByTeam(team)
 		result = self.settings.teammate_color
 	end
 	
-	result = result or {1,1,0}--team_colors[team] or result
-	return Color(unpack(result))
+	return result and Color(result) or Color.white
 end
+function AdvancedCrosshair:GetHitmarkerDuration()
+	return 1
+end
+function AdvancedCrosshair:GetHitmarkerType()
+	return "destiny"
+end
+function AdvancedCrosshair:GetHitmarkerBlendMode()
+	return "normal" --"add"
+end
+function AdvancedCrosshair:GetHitmarkerAlpha()
+	return 1
+end
+
+--************************************************--
+		--hud animate functions
+--************************************************--
+
+	-- hud animation manager --
+	
+function AdvancedCrosshair:animate(object,func,done_cb,...)
+	AdvancedCrosshair._animate_targets[tostring(object)] = {
+		object = object,
+		start_t = Application:time(),
+		func = func,
+		done_cb = done_cb,
+		args = {...}
+	}
+end
+
+function AdvancedCrosshair:animate_remove_done_cb(object,new)
+	local o = AdvancedCrosshair._animate_targets[tostring(object)]
+	if o then 
+		o.done_cb = new
+		return true
+	end
+	return false
+end
+
+function AdvancedCrosshair:animate_stop(object)
+	AdvancedCrosshair._animate_targets[tostring(object)] = nil
+end
+
+	--hud animations
+function AdvancedCrosshair:animate_fadeout(o,t,dt,start_t,duration,from_alpha,exit_x,exit_y)
+	duration = duration or 1
+	from_alpha = from_alpha or 1
+	local ratio = math.pow((t - start_t) / duration,2)
+	
+	if ratio >= 1 then 
+		o:set_alpha(0)
+		return true
+	end
+	o:set_alpha(from_alpha * (1 - ratio))
+	if exit_y then 
+		o:set_y(o:y() + (exit_y * dt / duration))
+	end
+	if exit_x then 
+		o:set_x(o:x() + (exit_x * dt / duration))
+	end
+end
+
+
+
 
 --************************************************--
 		--stuff that happens during gameplay
 --************************************************--
-
-function AdvancedCrosshair:GetCrosshairType(slot,weaponbase,fire_mode)
-	if override_by_slot and slot then --todo
-		return override_by_slot and slot
-	elseif override_by_id and weaponbase then --todo
-		return lookup_table and weaponbase:get_name_id()
-	else
-		local weapon_type,is_revolver,is_akimbo = self.GetWeaponCategory(weaponbase)
---		local fire_mode = (weaponbase.fire_mode and weaponbase:fire_mode()) or weaponbase.FIRE_MODE
-		if weapon_type then 
-		
-			if is_akimbo then 
-				return self.settings["crosshair_type_" .. weapon_type .. "_" .. fire_mode .. "_akimbo"] or "ma37"
-			else
-				return self.settings["crosshair_type_" .. weapon_type .. "_" .. fire_mode] or "ma37"
-			end
-		end
-	end
-end
 
 	--**********************--
 		--init hud items
 	--**********************--
 --these should only run once, when the player spawns
 function AdvancedCrosshair:Init()
---[[
-	--]]
 	managers.hud:remove_updator("advancedcrosshairs_update")
 	managers.hud:add_updator("advc_create_hud_delayed",callback(AdvancedCrosshair,AdvancedCrosshair,"CreateHUD"))
 end
 
 function AdvancedCrosshair:CreateHUD(t,dt) --try to create hud each run until both required elements are initiated.
 --...it's not ideal.
-	local hudhitconfirm = managers.hud._hud_hit_confirm and managers.hud._hud_hit_confirm._hud_panel
-	if alive(managers.player:local_player()) and hudhitconfirm then 
+	local hud = managers.hud and managers.hud:script(PlayerBase.PLAYER_INFO_HUD_FULLSCREEN_PD2)--managers.hud._hud_hit_confirm and managers.hud._hud_hit_confirm._hud_panel
+	if alive(managers.player:local_player()) and hud and hud.panel then 
 		managers.hud:remove_updator("advc_create_hud_delayed")
 		managers.hud:add_updator("advancedcrosshairs_update",callback(AdvancedCrosshair,AdvancedCrosshair,"Update"))
 		self:CheckWeapon(1)
 		self:CheckWeapon(2)
 		self:CheckUnderbarrel(1)
 		self:CheckUnderbarrel(2)
-		self:CreateCrosshairPanel(hudhitconfirm) -- or managers.hud._hud_temp._hud_panel)
+		self:CreateCrosshairPanel(hud.panel) -- or managers.hud._hud_temp._hud_panel)
 		self:CreateCrosshairs()
 	end
 end
@@ -1603,33 +1734,27 @@ function AdvancedCrosshair:CheckUnderbarrel(slot,underbarrel_slot)
 	end
 end
 
-function AdvancedCrosshair:CreateHitmarker(data) --unused
-	if not (data and type(data) == "table") then 
-		self:log("ERROR: CreateHitmarker(" .. tostring(data) .. "): Invalid data provided!",{color=Color.red})
-		return 
-	end
-	
-end
-
 function AdvancedCrosshair:CreateCrosshairPanel(hud)
 	if not alive(hud) then 
 		self:log("ERROR: CreateCrosshairPanel() No parent HUD found!",{color=Color.red})
 		return
 	end
 	
-	if alive(hud:child("advanced_crosshairs_panel")) then 
-		hud:remove(hud:child("advanced_crosshairs_panel"))
+	if alive(hud:child("ach_crosshair_panel")) then 
+		hud:remove(hud:child("ach_crosshair_panel"))
 	end
 	local crosshair_panel = hud:panel({
-		name = "advanced_crosshairs_panel"
+		name = "ach_crosshair_panel"
 	})
 	self._crosshair_panel = crosshair_panel
-	
+	self._hitmarker_panel = crosshair_panel:panel({
+		name = "ach_hitmarker_panel"
+	})
 	crosshair_panel:set_center(hud:w()/2,hud:h()/2)
 
 	local debug_crosshair = crosshair_panel:rect({
 		color = Color.yellow,
-		visible = true,
+		visible = false,
 		alpha = 0.1
 	})
 	local NUM_WEAPONS = 3
@@ -1651,12 +1776,8 @@ function AdvancedCrosshair:CreateCrosshairPanel(hud)
 	end
 end
 
-function AdvancedCrosshair:OnEnemyHit(data)
-
-end
-
 function AdvancedCrosshair:CreateCrosshairs()
---	for _,child in pairs(self._crosshairs_panel) do
+--	for _,child in pairs(self._crosshair_panel) do
 --		self._crosshair_panel:remove(child)
 --	end
 	for slot,data in pairs(self._cache.underbarrel) do 
@@ -1688,8 +1809,8 @@ function AdvancedCrosshair:CreateCrosshair(panel,data)
 		local y = (part_data.y or 0)
 		local angle = part_data.angle or part_data.rotation
 		if part_data.distance and angle then 
-			x = x + math.sin(angle) * part_data.distance
-			y = y + -math.cos(angle) * part_data.distance
+			x = x + (math.sin(angle) * part_data.distance)
+			y = y + (-math.cos(angle) * part_data.distance)
 		end
 		local bitmap = panel:bitmap({
 			name = tostring(i),
@@ -1703,7 +1824,8 @@ function AdvancedCrosshair:CreateCrosshair(panel,data)
 			alpha = part_data.alpha or data.alpha,
 			blend_mode = part_data.blend_mode or data.blend_mode,
 			color = part_data.color or data.alpha,
-			render_template = part_data.render_template or data.render_template
+			render_template = part_data.render_template or data.render_template,
+			layer = (part_data.layer or data.layer or 0)
 		})
 		table.insert(results,i,bitmap)
 		bitmap:set_center(x + (panel:w()/2),y + (panel:h()/2))
@@ -1711,8 +1833,8 @@ function AdvancedCrosshair:CreateCrosshair(panel,data)
 	return results
 end
 
-function AdvancedCrosshair:SetCrosshairCenter(w,h)
-	self._crosshair_panel:set_center(w,h)
+function AdvancedCrosshair:SetCrosshairCenter(x,y)
+	self._crosshair_panel:set_center(x,y)
 end
 
 
@@ -1801,25 +1923,184 @@ function AdvancedCrosshair:GetCurrentCrosshair()
 	end
 end
 
-function AdvancedCrosshair:ActivateHitmarker(attacker_unit,attack_data)
-	if attack_data and attacker_unit == managers.player:local_player() then 
-		local result = attack_data.result
-		local result_type = result and result.type
-		local pos = attack_data.pos
-		local headshot = attack_data.headshot
-		local crit = attack_data.crit --flag indicating crit is added from the mod, not here in vanilla
+function AdvancedCrosshair:CreateHitmarker(attack_data)
+	if not (attack_data and type(attack_data) == "table") then 
+		self:log("ERROR: CreateHitmarker(" .. tostring(attack_data) .. "): Invalid data provided!",{color=Color.red})
+		return 
+	end
+	
+	local result = attack_data.result
+	local result_type = result and result.type
+	local pos = attack_data.pos
+	local headshot = attack_data.headshot
+	local crit = attack_data.crit --flag indicating crit is added from the mod, not here in vanilla
 
-		local weapon_unit = attack_data.weapon_unit
-		local base = weapon_unit and weapon_unit:base()
-		
-		
-		if result_type == "death" then 
---				AdvancedCrosshair:ShowHitmarker(result)
-			--
-		else
-			self:log("Result type " .. tostring(result_type))
+	local weapon_unit = attack_data.weapon_unit
+	local base = weapon_unit and weapon_unit:base()
+	
+	local color = Color.white
+	local headshot_color = Color.red
+	local headcrit_color = Color(0.5,0,1)
+	local crit_color = Color(0,0,1)
+	if headshot and crit then 
+		color = headcrit_color
+	elseif headshot then 
+		color = headshot_color
+	elseif crit then 
+		color = crit_color
+	end
+	
+	local hitmarker_type = self:GetHitmarkerType()
+	local hitmarker_data = hitmarker_type and self._hitmarker_data[hitmarker_type]
+	if not hitmarker_data then 
+		--todo reset if bad hitmarker? or check elsewhere/on startup for validity?
+		self:log("ERROR: CreateHitmarker(): Bad Hitmarker type (" .. tostring(hitmarker_type) .. ")")
+	end
+	
+	self._cache.num_hitmarkers = self._cache.num_hitmarkers + 1 --presume that creation was successful when incrementing; todo fix this
+	
+	local panel = self._hitmarker_panel:panel({
+		alpha = hitmarker_data.alpha,
+		name = "hitmarker_" .. tostring(self._cache.num_hitmarkers)
+	})
+	
+--	local panel_debug = panel:rect({
+--		name = "debug",
+--		color = Color.blue,
+--		alpha = 0.25,
+--		visible = false
+--	})
+	
+	local result = {}
+	for i,part_data in pairs(hitmarker_data.parts) do 
+		local x = (part_data.x or 0)
+		local y = (part_data.y or 0)
+		local angle = part_data.angle
+		local rotation = (part_data.rotation or 0) + (angle or 0)
+		if part_data.distance and angle then 
+			x = x + math.sin(angle) * part_data.distance
+			y = y + -math.cos(angle) * part_data.distance
+		end
+		local bitmap = panel:bitmap({
+			name = tostring(i),
+			texture = part_data.texture,
+			texture_rect = part_data.texture_rect,
+			x = x,
+			y = y,
+			rotation = rotation,
+			w = part_data.w,
+			h = part_data.h,
+--			alpha = part_data.alpha or hitmarker_data.alpha,
+			blend_mode = part_data.blend_mode or hitmarker_data.blend_mode or self:GetHitmarkerBlendMode(),
+			color = part_data.color or hitmarker_data.alpha or color,
+			render_template = part_data.render_template or hitmarker_data.render_template,
+			layer = 5 + (part_data.layer or hitmarker_data.layer or 0)
+		})
+		bitmap:set_center(x + (panel:w()/2),y + (panel:h()/2))
+		table.insert(result,i,bitmap)
+	end
+	return panel,result
+end
+
+function AdvancedCrosshair:RemoveHitmarker(id)
+	if not id then return end
+	
+	for index,hitmarkers_data in pairs(self._cache.hitmarkers) do 
+		if hitmarkers_data.id == id then 
+			table.remove(self._cache.hitmarkers,index)
+			return true
 		end
 	end
+end
+
+function AdvancedCrosshair:ActivateHitmarker(unit,attack_data)
+	local attacker_unit = attack_data and attack_data.attacker_unit
+	if attacker_unit == managers.player:local_player() then 
+		local result = attack_data.result
+		butt = attack_data
+		local result_type = result and result.type
+		local pos = attack_data.pos
+--		if pos then 
+--			Draw:brush(Color.red:with_alpha(0.1),60):sphere(pos,50)
+--		end
+		
+		local headshot = attack_data.headshot
+		local crit = attack_data.crit --flag indicating crit is added from the mod, not here in vanilla	
+	
+		local hitmarker_type = self:GetHitmarkerType()
+		local hitmarker_data = hitmarker_type and self._hitmarker_data[hitmarker_type]
+		local hitmarker_duration = self:GetHitmarkerDuration()
+		local hitmarker_alpha = self:GetHitmarkerAlpha()
+		
+		local hitmarker_id = self._cache.num_hitmarkers
+		
+		local panel,parts = self:CreateHitmarker(attack_data)
+		if alive(panel) then 
+			table.insert(self._cache.hitmarkers,#self._cache.hitmarkers + 1,
+				{ --this is only used for the "3D hitmarkers" feature
+					id = hitmarker_id,
+					panel = panel,
+					parts = parts,
+					position = attack_data.pos
+				}
+			)
+			local function remove_panel(o)
+				o:parent():remove(o)
+				self:RemoveHitmarker(hitmarker_id)
+			end
+			
+			if hitmarker_data and type(hitmarker_data.hit_func) == "function" then 
+				self:animate(panel,"animate_hitmarker_parts",remove_panel,hitmarker_duration,parts,hitmarker_data.hit_func,
+					{
+						panel = panel,
+						result_type = result_type,
+						position = pos,
+						headshot = headshot,
+						crit = attack_data.crit,
+						attack_data = attack_data,
+						hitmarker_data = hitmarker_data
+					}
+				)
+			else
+				self:animate(panel,"animate_fadeout",remove_panel,hitmarker_duration,hitmarker_alpha,nil,nil)
+			end
+		end
+		
+	end
+end
+
+function AdvancedCrosshair:animate_hitmarker_parts(o,t,dt,start_t,duration,parts,hit_func,data)
+	for index,bitmap in ipairs(parts) do 
+		hit_func(index,bitmap,data,t,dt,start_t,duration)
+	end
+	
+	if t - start_t >= duration then 
+		return true
+	end
+end
+
+function AdvancedCrosshair:ClearCache(skip_destroy)
+	local cache = self._cache
+	local num_active_hitmarkers = #cache.hitmarkers
+	if not skip_destroy then 
+		if num_active_hitmarkers > 0 then 
+			for i=1,num_active_hitmarkers,1 do 
+				table.remove(cache.hitmarkers,i)
+			end
+		else
+			for i=1,num_active_hitmarkers,1 do 
+				local panel = cache.hitmarkers[i].panel
+				if alive(panel) then 
+					panel:parent():remove(panel)
+				end
+				table.remove(cache.hitmarkers,i)
+			end
+		end
+	end
+	cache.underbarrel = {}
+	cache.weapon = {}
+	cache.bloom = 0
+	cache.num_hitmarkers = 0
 end
 
 --sets the correct crosshair visible according to current weapon data 
@@ -1851,23 +2132,89 @@ function AdvancedCrosshair:CheckCrosshair()
 	end
 end
 
---AdvancedCrosshair:Init()
-
-
 function AdvancedCrosshair:AddBloom(amt)
 	amt = amt or 0.3
 	self._cache.bloom = self._cache.bloom + amt
 end
 
 function AdvancedCrosshair:Update(t,dt)
-	Console:SetTrackerValue("trackere",string.format("advancedcrosshair %0.2f",t))
 	local player = managers.player:local_player()
-	--todo do hitmarkers
-		--if hitmarker enabled then
 	
 	--do crosshair
 		--if crosshair enabled then 
-	if player and self._crosshair_panel then 
+	if alive(player) and alive(self._crosshair_panel) then 
+	
+		local viewport_cam = managers.viewport:get_current_camera()
+		if not viewport_cam then 
+			return 
+		end
+		local ws = managers.hud._workspace
+		
+		if not player:inventory():equipped_unit() then 
+			--this can happen when restarting the level
+			return
+		end
+		
+		
+		if self:IsHitmarkerEnabled() then
+			if self:UseHitmarkerWorldPosition() then 
+				for hitmarker_index,hitmarker in pairs(self._cache.hitmarkers) do 
+					local h_p = ws:world_to_screen(viewport_cam,hitmarker.position)
+					if h_p then 
+						if alive(hitmarker.panel) then 
+							hitmarker.panel:set_center(h_p.x,h_p.y)
+						end
+					end
+				end
+			end
+
+				--[[
+			for i = #self._cache.hitmarkers,1,-1 do 
+				local hitmarker_data = self._cache.hitmarkers[i]
+				local bitmap = hitmarker_data.bitmap
+				hitmarker_data.duration = hitmarker_data.duration - dt
+				if hitmarker_data.duration <= 0 then 
+					bitmap:parent():remove(bitmap)
+					table.remove(self._cache.hitmarkers,i)
+				else
+					if hitmarker_data.duration <= 1 then 
+						bitmap:set_alpha(1-math.pow(hitmarker_data.duration,2))
+					end
+					
+					--todo angle check
+					local h_p = ws:world_to_screen(viewport_cam,hitmarker_data.position)
+					if h_p then 
+						hitmarker_data.panel:set_position(h_p.x,h_p.y)
+					end
+--				end
+			end
+				--]]
+		end
+		
+		--animate update
+		for object_id,data in pairs(self._animate_targets) do 
+			local result
+			if type(data and data.func) == "string" then 
+				if self[data.func] then 					
+					result = self[data.func](self,data.object,t,dt,data.start_t,unpack(data.args))
+				else
+					self:log("ERROR: Unknown animate function:" .. tostring(data.func) .. "()")
+					self._animate_targets[object_id] = nil
+				end
+			elseif type(data.func) == "function" then
+				result = data.func(data.object,t,dt,data.start_t,unpack(data.args))
+			else
+				self._animate_targets[object_id] = nil --remove from animate targets table
+				result = nil --don't do done_cb, that's illegal
+			end
+			if result then
+				self._animate_targets[object_id] = nil
+				if data.done_cb and type(data.done_cb) == "function" then 
+					data.done_cb(data.object,result,unpack(data.args))
+				end
+			end
+		end				
+		
 		--set visible by firemode and unit
 		--on firemode switch or weapon switch, 
 			--change visible crosshair
@@ -1892,11 +2239,6 @@ function AdvancedCrosshair:Update(t,dt)
 
 			local compass_yaw = ((cam_aim + 90) / 180) - 1
 	--]]
-		local viewport_cam = managers.viewport:get_current_camera()
-		if not viewport_cam then 
-			--doesn't typically happen, usually for only a brief moment when all four players go into custody
-			return 
-		end
 
 			
 			
@@ -1906,6 +2248,8 @@ function AdvancedCrosshair:Update(t,dt)
 		--			local crosshair = self._crosshair_panel:child("crosshair_subparts"):child("crosshair_1") --todo function to handle crosshair modifications
 		local crosshair_color = Color.white
 		if alive(focused_person) then
+			
+--			Console:SetTrackerValue("trackere",tostring(focused_person))
 			if focused_person:character_damage() then 
 				if not focused_person:character_damage():dead() then 
 					local f_m = focused_person:movement()
@@ -1932,10 +2276,10 @@ function AdvancedCrosshair:Update(t,dt)
 
 		if self:UseCrosshairShake() then 
 			--if settings.allow_crosshair_shake then 
-			local crosshair_stability = self:GetCrosshairStability() * 10
+			local crosshair_stability = (fwd_ray and fwd_ray.distance or 1000) * self:GetCrosshairStability() --fwd_ray.length
 			--theoretically, the raycast position (assuming perfect accuracy) at [crosshair_stability] meters;
 			--practically, the higher the number, the less sway shake
-			local c_p = managers.hud._workspace:world_to_screen(viewport_cam,state:get_fire_weapon_position() + (state:get_fire_weapon_direction() * crosshair_stability))
+			local c_p = ws:world_to_screen(viewport_cam,state:get_fire_weapon_position() + (state:get_fire_weapon_direction() * crosshair_stability))
 			local c_w = (c_p.x or 0)
 			local c_h = (c_p.y or 0)
 			self:SetCrosshairCenter(c_w,c_h)	
@@ -1947,7 +2291,6 @@ function AdvancedCrosshair:Update(t,dt)
 			if self._cache.bloom > 0 then 
 				self._cache.bloom = math.max(self._cache.bloom - (bloom_decay_mul * dt),0)
 				self:SetCrosshairBloom(self._cache.bloom)
-				Console:SetTrackerValue("trackera",tostring(self._cache.bloom))
 
 				if true then 
 					
@@ -1972,6 +2315,49 @@ function AdvancedCrosshair:Update(t,dt)
 	end
 end
 
+function AdvancedCrosshair:GetCrosshairType(slot,weaponbase,fire_mode) --not strictly a settings getter since it depends on the equipped weapon
+	if override_by_slot and slot then --todo
+		return override_by_slot and slot
+	elseif override_by_id and weaponbase then --todo
+		return lookup_table and weaponbase:get_name_id()
+	else
+		local weapon_type,is_revolver,is_akimbo = self.GetWeaponCategory(weaponbase)
+--		local fire_mode = (weaponbase.fire_mode and weaponbase:fire_mode()) or weaponbase.FIRE_MODE
+		if weapon_type then 
+			local result
+			if is_akimbo then 
+				result = self.settings["crosshair_type_" .. weapon_type .. "_" .. fire_mode .. "_akimbo"]
+			end
+			result = result or self.settings["crosshair_type_" .. weapon_type .. "_" .. fire_mode] or "ma37"
+			return result
+		end
+	end
+end
+
+
+
+--************************************************--
+		--io
+--************************************************--
+function AdvancedCrosshair:Save()
+	local file = io.open(self.save_path,"w+")
+	if file then
+		file:write(json.encode(self.settings))
+		file:close()
+	end
+end
+
+function AdvancedCrosshair:Load()
+	local file = io.open(self.save_path, "r")
+	if (file) then
+		for k, v in pairs(json.decode(file:read("*all"))) do
+			self.settings[k] = v
+		end
+	else
+		self:Save()
+	end
+end
+
 
 
 --************************************************--
@@ -1979,6 +2365,20 @@ end
 --************************************************--
 Hooks:Add("LocalizationManagerPostInit", "advc_addlocalization", function( loc )
 	loc:add_localized_strings({
+		menu_weapon_category_assault_rifle = "Assault Rifle",
+		menu_weapon_category_pistol = "Pistol",
+		menu_weapon_category_smg = "Submachine Gun",
+		menu_weapon_category_lmg = "Light Machine Gun",
+		menu_weapon_category_snp = "Sniper Rifle",
+		menu_weapon_category_minigun = "Minigun",
+		menu_weapon_category_flamethrower = "Flamethrower",
+		menu_weapon_category_saw = "Saw",
+		menu_weapon_category_grenade_launcher = "Grenade Launcher",
+		menu_weapon_category_bow = "Bow",
+		menu_weapon_category_crossbow = "Crossbow",
+		menu_weapon_firemode_single = "Single",
+		menu_weapon_firemode_auto = "Auto",
+		menu_weapon_firemode_burst = "Burst",
 		menu_crosshair_type2_hammer = "Gravity Hammer",
 		menu_crosshair_m247h = "UNSC Turret",
 		menu_crosshair_halo_chevron = "Vehicle Chevron",
@@ -1996,14 +2396,23 @@ Hooks:Add("LocalizationManagerPostInit", "advc_addlocalization", function( loc )
 		menu_crosshair_type1_sword = "Energy Sword",
 		menu_crosshair_type50 = "Concussion Rifle",
 		menu_crosshair_type33_needler = "Needler",
-		menu_m319 = "Grenade Launcher (Halo)",
+		menu_crosshair_m319 = "Grenade Launcher (Halo)",
 		menu_crosshair_m392 = "DMR (Halo)",
 		menu_crosshair_m6g = "M6G",
 		menu_crosshair_m90 = "Shotgun (Halo)",
 		menu_crosshair_ma37 = "MA37 (Halo)",
 		menu_crosshair_spnkr = "SPNKr",
 		menu_crosshair_m7057 = "Flamethrower (Halo)",
-		menu_crosshair_m7 = "SMG (Halo)"
+		menu_crosshair_m7 = "SMG (Halo)",
+		menu_hitmarker_destiny = "Destiny",
+		menu_ach_set_color_title = "Set Color",
+		menu_ach_set_color_desc = "Change the color of your crosshair",
+		menu_ach_set_alpha_title = "Set Alpha",
+		menu_ach_set_alpha_desc = "Change the opacity of your crosshair",
+		menu_ach_set_bitmap_title = "Set Image",
+		menu_ach_set_bitmap_desc = "Select the bitmap you want to use",
+		menu_ach_preview_bloom_title = "Preview Bloom",
+		menu_ach_preview_bloom_desc = "Click to simulate firing reticle bloom"
 	})
 end)
 
@@ -2023,11 +2432,12 @@ end)
 
 --]]
 
+--todo refactor menu tables to allow for organized localization
 AdvancedCrosshair.main_menu_id = "ach_menu_main"
 AdvancedCrosshair.crosshairs_menu_id = "ach_menu_crosshairs"
 AdvancedCrosshair.hitmarkers_menu_id = "ach_menu_hitmarkers"
 AdvancedCrosshair.customization_menus = {}
-AdvancedCrosshair.crosshair_preview_data = {}
+AdvancedCrosshair.crosshair_preview_data = nil
 --AdvancedCrosshair.customization_menu_callbacks = {}
 AdvancedCrosshair.crosshair_id_by_index = {}
 Hooks:Add("MenuManagerSetupCustomMenus", "advc_MenuManagerSetupCustomMenus", function(menu_manager, nodes)
@@ -2036,17 +2446,21 @@ Hooks:Add("MenuManagerSetupCustomMenus", "advc_MenuManagerSetupCustomMenus", fun
 --	MenuHelper:NewMenu(AdvancedCrosshair.hitmarkers_menu_id)
 	for _,cat in ipairs(AdvancedCrosshair.valid_weapon_categories) do 
 		local cat_menu_name = "ach_crosshair_category_" .. tostring(cat)
-		AdvancedCrosshair.customization_menus[cat_menu_name] = {}
+		AdvancedCrosshair.customization_menus[cat_menu_name] = {
+			category_name = cat,
+			child_menus = {}
+		}
 		MenuHelper:NewMenu(cat_menu_name)
 		for _,firemode in ipairs(AdvancedCrosshair.valid_weapon_firemodes) do 
 			local firemode_menu_name = cat_menu_name .. "_firemode_" .. tostring(firemode)
-			AdvancedCrosshair.customization_menus[cat_menu_name][firemode_menu_name] = MenuHelper:NewMenu(firemode_menu_name)
+			AdvancedCrosshair.customization_menus[cat_menu_name].child_menus[firemode_menu_name] = {menu = MenuHelper:NewMenu(firemode_menu_name),firemode = firemode}
 		end
 	end
 	
 end)
 
 Hooks:Add("MenuManagerPopulateCustomMenus", "advc_MenuManagerPopulateCustomMenus", function(menu_manager, nodes)
+	local lm = managers.localization
 --generate available crosshairs here, in the items subtable, along with a number index/name reverse lookup table?
 	local items = {}
 	local i = 1
@@ -2065,7 +2479,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "advc_MenuManagerPopulateCustomMenus
 	--alpha
 	--default color? or in master crosshhair options?
 	--preview bloom
-	for cat_menu_name,v in pairs(AdvancedCrosshair.customization_menus) do 
+	for cat_menu_name,cat_menu_data in pairs(AdvancedCrosshair.customization_menus) do 
 		local i = 1
 		local select_crosshair_type_callback_name = cat_menu_name .. "_select_crosshair_type"
 		log("Creating callback " .. select_crosshair_type_callback_name)
@@ -2106,11 +2520,32 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "advc_MenuManagerPopulateCustomMenus
 			end
 		end
 		
+		local open_color_callback_name = cat_menu_name .. "_set_color"
+		MenuCallbackHandler[open_color_callback_name] = function(self)
+			--todo open set color dialog
+			local color = Color(math.random(),math.random(),math.random())
+			
+			
+			local function clbk_set_color(color)
+			--set preview color
+				local preview_data = AdvancedCrosshair.crosshair_preview_data
+				local parent_panel = preview_data and preview_data.panel
+				local crosshair_data = preview_data and AdvancedCrosshair._crosshair_data[tostring(preview_data.crosshair_type)]
+				if preview_data and crosshair_data and preview_data.parts and alive(parent_panel) then 
+					for part_index,part in ipairs(preview_data.parts) do
+						part:set_color(color)
+					end
+				end
+			end
+			
+			clbk_set_color(color)
+		end
+		
 		local preview_bloom_callback_name = cat_menu_name .. "_preview_bloom"
 		MenuCallbackHandler[preview_bloom_callback_name] = function(self)
 			local preview_data = AdvancedCrosshair.crosshair_preview_data
-			local parent_panel = preview_data.panel
-			local crosshair_data = AdvancedCrosshair._crosshair_data[tostring(preview_data.crosshair_type)]
+			local parent_panel = preview_data and preview_data.panel
+			local crosshair_data = preview_data and AdvancedCrosshair._crosshair_data[tostring(preview_data.crosshair_type)]
 			if preview_data and crosshair_data and preview_data.parts and alive(parent_panel) and type(crosshair_data.bloom_func) == "function" then 
 			--do updator
 				preview_data.bloom = preview_data.bloom + 0.5 --todo
@@ -2143,11 +2578,11 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "advc_MenuManagerPopulateCustomMenus
 		end
 		
 --		AdvancedCrosshair.customization_menu_callbacks[callback_name] = true
-		for firemode_menu_name,firemode_menu in pairs(v) do 
+		for firemode_menu_name,firemode_menu in pairs(cat_menu_data.child_menus) do 
 			MenuHelper:AddMultipleChoice({
-				id = "hello" .. i,
-				title = "title" .. i,
-				desc = "desc" .. i,
+				id = "set_bitmap_" .. firemode_menu_name,
+				title = "menu_ach_set_bitmap_title",
+				desc = "menu_ach_set_bitmap_desc",
 				callback = select_crosshair_type_callback_name,
 				items = items,
 				value = 1,
@@ -2156,9 +2591,9 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "advc_MenuManagerPopulateCustomMenus
 			})
 			
 			MenuHelper:AddButton({
-				id = "preview_bloom_" .. i,
-				title = "title " .. i,
-				desc = "desc " .. i,
+				id = "preview_bloom_" .. firemode_menu_name,
+				title = "menu_ach_preview_bloom_title",
+				desc = "menu_ach_preview_bloom_desc",
 				callback = preview_bloom_callback_name,
 				menu_id = firemode_menu_name,
 				priority = 3
@@ -2179,10 +2614,10 @@ end)
 
 Hooks:Add("MenuManagerBuildCustomMenus", "ach_MenuManagerBuildCustomMenus", function( menu_manager, nodes )
 	local lm = managers.localization
-	for cat_menu_name,v in pairs(AdvancedCrosshair.customization_menus) do 
+	for cat_menu_name,cat_menu_data in pairs(AdvancedCrosshair.customization_menus) do 
 		local cat_menu = MenuHelper:GetMenu(cat_menu_name)
 		local i = 1
-		for firemode_menu_name,firemode_menu in pairs(v) do
+		for firemode_menu_name,firemode_menu in pairs(cat_menu_data.child_menus) do
 			local name_id = firemode_menu_name
 			local desc_id = "hi"
 			nodes[firemode_menu_name] = MenuHelper:BuildMenu(firemode_menu_name,{area_bg = "none",back_callback = MenuCallbackHandler.callback_ach_crosshairs_close,focus_changed_callback=MenuCallbackHandler.callback_ach_crosshairs_focus})
@@ -2200,10 +2635,22 @@ Hooks:Add("MenuManagerInitialize", "advc_initmenu", function(menu_manager)
 	end
 	MenuCallbackHandler.callback_ach_hitmarkers_close = function(self)
 		log("Close hm")
+		AdvancedCrosshair:Save()
 	end
 	MenuCallbackHandler.callback_ach_crosshairs_close = function(self)
 		log("Close ch") --functional
+		if AdvancedCrosshair.crosshair_preview_data then 
+			local panel = AdvancedCrosshair.crosshair_preview_data.panel
+			if alive(panel) then 
+				panel:parent():remove(panel)
+			end
+			AdvancedCrosshair.crosshair_preview_data = nil
+		end
+		
+		
+		AdvancedCrosshair:Save()
 		--todo remove preview
+		--save
 	end
 	
 	--nonfunctional
@@ -2217,12 +2664,11 @@ Hooks:Add("MenuManagerInitialize", "advc_initmenu", function(menu_manager)
 		log("changed ch focus")
 	end
 
+	AdvancedCrosshair:Load()
 	
 	MenuHelper:LoadFromJsonFile(AdvancedCrosshair.path .. "menu/menu_main.json", AdvancedCrosshair, AdvancedCrosshair.settings)
 	MenuHelper:LoadFromJsonFile(AdvancedCrosshair.path .. "menu/menu_crosshairs.json", AdvancedCrosshair, AdvancedCrosshair.settings)
 	MenuHelper:LoadFromJsonFile(AdvancedCrosshair.path .. "menu/menu_hitmarkers.json", AdvancedCrosshair, AdvancedCrosshair.settings)
-	
-	
 end)
 
 
