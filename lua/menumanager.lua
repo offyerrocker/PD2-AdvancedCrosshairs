@@ -1475,6 +1475,10 @@ function AdvancedCrosshair.GetWeaponCategory(weaponbase)
 	return category,is_revolver,is_akimbo
 end
 
+--for ColorPicker mod support
+function AdvancedCrosshair:set_colorpicker_menu(colorpicker)
+	self._colorpicker = colorpicker
+end
 
 --************************************************--
 	--custom crosshair support
@@ -2373,6 +2377,7 @@ Hooks:Add("LocalizationManagerPostInit", "advc_addlocalization", function( loc )
 		menu_weapon_category_minigun = "Minigun",
 		menu_weapon_category_flamethrower = "Flamethrower",
 		menu_weapon_category_saw = "Saw",
+		menu_weapon_category_shotgun = "Shotgun",
 		menu_weapon_category_grenade_launcher = "Grenade Launcher",
 		menu_weapon_category_bow = "Bow",
 		menu_weapon_category_crossbow = "Crossbow",
@@ -2405,6 +2410,9 @@ Hooks:Add("LocalizationManagerPostInit", "advc_addlocalization", function( loc )
 		menu_crosshair_m7057 = "Flamethrower (Halo)",
 		menu_crosshair_m7 = "SMG (Halo)",
 		menu_hitmarker_destiny = "Destiny",
+		menu_ach_hitmarkers_menu_main_title = "Advanced Crosshairs and Hitmarkers",
+		menu_ach_hitmarkers_menu_title = "Hitmarker Customization...",
+		menu_ach_crosshairs_menu_title = "Crosshair Customization...",
 		menu_ach_set_color_title = "Set Color",
 		menu_ach_set_color_desc = "Change the color of your crosshair",
 		menu_ach_set_alpha_title = "Set Alpha",
@@ -2412,7 +2420,9 @@ Hooks:Add("LocalizationManagerPostInit", "advc_addlocalization", function( loc )
 		menu_ach_set_bitmap_title = "Set Image",
 		menu_ach_set_bitmap_desc = "Select the bitmap you want to use",
 		menu_ach_preview_bloom_title = "Preview Bloom",
-		menu_ach_preview_bloom_desc = "Click to simulate firing reticle bloom"
+		menu_ach_preview_bloom_desc = "Click to simulate firing reticle bloom",
+		menu_ach_change_crosshair_weapon_category_desc = "Edit the crosshair for this weapon category...",
+		menu_ach_change_crosshair_weapon_firemode_desc = "Edit the crosshair for this firemode..." --not used
 	})
 end)
 
@@ -2420,17 +2430,6 @@ end)
 --************************************************--
 		--menu
 --************************************************--
---[[
-	main menu
-		crosshair
-			crosshair types
-				[category]
-					[firemode] (single, auto, burst, apply to all)
-						select crosshair weapon type
-						select crosshair colors
-		hitmarker
-
---]]
 
 --todo refactor menu tables to allow for organized localization
 AdvancedCrosshair.main_menu_id = "ach_menu_main"
@@ -2482,10 +2481,8 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "advc_MenuManagerPopulateCustomMenus
 	for cat_menu_name,cat_menu_data in pairs(AdvancedCrosshair.customization_menus) do 
 		local i = 1
 		local select_crosshair_type_callback_name = cat_menu_name .. "_select_crosshair_type"
-		log("Creating callback " .. select_crosshair_type_callback_name)
 		MenuCallbackHandler[select_crosshair_type_callback_name] = function(self,item) 
 			local index = tonumber(item:value())
-			butt = item
 			local crosshair_id = AdvancedCrosshair.crosshair_id_by_index[index]
 --			log("Selected " .. tostring(crosshair_id))
 
@@ -2523,11 +2520,13 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "advc_MenuManagerPopulateCustomMenus
 		local open_color_callback_name = cat_menu_name .. "_set_color"
 		MenuCallbackHandler[open_color_callback_name] = function(self)
 			--todo open set color dialog
+			
 			local color = Color(math.random(),math.random(),math.random())
 			
 			
-			local function clbk_set_color(color)
+			local function clbk_colorpicker (color,palettes)
 			--set preview color
+				--todo save palettes
 				local preview_data = AdvancedCrosshair.crosshair_preview_data
 				local parent_panel = preview_data and preview_data.panel
 				local crosshair_data = preview_data and AdvancedCrosshair._crosshair_data[tostring(preview_data.crosshair_type)]
@@ -2538,18 +2537,24 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "advc_MenuManagerPopulateCustomMenus
 				end
 			end
 			
-			clbk_set_color(color)
+			if AdvancedCrosshair._colorpicker then 
+--				self:get_palettes()
+				AdvancedCrosshair._colorpicker:Show({changed_callback = clbk_colorpicker,done_callback = clbk_colorpicker})
+			end
+			
 		end
 		
 		local preview_bloom_callback_name = cat_menu_name .. "_preview_bloom"
 		MenuCallbackHandler[preview_bloom_callback_name] = function(self)
+			--todo if preview data does not exist,
+			--then create preview crosshair
+		
 			local preview_data = AdvancedCrosshair.crosshair_preview_data
 			local parent_panel = preview_data and preview_data.panel
 			local crosshair_data = preview_data and AdvancedCrosshair._crosshair_data[tostring(preview_data.crosshair_type)]
 			if preview_data and crosshair_data and preview_data.parts and alive(parent_panel) and type(crosshair_data.bloom_func) == "function" then 
-			--do updator
 				preview_data.bloom = preview_data.bloom + 0.5 --todo
-				BeardLib:AddUpdater("ach_preview_bloom",
+				BeardLib:AddUpdater("ach_preview_bloom", --needs to use beardlib updater since managers.hud isn't initialized in the main menu
 					function(t,dt)
 						if not (crosshair_data and preview_data.parts and alive(parent_panel) and type(crosshair_data.bloom_func) == "function") then 
 							BeardLib:RemoveUpdater("ach_preview_bloom")
@@ -2568,7 +2573,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "advc_MenuManagerPopulateCustomMenus
 								)
 							end
 							if preview_data.bloom <= 0 then 
-								--done doing bloom
+								--done doing bloom, so stop updating
 								BeardLib:RemoveUpdater("ach_preview_bloom")
 							end
 						end
@@ -2599,10 +2604,18 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "advc_MenuManagerPopulateCustomMenus
 				priority = 3
 			})
 			
+			MenuHelper:AddButton({
+				id = "set_color_" .. firemode_menu_name,
+				title = "menu_ach_set_color_title",
+				desc = "menu_ach_set_color_desc",
+				callback = open_color_callback_name,
+				menu_id = firemode_menu_name,
+				priority = 4
+			})
 			i = i + 1
 		end
 		
-		
+		local preview_hitmarker_callback_name = ""
 		
 		
 	end
@@ -2617,15 +2630,20 @@ Hooks:Add("MenuManagerBuildCustomMenus", "ach_MenuManagerBuildCustomMenus", func
 	for cat_menu_name,cat_menu_data in pairs(AdvancedCrosshair.customization_menus) do 
 		local cat_menu = MenuHelper:GetMenu(cat_menu_name)
 		local i = 1
+		
+		local cat_name_id = "menu_weapon_category_" .. tostring(cat_menu_data.category_name)
+		local cat_name_desc = "menu_ach_change_crosshair_weapon_category_desc"
+		
 		for firemode_menu_name,firemode_menu in pairs(cat_menu_data.child_menus) do
-			local name_id = firemode_menu_name
-			local desc_id = "hi"
+			local firemode = tostring(firemode_menu.firemode)
+			local name_id = "menu_weapon_firemode_" .. firemode
+			local desc_id = cat_name_id
 			nodes[firemode_menu_name] = MenuHelper:BuildMenu(firemode_menu_name,{area_bg = "none",back_callback = MenuCallbackHandler.callback_ach_crosshairs_close,focus_changed_callback=MenuCallbackHandler.callback_ach_crosshairs_focus})
 			MenuHelper:AddMenuItem(cat_menu,firemode_menu_name,name_id,desc_id,i) --add each firemode menu to its weaponcategory parent menu
 			i = i + 1
 		end
 		nodes[cat_menu_name] = MenuHelper:BuildMenu(cat_menu_name,{area_bg = "half",back_callback = MenuCallbackHandler.callback_ach_hitmarkers_close,focus_changed_callback = MenuCallbackHandler.callback_ach_hitmarkers_focus})
-		MenuHelper:AddMenuItem(MenuHelper:GetMenu(AdvancedCrosshair.crosshairs_menu_id),cat_menu_name,cat_menu_name,"hello",1)
+		MenuHelper:AddMenuItem(MenuHelper:GetMenu(AdvancedCrosshair.crosshairs_menu_id),cat_menu_name,cat_name_id,cat_name_desc,1)
 	end
 end)
 
@@ -2649,8 +2667,6 @@ Hooks:Add("MenuManagerInitialize", "advc_initmenu", function(menu_manager)
 		
 		
 		AdvancedCrosshair:Save()
-		--todo remove preview
-		--save
 	end
 	
 	--nonfunctional
@@ -2664,12 +2680,12 @@ Hooks:Add("MenuManagerInitialize", "advc_initmenu", function(menu_manager)
 		log("changed ch focus")
 	end
 
+	AdvancedCrosshair._colorpicker = AdvancedCrosshair._colorpicker or (ColorPicker and ColorPicker:new("advancedcrosshairs",{},callback(AdvancedCrosshair,AdvancedCrosshair,"set_colorpicker_menu")))
+
 	AdvancedCrosshair:Load()
 	
 	MenuHelper:LoadFromJsonFile(AdvancedCrosshair.path .. "menu/menu_main.json", AdvancedCrosshair, AdvancedCrosshair.settings)
 	MenuHelper:LoadFromJsonFile(AdvancedCrosshair.path .. "menu/menu_crosshairs.json", AdvancedCrosshair, AdvancedCrosshair.settings)
 	MenuHelper:LoadFromJsonFile(AdvancedCrosshair.path .. "menu/menu_hitmarkers.json", AdvancedCrosshair, AdvancedCrosshair.settings)
 end)
-
-
 

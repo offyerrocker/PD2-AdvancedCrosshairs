@@ -1,7 +1,7 @@
 {
 	"menu_id" : "ach_menu_crosshairs",
 	"parent_menu_id" : "ach_menu_main",
-	"title" : "ach_crosshairs_menu_title",
+	"title" : "menu_ach_crosshairs_menu_title",
 	"back_callback" : "callback_ach_crosshairs_close",
 	"focus_changed_callback" : "callback_ach_crosshairs_focus",
 	"items" : [
