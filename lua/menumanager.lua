@@ -22,6 +22,13 @@ _G.AdvancedCrosshair = {}
 AdvancedCrosshair._animate_targets = {}
 AdvancedCrosshair._hitmarker_panel = nil
 AdvancedCrosshair._crosshair_panel = nil --todo both parented to one ach panel
+AdvancedCrosshair.url_colorpicker = "https://modwork.shop/29641"
+AdvancedCrosshair.DEFAULT_CROSSHAIR_OPTIONS = {
+	crosshair_id = "ma37",
+	use_bloom = true,
+	color = "ffffff",
+	alpha = 1
+}
 
 AdvancedCrosshair.valid_weapon_categories = {
 	"assault_rifle",
@@ -59,19 +66,43 @@ AdvancedCrosshair.settings = {
 	enemy_color = "ff0000",
 	civ_color = "00ff00",
 	teammate_color = "00ffff",
-	misc_color = "ff00ff"
-	--crosshairs by weapon type are here
+	misc_color = "ff00ff",
+	palettes = {
+		"ff7a7a",
+		"ffbd7a",
+		"ffff7a",
+		"ff7abd",
+		"ff7aff",
+		"87ff7a",
+		"7affb0",
+		"7afff2",
+		"caff7a",
+		"fff27a",
+		"7afdff",
+		"7abbff",
+		"7c7aff",
+		"7affbf",
+		"7aff7c",
+		"7a7eff",
+		"b87aff",
+		"fb7aff",
+		"7ac1ff",
+		"7afff8",
+		"d57aff",
+		"ff7ae7",
+		"ff7aa4",
+		"937aff",
+		"7aa4ff"
+	},
+	crosshairs = {}
 }
 --init settings for every variation of weapon + firemode (even for combinations that don't exist in-game)
 for _,cat in pairs(AdvancedCrosshair.valid_weapon_categories) do 
+	AdvancedCrosshair.settings.crosshairs[cat] = {}
 	for _,firemode in pairs(AdvancedCrosshair.valid_weapon_firemodes) do 
-		AdvancedCrosshair.settings["crosshair_type_" .. cat .. "_" .. firemode] = "ma37"
-		AdvancedCrosshair.settings["crosshair_type_" .. cat .. "_" .. firemode .. "_akimbo"] = "ma37"
+		AdvancedCrosshair.settings.crosshairs[cat][firemode] = table.deep_map_copy(AdvancedCrosshair.DEFAULT_CROSSHAIR_OPTIONS)
 	end
 end
-
-	
-	
 
 AdvancedCrosshair.path = ModPath
 AdvancedCrosshair.save_path = SavePath .. "AdvancedCrosshair.txt"
@@ -1609,6 +1640,24 @@ function AdvancedCrosshair:GetHitmarkerAlpha()
 	return 1
 end
 
+function AdvancedCrosshair:GetPaletteColors()
+	local result = {}
+	for i,hex in ipairs(self.settings.palettes) do 
+		result[i] = Color(hex)
+	end
+	return result
+end
+
+function AdvancedCrosshair:SetPaletteCodes(tbl)
+	if type(tbl) == "table" then 
+		for i,color in ipairs(tbl) do 
+			self.settings.palettes[i] = color:to_hex()
+		end
+	else
+		self:log("Error: SetPaletteCodes(" .. tostring(tbl) .. ") Bad palettes table from ColorPicker callback")
+	end
+end
+
 --************************************************--
 		--hud animate functions
 --************************************************--
@@ -1789,12 +1838,18 @@ function AdvancedCrosshair:CreateCrosshairs()
 	end
 	
 	for slot,firemodes_data in pairs(self._cache.weapon) do 
-		for firemode,crosshair_type in pairs(firemodes_data) do 
-			local crosshair_data = self._crosshair_data[crosshair_type]
+		for firemode,crosshair_id in pairs(firemodes_data) do 
+			local crosshair_data = self._crosshair_data[crosshair_id]
 			if crosshair_data then 
 				local slotpanel = self._crosshair_panel:child("slot_" .. tostring(slot))
 				local firemode_panel = slotpanel:child("firemode_" .. tostring(firemode))
-				self:CreateCrosshair(firemode_panel,crosshair_data)
+				local parts = self:CreateCrosshair(firemode_panel,crosshair_data)
+				for part_index,part in ipairs(parts) do 
+					if not crosshair_data.parts[part_index].UNRECOLORABLE then 
+--						part:set_color(
+					end
+--					firemode_panel:set_alpha(
+				end
 				--if crosshair_data.special_crosshair then
 			else
 				self:log("ERROR: CreateCrosshairs() Bad crosshair data for weapon " .. self.concat_tbl(slot,firemode),{color=Color.red})
@@ -1808,7 +1863,7 @@ function AdvancedCrosshair:CreateCrosshair(panel,data)
 	--	do stuff here
 	--end
 	local results = {}
-	for i,part_data in pairs(data.parts) do 
+	for i,part_data in ipairs(data.parts) do 
 		local x = (part_data.x or 0)
 		local y = (part_data.y or 0)
 		local angle = part_data.angle or part_data.rotation
@@ -2329,10 +2384,12 @@ function AdvancedCrosshair:GetCrosshairType(slot,weaponbase,fire_mode) --not str
 --		local fire_mode = (weaponbase.fire_mode and weaponbase:fire_mode()) or weaponbase.FIRE_MODE
 		if weapon_type then 
 			local result
+			result = self.settings.crosshairs[weapon_type] and self.settings.crosshairs[weapon_type][fire_mode] and self.settings.crosshairs[weapon_type][fire_mode].crosshair_id or self.DEFAULT_CROSSHAIR_OPTIONS.crosshair_id
 			if is_akimbo then 
-				result = self.settings["crosshair_type_" .. weapon_type .. "_" .. fire_mode .. "_akimbo"]
+				
+--				self.settings["crosshair_type_" .. weapon_type .. "_" .. fire_mode .. "_akimbo"]
 			end
-			result = result or self.settings["crosshair_type_" .. weapon_type .. "_" .. fire_mode] or "ma37"
+--			result = result or self.settings["crosshair_type_" .. weapon_type .. "_" .. fire_mode] or "ma37"
 			return result
 		end
 	end
@@ -2422,7 +2479,14 @@ Hooks:Add("LocalizationManagerPostInit", "advc_addlocalization", function( loc )
 		menu_ach_preview_bloom_title = "Preview Bloom",
 		menu_ach_preview_bloom_desc = "Click to simulate firing reticle bloom",
 		menu_ach_change_crosshair_weapon_category_desc = "Edit the crosshair for this weapon category...",
-		menu_ach_change_crosshair_weapon_firemode_desc = "Edit the crosshair for this firemode..." --not used
+		menu_ach_change_crosshair_weapon_firemode_desc = "Edit the crosshair for this firemode...", --not used
+		menu_ach_prompt_missing_colorpicker_title = "Color Picker mod installation required",
+		menu_ach_prompt_missing_colorpicker_desc = "You must install \"Color Picker\" in order to use the Set Color feature!\n\nYou can install it from here: $URL",
+		menu_ach_prompt_ok = "OK",
+		menu_ach_set_bloom_enabled_title = "Show Crosshair Bloom",
+		menu_ach_set_bloom_enabled_desc = "Does not reflect actual weapon accuracy/stability.",
+		menu_ach_preview_label_title = "PREVIEW"
+		
 	})
 end)
 
@@ -2478,8 +2542,273 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "advc_MenuManagerPopulateCustomMenus
 	--alpha
 	--default color? or in master crosshhair options?
 	--preview bloom
+	
+	
+			
+	--define open preview clbk (not specific to any submenu; shown on interacting with any firemode menu option)
+	local function create_preview(crosshair_setting)
+		local crosshair_id = crosshair_setting.crosshair_id
+--		BeardLib:RemoveUpdater("ach_preview_bloom")
+		local fullscreen_ws = managers.menu_component and managers.menu_component._fullscreen_ws
+		if alive(fullscreen_ws) then 
+			local menupanel = fullscreen_ws:panel()
+			
+			local crosshair_data = AdvancedCrosshair._crosshair_data[crosshair_id]
+			if alive(menupanel:child("ach_preview")) then 
+				menupanel:remove(menupanel:child("ach_preview"))
+			end
+			local preview_panel = menupanel:panel({
+				name = "ach_preview"
+			})
+			local screenshot_bg = preview_panel:bitmap({
+				name = "screenshot_bg",
+				color = Color(0.7,0.7,0.7),
+				layer = -101,
+				w = 200,
+				h = 200,
+				texture = "guis/textures/pd2/mission_briefing/assets/assets_risklevel_4",
+				texture_rect = {
+					450,532,260,260
+				}
+			})
+			screenshot_bg:set_center(preview_panel:center())
+			local blur_bg = preview_panel:bitmap({
+				name = "blur_bg",
+				color = Color.white,
+				layer = -100,
+				w = 200,
+				h = 200,
+				texture = "guis/textures/test_blur_df",
+				render_template = "VertexColorTexturedBlur3D"
+			})
+			blur_bg:set_center(preview_panel:center())
+			local preview_label = preview_panel:text({
+				name = "preview_label",
+				text = managers.localization:text("menu_ach_preview_label_title"),
+				layer = 2,
+				align = "center",
+				y = blur_bg:top() + 4,
+				font = tweak_data.hud.medium_font,
+				font_size = 16,
+				color = Color.white,
+				alpha = 0.5
+			})
+			local crosshair_preview_panel = preview_panel:panel({
+				name = "crosshair_preview_panel",
+				layer = 1,
+				alpha = crosshair_setting.alpha
+			})
+			AdvancedCrosshair.crosshair_preview_data = {
+				panel = preview_panel,
+				parts = AdvancedCrosshair:CreateCrosshair(crosshair_preview_panel,crosshair_data),
+				crosshair_id = crosshair_id,
+				bloom = 0
+			}
+			
+			--set color here
+			for part_index,part in ipairs(AdvancedCrosshair.crosshair_preview_data.parts) do 
+				if not crosshair_data.parts[part_index].UNRECOLORABLE then
+					part:set_color(Color:from_hex(crosshair_setting.color))
+				end
+			end
+			
+		end
+		return AdvancedCrosshair.crosshair_preview_data
+	end
+	
 	for cat_menu_name,cat_menu_data in pairs(AdvancedCrosshair.customization_menus) do 
-		local i = 1
+		local i = 1 --?
+		local category = cat_menu_data.category_name
+		
+		for firemode_menu_name,firemode_menu_data in pairs(cat_menu_data.child_menus) do 
+			local firemode = firemode_menu_data.firemode
+			local crosshair_setting = AdvancedCrosshair.settings.crosshairs[category] and AdvancedCrosshair.settings.crosshairs[category][firemode]
+			if not crosshair_setting then 
+				AdvancedCrosshair:log("FATAL ERROR: Invalid crosshair settings for [category " .. tostring(category) .. " | firemode " .. tostring(firemode) .. "], aborting menu generation",{color=Color.red})
+				return 
+			end
+		--define menu callbacks
+			--set crosshair type
+			local set_crosshair_type_callback_name = firemode_menu_name .. "_set_crosshair_type"
+			MenuCallbackHandler[set_crosshair_type_callback_name] = function(self,item)
+				--multiple choice
+				local index = tonumber(item:value())
+				local crosshair_id = AdvancedCrosshair.crosshair_id_by_index[index]
+				crosshair_setting.crosshair_id = crosshair_id
+				AdvancedCrosshair.crosshair_preview_data = create_preview(crosshair_setting)
+				
+				AdvancedCrosshair:Save()
+			end
+			
+			--set color
+			local set_crosshair_color_callback_name = firemode_menu_name .. "_set_crosshair_color"
+			MenuCallbackHandler[set_crosshair_color_callback_name] = function(self)
+				AdvancedCrosshair.crosshair_preview_data = AdvancedCrosshair.crosshair_preview_data or create_preview(crosshair_setting)
+				
+				if AdvancedCrosshair._colorpicker then
+					local function clbk_colorpicker (color,palettes)
+						--set preview color here
+						local preview_data = AdvancedCrosshair.crosshair_preview_data
+						local parent_panel = preview_data and preview_data.panel
+						local crosshair_data = preview_data and AdvancedCrosshair._crosshair_data[tostring(preview_data.crosshair_id)]
+						if preview_data and crosshair_data and preview_data.parts and alive(parent_panel) then 
+							for part_index,part in ipairs(preview_data.parts) do
+								if not crosshair_data.parts[part_index].UNRECOLORABLE then 
+									part:set_color(color)
+								end
+							end
+						end
+						
+						--save color to settings
+						crosshair_setting.color = color:to_hex()
+
+						--save palette swatches to settings
+						if palettes then 
+							AdvancedCrosshair:SetPaletteCodes(palettes)
+						end
+					end
+					
+					AdvancedCrosshair._colorpicker:Show({color = Color(crosshair_setting.color),changed_callback = clbk_colorpicker,done_callback = clbk_colorpicker,palettes = AdvancedCrosshair:GetPaletteColors()})
+					
+					AdvancedCrosshair:Save()
+				elseif not _G.ColorPicker then
+					QuickMenu:new(managers.localization:text("menu_ach_prompt_missing_colorpicker_title"),string.gsub(managers.localization:text("menu_ach_prompt_missing_colorpicker_desc"),"$URL",AdvancedCrosshair.url_colorpicker),{
+						text = managers.localization:text("menu_ach_prompt_ok")
+					},true)
+				end
+			end
+			
+			
+			--set alpha
+			local set_crosshair_alpha_callback_name = firemode_menu_name .. "_set_crosshair_alpha"
+			MenuCallbackHandler[set_crosshair_alpha_callback_name] = function(self,item)
+				local alpha = tonumber(item:value())
+				AdvancedCrosshair.crosshair_preview_data = AdvancedCrosshair.crosshair_preview_data or create_preview(crosshair_setting)
+				local preview_data = AdvancedCrosshair.crosshair_preview_data
+				local parent_panel = preview_data and preview_data.panel
+				local crosshair_data = preview_data and AdvancedCrosshair._crosshair_data[tostring(preview_data.crosshair_id)]
+				if preview_data and crosshair_data and preview_data.parts and alive(parent_panel) then 
+					parent_panel:child("crosshair_preview_panel"):set_alpha(alpha)
+				end
+				crosshair_setting.alpha = alpha
+			end
+			
+			--enable/disable bloom
+			local enable_crosshair_bloom_callback_name = firemode_menu_name .. "_set_bloom_enabled"
+			MenuCallbackHandler[enable_crosshair_bloom_callback_name] = function(self,item)
+				local enabled = item:value() == "on"
+				crosshair_setting.use_bloom = enabled
+				AdvancedCrosshair.crosshair_preview_data = AdvancedCrosshair.crosshair_preview_data or create_preview(crosshair_setting)
+			end
+			
+			--preview bloom
+			local preview_crosshair_bloom_callback_name = firemode_menu_name .. "_preview_bloom"
+			MenuCallbackHandler[preview_crosshair_bloom_callback_name] = function(self)
+				AdvancedCrosshair.crosshair_preview_data = AdvancedCrosshair.crosshair_preview_data or create_preview(crosshair_setting)
+				local preview_data = AdvancedCrosshair.crosshair_preview_data
+				local parent_panel = preview_data and preview_data.panel
+				local crosshair_data = preview_data and AdvancedCrosshair._crosshair_data[tostring(preview_data.crosshair_id)]
+				if preview_data and crosshair_data and preview_data.parts and alive(parent_panel) and type(crosshair_data.bloom_func) == "function" then 
+					preview_data.bloom = preview_data.bloom + 0.5 --todo
+					BeardLib:AddUpdater("ach_preview_bloom", --needs to use beardlib updater since managers.hud isn't initialized in the main menu
+						function(t,dt)
+							if not (crosshair_data and preview_data.parts and alive(parent_panel) and type(crosshair_data.bloom_func) == "function") then 
+								BeardLib:RemoveUpdater("ach_preview_bloom")
+								return
+							else
+								local bloom_decay_mul = 2 --todo 
+								preview_data.bloom = math.max(preview_data.bloom - (bloom_decay_mul * dt),0)
+								for part_index,part in ipairs(preview_data.parts) do
+									crosshair_data.bloom_func(part_index,part,
+										{
+											crosshair_data = crosshair_data,
+											bloom = preview_data.bloom,
+											panel_w = parent_panel:w(),
+											panel_h = parent_panel:h()
+										}
+									)
+								end
+								if preview_data.bloom <= 0 then 
+									--done doing bloom, so stop updating
+									BeardLib:RemoveUpdater("ach_preview_bloom")
+								end
+							end
+						end,
+					true)
+				end
+			end
+			
+			--add menu items
+			
+--		AdvancedCrosshair.customization_menu_callbacks[callback_name] = true
+			local crosshair_index = 1
+			for _crosshair_index,_crosshair_id in ipairs(AdvancedCrosshair.crosshair_id_by_index) do 
+				if _crosshair_id == crosshair_setting.crosshair_id then 
+					crosshair_index = _crosshair_index
+					break
+				end
+			end
+			MenuHelper:AddMultipleChoice({
+				id = "id_" .. set_crosshair_type_callback_name,
+				title = "menu_ach_set_bitmap_title",
+				desc = "menu_ach_set_bitmap_desc",
+				callback = set_crosshair_type_callback_name,
+				items = items,
+				value = crosshair_index,
+				menu_id = firemode_menu_name,
+				priority = 7
+			})
+			
+			MenuHelper:AddButton({
+				id = "id_" .. set_crosshair_color_callback_name,
+				title = "menu_ach_set_color_title",
+				desc = "menu_ach_set_color_desc",
+				callback = set_crosshair_color_callback_name,
+				menu_id = firemode_menu_name,
+				priority = 6
+			})
+			
+			MenuHelper:AddSlider({
+				id = "id_" .. set_crosshair_alpha_callback_name,
+				title = "menu_ach_set_alpha_title",
+				desc = "menu_ach_set_alpha_desc",
+				callback = set_crosshair_alpha_callback_name,
+				value = crosshair_setting.alpha,
+				min = 0,
+				max = 1,
+				step = 0.05,
+				show_value = true,
+				menu_id = firemode_menu_name,
+				priority = 5
+			})
+			
+			MenuHelper:AddToggle({
+				id = "id_" .. enable_crosshair_bloom_callback_name,
+				title = "menu_ach_set_bloom_enabled_title",
+				desc = "menu_ach_set_bloom_enabled_desc",
+				callback = enable_crosshair_bloom_callback_name,
+				value = crosshair_setting.use_bloom,
+				menu_id = firemode_menu_name,
+				priority = 4
+			})
+			
+			MenuHelper:AddDivider({
+				id = "divider_1_" .. firemode_menu_name,
+				size = 24,
+				menu_id = firemode_menu_name,
+				priority = 3
+			})
+			
+			MenuHelper:AddButton({
+				id = "id_" .. preview_crosshair_bloom_callback_name,
+				title = "menu_ach_preview_bloom_title",
+				desc = "menu_ach_preview_bloom_desc",
+				callback = preview_crosshair_bloom_callback_name,
+				menu_id = firemode_menu_name,
+				priority = 2
+			})
+		end
+		--[[
 		local select_crosshair_type_callback_name = cat_menu_name .. "_select_crosshair_type"
 		MenuCallbackHandler[select_crosshair_type_callback_name] = function(self,item) 
 			local index = tonumber(item:value())
@@ -2511,37 +2840,39 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "advc_MenuManagerPopulateCustomMenus
 				AdvancedCrosshair.crosshair_preview_data = {
 					panel = preview_panel,
 					parts = AdvancedCrosshair:CreateCrosshair(preview_panel,crosshair_data),
-					crosshair_type = crosshair_id,
+					crosshair_id = crosshair_id,
 					bloom = 0
 				}
 			end
 		end
 		
-		local open_color_callback_name = cat_menu_name .. "_set_color"
+		local open_color_callback_name = cat_menu_name .. "_" .. tostring(firemode) .. "_" .. "_set_color"
 		MenuCallbackHandler[open_color_callback_name] = function(self)
-			--todo open set color dialog
-			
-			local color = Color(math.random(),math.random(),math.random())
-			
 			
 			local function clbk_colorpicker (color,palettes)
 			--set preview color
-				--todo save palettes
 				local preview_data = AdvancedCrosshair.crosshair_preview_data
 				local parent_panel = preview_data and preview_data.panel
-				local crosshair_data = preview_data and AdvancedCrosshair._crosshair_data[tostring(preview_data.crosshair_type)]
+				local crosshair_data = preview_data and AdvancedCrosshair._crosshair_data[tostring(preview_data.crosshair_id)]
 				if preview_data and crosshair_data and preview_data.parts and alive(parent_panel) then 
 					for part_index,part in ipairs(preview_data.parts) do
 						part:set_color(color)
 					end
 				end
+				
+				--save color to settings
+				self.settings.crosshairs[cat_menu_data.category_name][firemode].color = color
+
+				--save palette swatches to settings
+				if palettes then 
+					AdvancedCrosshair:SetPaletteCodes(palettes)
+				end
 			end
 			
 			if AdvancedCrosshair._colorpicker then 
 --				self:get_palettes()
-				AdvancedCrosshair._colorpicker:Show({changed_callback = clbk_colorpicker,done_callback = clbk_colorpicker})
+				AdvancedCrosshair._colorpicker:Show({changed_callback = clbk_colorpicker,done_callback = clbk_colorpicker,palettes=AdvancedCrosshair:GetPaletteColors()})
 			end
-			
 		end
 		
 		local preview_bloom_callback_name = cat_menu_name .. "_preview_bloom"
@@ -2551,7 +2882,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "advc_MenuManagerPopulateCustomMenus
 		
 			local preview_data = AdvancedCrosshair.crosshair_preview_data
 			local parent_panel = preview_data and preview_data.panel
-			local crosshair_data = preview_data and AdvancedCrosshair._crosshair_data[tostring(preview_data.crosshair_type)]
+			local crosshair_data = preview_data and AdvancedCrosshair._crosshair_data[tostring(preview_data.crosshair_id)]
 			if preview_data and crosshair_data and preview_data.parts and alive(parent_panel) and type(crosshair_data.bloom_func) == "function" then 
 				preview_data.bloom = preview_data.bloom + 0.5 --todo
 				BeardLib:AddUpdater("ach_preview_bloom", --needs to use beardlib updater since managers.hud isn't initialized in the main menu
@@ -2581,7 +2912,8 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "advc_MenuManagerPopulateCustomMenus
 				true)
 			end
 		end
-		
+		--]]
+		--[[
 --		AdvancedCrosshair.customization_menu_callbacks[callback_name] = true
 		for firemode_menu_name,firemode_menu in pairs(cat_menu_data.child_menus) do 
 			MenuHelper:AddMultipleChoice({
@@ -2616,7 +2948,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "advc_MenuManagerPopulateCustomMenus
 		end
 		
 		local preview_hitmarker_callback_name = ""
-		
+		--]]
 		
 	end
 	
@@ -2662,8 +2994,8 @@ Hooks:Add("MenuManagerInitialize", "advc_initmenu", function(menu_manager)
 			if alive(panel) then 
 				panel:parent():remove(panel)
 			end
-			AdvancedCrosshair.crosshair_preview_data = nil
 		end
+		AdvancedCrosshair.crosshair_preview_data = nil
 		
 		
 		AdvancedCrosshair:Save()
@@ -2682,10 +3014,10 @@ Hooks:Add("MenuManagerInitialize", "advc_initmenu", function(menu_manager)
 
 	AdvancedCrosshair._colorpicker = AdvancedCrosshair._colorpicker or (ColorPicker and ColorPicker:new("advancedcrosshairs",{},callback(AdvancedCrosshair,AdvancedCrosshair,"set_colorpicker_menu")))
 
-	AdvancedCrosshair:Load()
 	
 	MenuHelper:LoadFromJsonFile(AdvancedCrosshair.path .. "menu/menu_main.json", AdvancedCrosshair, AdvancedCrosshair.settings)
 	MenuHelper:LoadFromJsonFile(AdvancedCrosshair.path .. "menu/menu_crosshairs.json", AdvancedCrosshair, AdvancedCrosshair.settings)
 	MenuHelper:LoadFromJsonFile(AdvancedCrosshair.path .. "menu/menu_hitmarkers.json", AdvancedCrosshair, AdvancedCrosshair.settings)
 end)
 
+AdvancedCrosshair:Load()
