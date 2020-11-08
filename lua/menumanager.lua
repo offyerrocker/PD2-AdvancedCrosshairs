@@ -1,21 +1,37 @@
---todo hide character + bg menu like how blt mods menu does (and fails to restore after hitting back lol)
+		--todo list, loosely sorted by descending priority:
 
---todo localization
---todo hitmarkers + positioning + queue
---todo alpha
---todo bloom based on weapon kick
---todo bloom delay for things like focus rifle
---todo akimbo support
---todo override by slot
---todo override by weapon id
---todo super srs april fool's hitmarkers rain
---todo settings are multipliers/modifiers of crosshair/hitmarker-specific data, when possible
---todo place category submenus into a categories menu
+
+-- refresh crosshair on settings changed if in-game
+	--iterate through all weapons again to re-apply settings?
+	--todo function for refreshing crosshair
+-- fix not updating on firemode override gadget toggle
+-- hitmarkers menu
+-- add preview clbks to menu callbacks
+-- angle check for hitmarkers (visible when facing opposite direction)
+
+-- localization through beardlib
+
+-- fix crosshair being invisible upon game start in casing
+
+-- settings are multipliers/modifiers of crosshair/hitmarker-specific data, when possible?
+-- bloom delay/add values per crosshair
+
+-- import special halo reach crosshair + add option to pass relevant data to all crosshairs
+
+-- test burstfire support
+-- hide character + bg menu like how blt mods menu does (and fails to restore after hitting back lol)
+
+-- akimbo support
+-- override by slot (needs menu options)
+-- override by weapon id (needs menu options)
+-- super srs april fool's hitmarkers rain
+
+
+
+
+
 
 --if you're looking for examples on how to add custom crosshairs, scroll down
-
-
-
 
 --************************************************--
 		--init mod data
@@ -100,7 +116,27 @@ AdvancedCrosshair.settings = {
 		"7aa4ff"
 	},
 	crosshair_global = table.deep_map_copy(AdvancedCrosshair.DEFAULT_CROSSHAIR_OPTIONS),
-	crosshairs = {}
+	crosshairs = {},
+	crosshair_weapon_id_overrides = {
+	--EG:
+--		deagle = {
+--			crosshair_id = "m6g",
+--			use_bloom = true,
+--			color = "ffffff",
+--			alpha = 0.9,
+--			overrides_global = true
+--		}
+	},
+	crosshair_slot_overrides = {
+	--EG:
+--		1 = { --overrides all primary slots
+--			crosshair_id = "ma37",
+--			use_bloom = true,
+--			color = "ffffff",
+--			alpha = 0.5,
+--			overrides_global = true
+--		}
+	}
 }
 --init settings for every variation of weapon + firemode (even for combinations that don't exist in-game)
 for _,cat in pairs(AdvancedCrosshair.valid_weapon_categories) do 
@@ -115,9 +151,12 @@ AdvancedCrosshair.save_path = SavePath .. "AdvancedCrosshair.txt"
 
 --holds some instance-specific stuff to save time + cycles
 AdvancedCrosshair._cache = {
-	underbarrel = {},
-	weapon = {},
+	current_crosshair_data = nil, --holds table reference to self._cache.weapons [...] .firemode
+	underbarrel = {}, --deprecated
+	weapon = {}, --deprecated
+	weapons = {},
 	bloom = 0,
+	bloom_t = -69,
 	hitmarkers = {},
 	num_hitmarkers = 0
 }
@@ -129,15 +168,17 @@ AdvancedCrosshair._crosshair_data = {
 	ma37 = { --halo reach assault rifle; four circle subquadrants + four aiming ticks
 		name_id = "menu_crosshair_ma37",
 		bloom_func = function(index,bitmap,data)
-			local bloom = data.bloom * 1.5
-			local crosshair_data = data.crosshair_data and data.crosshair_data.parts[index] or {}
-			local distance = (crosshair_data.distance or 10) * (1 + bloom)
-			local angle = crosshair_data.rotation or 60
-			local c_x = data.panel_w/2
-			local c_y = data.panel_h/2
+			local bloom = data.bloom
 			if index == 1 then 
+				bitmap:set_alpha((1.25 - bloom) / 2)
 				--main
 			else
+				local crosshair_data = data.crosshair_data and data.crosshair_data.parts[index] or {}
+				local angle = crosshair_data.rotation or 60
+				local c_x = data.panel_w/2
+				local c_y = data.panel_h/2
+				local distance = (crosshair_data.distance or 10) * ((1.5 * bloom) + 1)
+				bitmap:set_alpha(bloom + 0.5)
 				bitmap:set_center(c_x + (math.sin(angle) * distance),c_y - (math.cos(angle) * distance))
 			end
 		end,
@@ -151,28 +192,28 @@ AdvancedCrosshair._crosshair_data = {
 				texture = "guis/textures/advanced_crosshairs/ar_crosshair_2",
 				rotation = 0,
 				distance = 10,
-				w = 2,
+				w = 4,
 				h = 8
 			},
 			{
 				texture = "guis/textures/advanced_crosshairs/ar_crosshair_2",
 				rotation = 90,
 				distance = 10,
-				w = 2,
+				w = 4,
 				h = 8
 			},
 			{
 				texture = "guis/textures/advanced_crosshairs/ar_crosshair_2",
 				rotation = 180,
 				distance = 10,
-				w = 2,
+				w = 4,
 				h = 8
 			},
 			{
 				texture = "guis/textures/advanced_crosshairs/ar_crosshair_2",
 				rotation = 270,
 				distance = 10,
-				w = 2,
+				w = 4,
 				h = 8
 			}
 		}
@@ -181,12 +222,14 @@ AdvancedCrosshair._crosshair_data = {
 		name_id = "menu_crosshair_m392",
 		bloom_func = function(index,bitmap,data)
 			local bloom = data.bloom
-			local max_distance = 32
+			local max_distance = 48
 			if index == 1 then 
-				bitmap:set_alpha(0.75 - bloom)
+				bitmap:set_alpha(1.25 - bloom)
 			elseif index == 2 then 
-				bitmap:set_size(16 + (max_distance * bloom),16 + (max_distance * bloom))
-				bitmap:set_rotation(bloom * 90)
+				local size = 16 + (max_distance * bloom)
+				bitmap:set_size(size,size)
+				bitmap:set_rotation(bloom * 45)
+				bitmap:set_alpha(bloom + 0.33)
 			end
 			bitmap:set_center(data.panel_w/2,data.panel_h/2)
 		end,
@@ -199,7 +242,8 @@ AdvancedCrosshair._crosshair_data = {
 			{
 				texture = "guis/textures/advanced_crosshairs/dmr_crosshair_2",
 				w = 16,
-				h = 16
+				h = 16,
+				alpha = 0.75
 			}
 		}
 	},
@@ -1496,14 +1540,14 @@ function AdvancedCrosshair.concat(...)
 	return AdvancedCrosshair.concat_tbl({...})
 end
 
-function AdvancedCrosshair.GetWeaponCategory(weaponbase)
-	local category
-	for _,cat in pairs(weaponbase:categories()) do 
+function AdvancedCrosshair:GetWeaponCategory(categories)
+	local category,is_revolver,is_akimbo
+	for _,cat in pairs(categories) do 
 		if cat == "revolver" then 
 			is_revolver = true
 		elseif cat == "akimbo" then 
 			is_akimbo = true
-		elseif table.contains(AdvancedCrosshair.valid_weapon_categories,cat) then
+		elseif table.contains(self.valid_weapon_categories,cat) then
 			category = cat
 		else
 			self:log("ERROR: GetWeaponCategory(" .. tostring(cat) .."): Invalid category!",{color=Color.red})
@@ -1664,6 +1708,14 @@ function AdvancedCrosshair:SetPaletteCodes(tbl)
 	end
 end
 
+function AdvancedCrosshair:UseGlobalCrosshair()
+	return self.settings.crosshair_all_override
+end
+
+function AdvancedCrosshair:GetBloomCooldown()
+	return 0.05
+end
+
 --************************************************--
 		--hud animate functions
 --************************************************--
@@ -1718,7 +1770,53 @@ end
 --************************************************--
 		--stuff that happens during gameplay
 --************************************************--
+--[[
 
+--		local fire_mode = (weaponbase.fire_mode and weaponbase:fire_mode()) or weaponbase.FIRE_MODE
+
+
+cache.weapon = {
+	Unit12345 = { --underbarrels are created as their own unit entry
+		name_id = "wa2000",
+		panel = Panel,
+		firemodes = {
+			single = {
+				crosshair_id = "ma37",
+				panel = Panel,
+				parts = {
+					Bitmap1,
+					Bitmap2,
+					Bitmap3,
+					Bitmap4,
+					Bitmap5
+				}
+			},
+			auto = {
+				crosshair_id = "ma37",
+				panel = Panel,
+				parts = {
+					Bitmap1,
+					Bitmap2,
+					Bitmap3,
+					Bitmap4,
+					Bitmap5
+				},
+			}
+			burst = {
+				crosshair_id = "ma37",
+				panel = Panel,
+				parts = {
+					Bitmap1,
+					Bitmap2,
+					Bitmap3,
+					Bitmap4,
+					Bitmap5
+				}
+			}
+		}
+	}
+}
+--]]
 	--**********************--
 		--init hud items
 	--**********************--
@@ -1734,16 +1832,16 @@ function AdvancedCrosshair:CreateHUD(t,dt) --try to create hud each run until bo
 	if alive(managers.player:local_player()) and hud and hud.panel then 
 		managers.hud:remove_updator("advc_create_hud_delayed")
 		managers.hud:add_updator("advancedcrosshairs_update",callback(AdvancedCrosshair,AdvancedCrosshair,"Update"))
-		self:CheckWeapon(1)
-		self:CheckWeapon(2)
-		self:CheckUnderbarrel(1)
-		self:CheckUnderbarrel(2)
-		self:CreateCrosshairPanel(hud.panel) -- or managers.hud._hud_temp._hud_panel)
+--		self:CheckWeapon(1)
+--		self:CheckWeapon(2)
+--		self:CheckUnderbarrel(1)
+--		self:CheckUnderbarrel(2)
+		self:CreateCrosshairPanel(hud.panel)
 		self:CreateCrosshairs()
 	end
 end
 
-function AdvancedCrosshair:CheckWeapon(slot,underbarrel_slot)
+function AdvancedCrosshair:CheckWeapon(slot,underbarrel_slot) --deprecated
 	slot = tonumber(slot)
 	local player = managers.player:local_player()
 	if not slot then 
@@ -1767,7 +1865,7 @@ function AdvancedCrosshair:CheckWeapon(slot,underbarrel_slot)
 	self._cache.weapon[slot].burst = crosshair_burst
 end
 
-function AdvancedCrosshair:CheckUnderbarrel(slot,underbarrel_slot)
+function AdvancedCrosshair:CheckUnderbarrel(slot,underbarrel_slot) --deprecated
 	--there is currently no precedent for multiple underbarrel gadgets on a single weapon... yet
 	underbarrel_slot = tonumber(underbarrel_slot) or 1
 	slot = tonumber(slot)
@@ -1793,7 +1891,31 @@ function AdvancedCrosshair:CheckUnderbarrel(slot,underbarrel_slot)
 	end
 end
 
-function AdvancedCrosshair:CreateCrosshairPanel(hud)
+function AdvancedCrosshair:CreateCrosshairPanel(parent_panel)
+	if not alive(parent_panel) then 
+		self:log("ERROR: CreateCrosshairPanel() No parent HUD found!",{color=Color.red})
+		return
+	end
+	
+	if alive(parent_panel:child("advanced_crosshair_panel")) then 
+		parent_panel:remove(parent_panel:child("advanced_crosshair_panel"))
+	end
+	
+	local advanced_crosshair_panel = parent_panel:panel({
+		name = "advanced_crosshair_panel"
+	})
+	self._panel = advanced_crosshair_panel
+	self._crosshair_panel = advanced_crosshair_panel:panel({
+		name = "ach_crosshair_panel",
+		layer = 1
+	})
+	self._hitmarker_panel = advanced_crosshair_panel:panel({
+		name = "ach_hitmarker_panel",
+		layer = 2
+	})
+end
+
+function AdvancedCrosshair:OLD_CreateCrosshairPanel(hud) --deprecated
 	if not alive(hud) then 
 		self:log("ERROR: CreateCrosshairPanel() No parent HUD found!",{color=Color.red})
 		return
@@ -1836,6 +1958,18 @@ function AdvancedCrosshair:CreateCrosshairPanel(hud)
 end
 
 function AdvancedCrosshair:CreateCrosshairs()
+	local player = managers.player:local_player()
+	local inventory = player:inventory()
+	local equipped_unit = inventory:equipped_unit()
+	for i,selection_data in pairs(inventory:available_selections()) do 
+		self:CreateCrosshairByWeapon(selection_data.unit,i)
+		if selection_data.unit == equipped_unit then 
+			self._cache.current_crosshair_data = self._cache.weapons[tostring(equipped_unit:key())].firemodes[equipped_unit:base():fire_mode()]
+		end
+	end
+end
+
+function AdvancedCrosshair:OLD_CreateCrosshairs()
 --	for _,child in pairs(self._crosshair_panel) do
 --		self._crosshair_panel:remove(child)
 --	end
@@ -1862,6 +1996,98 @@ function AdvancedCrosshair:CreateCrosshairs()
 			end
 		end
 	end
+end
+
+function AdvancedCrosshair:RemoveCrosshairByWeapon(unit)
+	local unit_key = tostring(unit:key())
+	local data = self._cache.weapons[unit_key] 
+	if data then 
+		if alive(data.panel) then 
+			data.panel:parent():remove(data.panel)
+			data.panel = nil
+		end
+	end
+	self._cache.weapons[unit_key] = nil
+end
+
+function AdvancedCrosshair:CreateCrosshairByWeapon(unit,weapon_index)
+	local weapon_base = unit and unit:base()
+	if not weapon_base then 
+		self:log("ERROR: Bad weapon unit/base to CreateCrosshairByWeapon(" .. tostring(unit) ..")")
+		return
+	end
+	self:RemoveCrosshairByWeapon(unit)
+	
+	local unit_key = tostring(unit:key())
+	local weapon_panel = self._crosshair_panel:panel({
+		name = unit_key
+	})
+	local weapon_id = weapon_base:get_name_id()
+	local firemodes_data = {}
+	local weapon_category,is_revolver,is_akimbo = self:GetWeaponCategory(weapon_base:categories())
+	for _,firemode in pairs(self.valid_weapon_firemodes) do
+		local crosshair_id = self:GetCrosshairType(weapon_index,weapon_id,weapon_category,firemode,is_revolver,is_akimbo)
+		local crosshair_tweakdata = self._crosshair_data[crosshair_id]
+		local crosshair_setting = self.settings.crosshairs[weapon_category][firemode]
+		crosshair_setting = (self:UseGlobalCrosshair() or not (crosshair_setting and crosshair_setting.overrides_global)) and self.settings.crosshair_global or crosshair_setting or self.DEFAULT_CROSSHAIR_OPTIONS
+		local firemode_panel = weapon_panel:panel({
+			name = firemode,
+			visible = false,
+			alpha = crosshair_setting.alpha
+		})
+		local parts = self:CreateCrosshair(firemode_panel,crosshair_tweakdata)
+		firemodes_data[firemode] = {
+			base = weapon_base,
+			crosshair_id = crosshair_id,
+			panel = firemode_panel,
+			parts = parts,
+--			settings = self.DEFAULT_CROSSHAIR_OPTIONS
+			color = Color(crosshair_setting.color),
+			settings = crosshair_setting
+		}
+	end
+	
+	local underbarrels_data = {}
+	local underbarrel_weapons = weapon_base:get_all_override_weapon_gadgets()
+	if #underbarrel_weapons > 0 then 
+		for underbarrel_index,underbarrel in ipairs(underbarrel_weapons) do 
+			local underbarrel_panel = weapon_panel:panel({
+				name = "underbarrel_" .. tostring(underbarrel_index),
+				visible = true
+			})
+			for _,firemode in pairs(self.valid_weapon_firemodes) do
+				local underbarrel_tweakdata = underbarrel._tweak_data
+				local underbarrel_category,underbarrel_is_revolver,underbarrel_is_akimbo = self:GetWeaponCategory(underbarrel_tweakdata.categories)
+				local underbarrel_id = underbarrel_tweakdata.name_id
+				local underbarrel_crosshair_id = self:GetCrosshairType(nil,underbarrel_id,underbarrel_category,firemode,underbarrel_is_revolver,underbarrel_is_akimbo)
+				local crosshair_setting = self.settings.crosshairs[underbarrel_category][firemode]
+				crosshair_setting = (self:UseGlobalCrosshair() or not (crosshair_setting and crosshair_setting.overrides_global)) and self.settings.crosshair_global or crosshair_setting or self.DEFAULT_CROSSHAIR_OPTIONS
+				local underbarrel_firemode_panel = underbarrel_panel:panel({
+					name = firemode,
+					visible = false,
+					alpha = crosshair_setting.alpha
+				})
+				underbarrels_data[tostring(underbarrel)] = { --using a tostring(table) as an index is gross but i gotta
+					underbarrel_index = underbarrel_index,
+					crosshair_id = underbarrel_crosshair_id,
+					base = underbarrel,
+					panel = underbarrel_panel,
+					parts = self:CreateCrosshair(underbarrel_firemode_panel,self._crosshair_data[underbarrel_crosshair_id]),
+--					settings = self.DEFAULT_CROSSHAIR_OPTIONS
+					color = Color(crosshair_setting.color),
+					settings = crosshair_setting,
+				}
+			end
+		end
+	end
+	
+	self._cache.weapons[unit_key] = {
+		name = weapon_base:get_name_id(),
+		base = weapon_base,
+		panel = weapon_panel,
+		firemodes = firemodes_data,
+		underbarrel = underbarrels_data
+	}
 end
 
 function AdvancedCrosshair:CreateCrosshair(panel,data)
@@ -1903,26 +2129,40 @@ function AdvancedCrosshair:SetCrosshairCenter(x,y)
 end
 
 
-function AdvancedCrosshair:SetCrosshairColor(primary_color) --todo secondary color?
-	local current_crosshair,crosshair_type = self:GetCurrentCrosshair()
-	local crosshair_data = self._crosshair_data[tostring(crosshair_type)]
+function AdvancedCrosshair:SetCrosshairColor(primary_color) --todo support secondary colors?
+	local current_crosshair_data = self:GetCurrentCrosshair()
+	local crosshair_data = self._crosshair_data[tostring(current_crosshair_data.crosshair_id)]
 	if crosshair_data then 
 		if not crosshair_data.special_crosshair then 
 			for i=1,#crosshair_data.parts,1 do 
 				if not crosshair_data.parts[i].UNRECOLORABLE then 
-					local part = current_crosshair:child(tostring(i))
+					local part = current_crosshair_data.parts[i]
 					if part then 
 						part:set_color(primary_color)
 					end
 				end
 			end
 		else
-			--todo
+			--todo special crosshair like gl
 		end
 	end
 end
 
 function AdvancedCrosshair:SetCrosshairBloom(bloom)
+	local player = managers.player:local_player()
+
+	if player then 
+		local current_crosshair_data = self:GetCurrentCrosshair()
+		
+		local crosshair_data = self._crosshair_data[current_crosshair_data.crosshair_id] or {}
+		local data = {bloom = bloom,crosshair_data = crosshair_data,panel_w = current_crosshair_data.panel:w(),panel_h = current_crosshair_data.panel:h()}
+		local a = crosshair_data.bloom_func
+		
+		self:GetCurrentCrosshairParts(a,data)
+	end
+end
+
+function AdvancedCrosshair:OLD_SetCrosshairBloom(bloom)
 	local player = managers.player:local_player()
 
 	if player then 
@@ -1940,12 +2180,13 @@ end
 
 function AdvancedCrosshair:GetCurrentCrosshairParts(func,...)
 	local result = {}
-	local current_crosshair,crosshair_type = self:GetCurrentCrosshair()
-	local crosshair_data = self._crosshair_data[tostring(crosshair_type)]
-	if current_crosshair and crosshair_data then 
+	local current_crosshair_data,crosshair_id = self:GetCurrentCrosshair()
+	local crosshair_data = self._crosshair_data[tostring(crosshair_id)]
+	local crosshair_panel = current_crosshair_data and current_crosshair_data.panel
+	if alive(crosshair_panel) and crosshair_data then 
 		if not crosshair_data.special_crosshair then 
 			for i=1,#crosshair_data.parts,1 do 
-				local bitmap = current_crosshair:child(tostring(i))
+				local bitmap = current_crosshair_data.parts[i]
 				if bitmap and type(func) == "function" then 
 					func(i,bitmap,...)
 				end
@@ -1953,7 +2194,7 @@ function AdvancedCrosshair:GetCurrentCrosshairParts(func,...)
 		else
 			--todo
 		end
-		return current_crosshair:children()
+		return current_crosshair_data.parts
 	end
 	
 	--[[
@@ -1975,6 +2216,10 @@ function AdvancedCrosshair:GetCurrentCrosshairParts(func,...)
 end
 
 function AdvancedCrosshair:GetCurrentCrosshair()
+	return self._cache.current_crosshair_data,self._cache.current_crosshair_data.crosshair_id
+end
+
+function AdvancedCrosshair:OLD_GetCurrentCrosshair()
 	local player = managers.player:local_player()
 	if player and self._crosshair_panel then 
 		local inventory = player:inventory()
@@ -2176,6 +2421,44 @@ function AdvancedCrosshair:CheckCrosshair()
 		local equipped_index = inventory:equipped_selection()
 		local equipped_unit = inventory:equipped_unit()
 		local current_firemode = equipped_unit:base():fire_mode()
+		local weapon_base = equipped_unit:base()
+		if weapon_base.in_burst_mode and weapon_base:in_burst_mode() then
+			current_firemode = "burst"
+		end
+		
+		local new_current_data
+		
+		local weapon_data = self._cache.weapons[tostring(equipped_unit:key())]
+		local underbarrel_slot = weapon_base:gadget_overrides_weapon_functions()
+		if underbarrel_slot then 
+			local underbarrel = weapon_data.underbarrels[tostring(underbarrel_slot)]
+			if underbarrel then 
+				current_firemode = underbarrel._tweak_data.FIRE_MODE
+				--currently no other way to get the firemode of an underbarrel, since i don't believe switching firemodes independently of parent weapon is possible?
+				
+				new_current_data = underbarrel.firemodes[current_firemode]
+			end
+		end
+		new_current_data = new_current_data or weapon_data.firemodes[current_firemode]
+		
+		if new_current_data and (new_current_data ~= self._cache.current_crosshair_data) then 
+			self._cache.current_crosshair_data.panel:hide()
+--			self:log("Hiding " .. tostring(self._cache.current_crosshair_data.panel))
+			self._cache.current_crosshair_data = new_current_data
+--			self:log("Swapped to " .. tostring(new_current_data.base:get_name_id()))
+		end
+--		self:log("Showing " .. tostring(self._cache.current_crosshair_data.panel))
+		self._cache.current_crosshair_data.panel:show()
+	end
+end
+
+function AdvancedCrosshair:OLD_CheckCrosshair()
+	local player = managers.player:local_player()
+	if player then 
+		local inventory = player:inventory()
+		local equipped_index = inventory:equipped_selection()
+		local equipped_unit = inventory:equipped_unit()
+		local current_firemode = equipped_unit:base():fire_mode()
 		for slot,firemodes_data in pairs(self._cache.weapon) do 
 			local slot_panel = self._crosshair_panel:child("slot_" .. tostring(slot))
 			if slot == equipped_index then 
@@ -2198,8 +2481,25 @@ function AdvancedCrosshair:CheckCrosshair()
 end
 
 function AdvancedCrosshair:AddBloom(amt)
-	amt = amt or 0.3
-	self._cache.bloom = self._cache.bloom + amt
+	if true then 
+		local weapon = self:GetCurrentCrosshair().base
+		local stats = weapon and weapon._current_stats
+		local stability = stats and stats.recoil
+		amt = math.max(amt or (0.5 * (24 - stability) / 24) or 0,0)
+		
+	else
+		amt = amt or 0.3
+	end
+	self._cache.bloom_t = Application:time()
+	self._cache.bloom = math.clamp(self._cache.bloom + amt,0,1)
+end
+
+function AdvancedCrosshair:DecayBloom(bloom,t,dt)
+	if t - self._cache.bloom_t < self:GetBloomCooldown() then 
+		return bloom
+	end
+	local decay_mul = 2
+	return math.clamp(self._cache.bloom - (decay_mul * dt),0,1)
 end
 
 function AdvancedCrosshair:Update(t,dt)
@@ -2207,8 +2507,9 @@ function AdvancedCrosshair:Update(t,dt)
 	
 	--do crosshair
 		--if crosshair enabled then 
-	if alive(player) and alive(self._crosshair_panel) then 
-	
+	local current_crosshair_data = self._cache.current_crosshair_data
+	if alive(player) and alive(self._crosshair_panel) and current_crosshair_data then 
+		
 		local viewport_cam = managers.viewport:get_current_camera()
 		if not viewport_cam then 
 			return 
@@ -2311,7 +2612,7 @@ function AdvancedCrosshair:Update(t,dt)
 		local fwd_ray = state._fwd_ray	
 		local focused_person = fwd_ray and fwd_ray.unit
 		--			local crosshair = self._crosshair_panel:child("crosshair_subparts"):child("crosshair_1") --todo function to handle crosshair modifications
-		local crosshair_color = Color.white
+		local crosshair_color = current_crosshair_data.color
 		if alive(focused_person) then
 			
 --			Console:SetTrackerValue("trackere",tostring(focused_person))
@@ -2351,42 +2652,55 @@ function AdvancedCrosshair:Update(t,dt)
 		end
 
 		--bloom
-		if true then 
-			local bloom_decay_mul = 3 -- 1.5
+		if current_crosshair_data.settings.use_bloom then 
+--			Console:SetTrackerValue("trackera",tostring(self._cache.bloom))
 			if self._cache.bloom > 0 then 
-				self._cache.bloom = math.max(self._cache.bloom - (bloom_decay_mul * dt),0)
+				self._cache.bloom = self:DecayBloom(self._cache.bloom,t,dt)
 				self:SetCrosshairBloom(self._cache.bloom)
-
-				if true then 
-					
-		--							self.weapon_data.bloom = 1 - math.pow((dt + 1 - self.weapon_data.bloom) * 0.5,2)
-				
-		--							local bloom_duration = 2
-		--							self.weapon_data.bloom = math.pow(math.clamp((self.weapon_data.bloom - dt),0,1) * bloom_duration,2)
-					
-				elseif false then
-					self._cache.bloom = self._cache.bloom * 0.97
-					if self._cache.bloom - 0.001 < 0 then
-						self._cache.bloom = 0
-					end
-				else
-					self._cache.bloom = math.max(self._cache.bloom - 0.01,0)
-				end
 			end
-			
-						
 		end
 			
 	end
 end
 
-function AdvancedCrosshair:GetCrosshairType(slot,weaponbase,fire_mode) --not strictly a settings getter since it depends on the equipped weapon
+function AdvancedCrosshair:GetCrosshairType(slot,weapon_id,category,firemode,is_revolver,is_akimbo)
+	local result
+	if weapon_id then
+		result = self.settings.crosshair_weapon_id_overrides[weapon_id]
+	end
+
+--	if slot and not result then --todo
+--		result = self.settings.crosshair_slot_overrides[slot]
+--	end
+
+	if not result then 
+		if category then 
+			if is_akimbo then 
+				--todo check [category .. "_akimbo"]
+			end
+			if not (self.settings.crosshairs[category] and self.settings.crosshairs[category][firemode]) then 
+				self:log("ERROR: GetCrosshairType() Bad category " .. tostring(category) .. "/firemode " .. tostring(firemode))
+				return self.DEFAULT_CROSSHAIR_OPTIONS.crosshair_id
+			end
+			
+			local crosshair_setting = self.settings.crosshairs[category][firemode]
+			if not crosshair_setting.overrides_global or self:UseGlobalCrosshair() then 
+				result = self.settings.crosshair_global.crosshair_id
+			else
+				result = crosshair_setting.crosshair_id
+			end
+		end
+	end
+	return result or self.DEFAULT_CROSSHAIR_OPTIONS.crosshair_id
+end
+
+function AdvancedCrosshair:OLD_GetCrosshairType(slot,weaponbase,fire_mode) --not strictly a settings getter since it depends on the equipped weapon
 	if override_by_slot and slot then --todo
 		return override_by_slot and slot
 	elseif override_by_id and weaponbase then --todo
 		return lookup_table and weaponbase:get_name_id()
 	else
-		local weapon_type,is_revolver,is_akimbo = self.GetWeaponCategory(weaponbase)
+		local weapon_type,is_revolver,is_akimbo = self:GetWeaponCategory(weaponbase)
 --		local fire_mode = (weaponbase.fire_mode and weaponbase:fire_mode()) or weaponbase.FIRE_MODE
 		if weapon_type then 
 			local result
@@ -2497,8 +2811,9 @@ Hooks:Add("LocalizationManagerPostInit", "advc_addlocalization", function( loc )
 		menu_ach_set_bloom_enabled_desc = "Does not reflect actual weapon accuracy/stability.",
 		menu_ach_preview_label_title = "PREVIEW",
 		menu_ach_crosshairs_global_menu_title = "All Crosshairs",
-		menu_ach_crosshairs_global_menu_desc = "Applies globally to all weapons.",
-		
+		menu_ach_crosshairs_global_menu_desc = "Applies to any weapons not overridden.",
+		menu_ach_crosshairs_general_menu_title = "General",
+		menu_ach_crosshairs_general_menu_desc = "General crosshair settings"
 	})
 end)
 
@@ -2862,6 +3177,7 @@ end)
 Hooks:Add("MenuManagerInitialize", "advc_initmenu", function(menu_manager)
 	MenuCallbackHandler.callback_ach_main_close = function(self)
 		log("Close mainmenu")
+		AdvancedCrosshair.clbk_refresh_crosshairs()
 	end
 	MenuCallbackHandler.callback_ach_hitmarkers_close = function(self)
 		log("Close hm")
@@ -2869,6 +3185,8 @@ Hooks:Add("MenuManagerInitialize", "advc_initmenu", function(menu_manager)
 	end
 	MenuCallbackHandler.callback_ach_crosshairs_close = function(self)
 		log("Close ch") --functional
+		AdvancedCrosshair:Save()
+		AdvancedCrosshair.clbk_remove_preview()
 	end
 	
 	--nonfunctional
@@ -2885,7 +3203,7 @@ Hooks:Add("MenuManagerInitialize", "advc_initmenu", function(menu_manager)
 		log("Changed ch cat focus")
 	end
 	MenuCallbackHandler.callback_ach_crosshairs_focus = function(self,item)
-		log("changed ch focus")
+		log("changed ch focus " .. tostring(item))
 	end
 	
 	MenuCallbackHandler.callback_ach_menu_crosshairs_categories_global_enable_override = function(self,item)
@@ -2969,6 +3287,17 @@ Hooks:Add("MenuManagerInitialize", "advc_initmenu", function(menu_manager)
 	MenuHelper:LoadFromJsonFile(AdvancedCrosshair.path .. "menu/menu_crosshairs.json", AdvancedCrosshair, AdvancedCrosshair.settings)
 	MenuHelper:LoadFromJsonFile(AdvancedCrosshair.path .. "menu/menu_hitmarkers.json", AdvancedCrosshair, AdvancedCrosshair.settings)
 end)
+
+function AdvancedCrosshair.clbk_refresh_crosshairs()
+	--apply changes from settings to existing crosshairs
+	--todo
+	--[[
+	
+		for _,weapon_unit in pairs(inventory:available_selections()) do
+			create_weapon(weapon_unit)
+		end
+	--]]
+end
 
 function AdvancedCrosshair.clbk_show_colorpicker_with_callbacks(color,changed_callback,done_callback)
 	AdvancedCrosshair._colorpicker:Show({color = color,changed_callback = changed_callback,done_callback = done_callback,palettes = AdvancedCrosshair:GetPaletteColors(),blur_bg_x = 750})
@@ -3068,8 +3397,7 @@ function AdvancedCrosshair.clbk_bloom_preview(crosshair_setting)
 					BeardLib:RemoveUpdater("ach_preview_bloom")
 					return
 				else
-					local bloom_decay_mul = 2 --todo 
-					preview_data.bloom = math.max(preview_data.bloom - (bloom_decay_mul * dt),0)
+					preview_data.bloom = AdvancedCrosshair:DecayBloom(preview_data.bloom,t,dt)
 					for part_index,part in ipairs(preview_data.parts) do
 						crosshair_data.bloom_func(part_index,part,
 							{
