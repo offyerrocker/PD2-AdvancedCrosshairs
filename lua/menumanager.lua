@@ -1,17 +1,18 @@
 		--todo list, loosely sorted by descending priority:
 
-
--- refresh crosshair on settings changed if in-game
-	--iterate through all weapons again to re-apply settings?
-	--todo function for refreshing crosshair
--- fix not updating on firemode override gadget toggle
+-- remove deprecated functions from old crosshair cataloguing system
+-- change menu-changed recreate crosshair callback to also manually wipe existing weapon data in case in-heist weapon changes (eg. through weapon pickup mod)
+-- angle check for hitmarkers (visible when facing opposite direction)
 -- hitmarkers menu
 -- add preview clbks to menu callbacks
--- angle check for hitmarkers (visible when facing opposite direction)
+	--will require loading setting data for selected weapon type/firemode to memory, since focus_changed_callback does not pass menu id
 
--- localization through beardlib
+-- fix crosshair being invisible upon game start in loud, or after refreshing crosshair from menu
+	-- call check immediately after generation/check game heist state?
 
--- fix crosshair being invisible upon game start in casing
+-- add hitmarkers on melee
+-- add hook to call wipe crosshair data/refresh crosshair
+
 
 -- settings are multipliers/modifiers of crosshair/hitmarker-specific data, when possible?
 -- bloom delay/add values per crosshair
@@ -385,7 +386,7 @@ AdvancedCrosshair._crosshair_data = {
 			}
 		}
 	},
-	m319 = { --halo reach grenade launcher; circle with distance markers
+--[[	m319 = { --halo reach grenade launcher; circle with distance markers
 		name_id = "menu_crosshair_m319",
 		special_crosshair = "altimeter", --used for special altitude display for grenade launcher specifically
 		parts = {
@@ -401,6 +402,7 @@ AdvancedCrosshair._crosshair_data = {
 			}
 		}
 	},
+--]]
 	spnkr = { --halo reach m41 rocket launcher; circle with distance markers
 		name_id = "menu_crosshair_spnkr",
 		parts = {
@@ -1969,7 +1971,7 @@ function AdvancedCrosshair:CreateCrosshairs()
 	end
 end
 
-function AdvancedCrosshair:OLD_CreateCrosshairs()
+function AdvancedCrosshair:OLD_CreateCrosshairs() --deprecated
 --	for _,child in pairs(self._crosshair_panel) do
 --		self._crosshair_panel:remove(child)
 --	end
@@ -2051,14 +2053,21 @@ function AdvancedCrosshair:CreateCrosshairByWeapon(unit,weapon_index)
 	local underbarrel_weapons = weapon_base:get_all_override_weapon_gadgets()
 	if #underbarrel_weapons > 0 then 
 		for underbarrel_index,underbarrel in ipairs(underbarrel_weapons) do 
+			local underbarrel_tweakdata = underbarrel._tweak_data
+			local underbarrel_id = underbarrel_tweakdata.name_id
+			
 			local underbarrel_panel = weapon_panel:panel({
 				name = "underbarrel_" .. tostring(underbarrel_index),
 				visible = true
 			})
+			underbarrels_data[tostring(underbarrel)] = {
+				name = underbarrel_id,
+				base = underbarrel,
+				panel = underbarrel_panel,
+				firemodes = {}
+			}
 			for _,firemode in pairs(self.valid_weapon_firemodes) do
-				local underbarrel_tweakdata = underbarrel._tweak_data
 				local underbarrel_category,underbarrel_is_revolver,underbarrel_is_akimbo = self:GetWeaponCategory(underbarrel_tweakdata.categories)
-				local underbarrel_id = underbarrel_tweakdata.name_id
 				local underbarrel_crosshair_id = self:GetCrosshairType(nil,underbarrel_id,underbarrel_category,firemode,underbarrel_is_revolver,underbarrel_is_akimbo)
 				local crosshair_setting = self.settings.crosshairs[underbarrel_category][firemode]
 				crosshair_setting = (self:UseGlobalCrosshair() or not (crosshair_setting and crosshair_setting.overrides_global)) and self.settings.crosshair_global or crosshair_setting or self.DEFAULT_CROSSHAIR_OPTIONS
@@ -2067,12 +2076,15 @@ function AdvancedCrosshair:CreateCrosshairByWeapon(unit,weapon_index)
 					visible = false,
 					alpha = crosshair_setting.alpha
 				})
-				underbarrels_data[tostring(underbarrel)] = { --using a tostring(table) as an index is gross but i gotta
+local _crosshair_data = self._crosshair_data[underbarrel_crosshair_id]
+_crosshair_data = _crosshair_data or self._crosshair_data.ma37
+
+				underbarrels_data[tostring(underbarrel)].firemodes[firemode] = { --using a tostring(table) as an index is gross but i gotta
 					underbarrel_index = underbarrel_index,
 					crosshair_id = underbarrel_crosshair_id,
 					base = underbarrel,
-					panel = underbarrel_panel,
-					parts = self:CreateCrosshair(underbarrel_firemode_panel,self._crosshair_data[underbarrel_crosshair_id]),
+					panel = underbarrel_firemode_panel,
+					parts = self:CreateCrosshair(underbarrel_firemode_panel,_crosshair_data),
 --					settings = self.DEFAULT_CROSSHAIR_OPTIONS
 					color = Color(crosshair_setting.color),
 					settings = crosshair_setting,
@@ -2086,7 +2098,7 @@ function AdvancedCrosshair:CreateCrosshairByWeapon(unit,weapon_index)
 		base = weapon_base,
 		panel = weapon_panel,
 		firemodes = firemodes_data,
-		underbarrel = underbarrels_data
+		underbarrels = underbarrels_data
 	}
 end
 
@@ -2429,11 +2441,11 @@ function AdvancedCrosshair:CheckCrosshair()
 		local new_current_data
 		
 		local weapon_data = self._cache.weapons[tostring(equipped_unit:key())]
-		local underbarrel_slot = weapon_base:gadget_overrides_weapon_functions()
-		if underbarrel_slot then 
-			local underbarrel = weapon_data.underbarrels[tostring(underbarrel_slot)]
-			if underbarrel then 
-				current_firemode = underbarrel._tweak_data.FIRE_MODE
+		local underbarrel_base = weapon_base:gadget_overrides_weapon_functions()
+		if underbarrel_base then 
+			local underbarrel = weapon_data.underbarrels[tostring(underbarrel_base)]
+			if underbarrel and underbarrel_base and underbarrel_base._tweak_data then
+				current_firemode = underbarrel_base._tweak_data.FIRE_MODE
 				--currently no other way to get the firemode of an underbarrel, since i don't believe switching firemodes independently of parent weapon is possible?
 				
 				new_current_data = underbarrel.firemodes[current_firemode]
@@ -2485,8 +2497,11 @@ function AdvancedCrosshair:AddBloom(amt)
 		local weapon = self:GetCurrentCrosshair().base
 		local stats = weapon and weapon._current_stats
 		local stability = stats and stats.recoil
-		amt = math.max(amt or (0.5 * (24 - stability) / 24) or 0,0)
-		
+		if stability then 
+			amt = math.max(amt or (0.5 * (24 - stability) / 24) or 0,0)
+		else
+			amt = amt or 0.3
+		end
 	else
 		amt = amt or 0.3
 	end
@@ -2691,7 +2706,10 @@ function AdvancedCrosshair:GetCrosshairType(slot,weapon_id,category,firemode,is_
 			end
 		end
 	end
-	return result or self.DEFAULT_CROSSHAIR_OPTIONS.crosshair_id
+	if result and self._crosshair_data[result] then
+		return result 
+	end
+	return self.DEFAULT_CROSSHAIR_OPTIONS.crosshair_id
 end
 
 function AdvancedCrosshair:OLD_GetCrosshairType(slot,weaponbase,fire_mode) --not strictly a settings getter since it depends on the equipped weapon
@@ -2740,84 +2758,6 @@ function AdvancedCrosshair:Load()
 end
 
 
-
---************************************************--
-		--loc
---************************************************--
-Hooks:Add("LocalizationManagerPostInit", "advc_addlocalization", function( loc )
-	loc:add_localized_strings({
-		menu_weapon_category_assault_rifle = "Assault Rifle",
-		menu_weapon_category_pistol = "Pistol",
-		menu_weapon_category_smg = "Submachine Gun",
-		menu_weapon_category_lmg = "Light Machine Gun",
-		menu_weapon_category_snp = "Sniper Rifle",
-		menu_weapon_category_minigun = "Minigun",
-		menu_weapon_category_flamethrower = "Flamethrower",
-		menu_weapon_category_saw = "Saw",
-		menu_weapon_category_shotgun = "Shotgun",
-		menu_weapon_category_grenade_launcher = "Grenade Launcher",
-		menu_weapon_category_bow = "Bow",
-		menu_weapon_category_crossbow = "Crossbow",
-		menu_weapon_firemode_single = "Single",
-		menu_weapon_firemode_auto = "Auto",
-		menu_weapon_firemode_burst = "Burst",
-		menu_crosshair_type2_hammer = "Gravity Hammer",
-		menu_crosshair_m247h = "UNSC Turret",
-		menu_crosshair_halo_chevron = "Vehicle Chevron",
-		menu_crosshair_type52_turret = "Covenant Turret",
-		menu_crosshair_srs99 = "SRS99",
-		menu_crosshair_type52_rifle = "Focus Rifle",
-		menu_crosshair_type25_rifle = "Plasma Rifle",
-		menu_crosshair_type31 = "Needle Rifle",
-		menu_crosshair_type51_rifle = "Plasma Repeater",
-		menu_crosshair_type33_aa = "Fuel Rod Launcher",
-		menu_crosshair_h165 = "Target Designator",
-		menu_crosshair_type25_pistol = "Plasma Pistol",
-		menu_crosshair_type25_carbine = "Spiker",
-		menu_crosshair_type52_launcher = "Plasma Launcher",
-		menu_crosshair_type1_sword = "Energy Sword",
-		menu_crosshair_type50 = "Concussion Rifle",
-		menu_crosshair_type33_needler = "Needler",
-		menu_crosshair_m319 = "Grenade Launcher (Halo)",
-		menu_crosshair_m392 = "DMR (Halo)",
-		menu_crosshair_m6g = "M6G",
-		menu_crosshair_m90 = "Shotgun (Halo)",
-		menu_crosshair_ma37 = "MA37 (Halo)",
-		menu_crosshair_spnkr = "SPNKr",
-		menu_crosshair_m7057 = "Flamethrower (Halo)",
-		menu_crosshair_m7 = "SMG (Halo)",
-		menu_hitmarker_destiny = "Destiny",
-		menu_ach_hitmarkers_menu_main_title = "Advanced Crosshairs and Hitmarkers",
-		menu_ach_hitmarkers_menu_title = "Hitmarker Customization...",
-		menu_ach_crosshairs_menu_title = "Crosshair Customization...",
-		menu_ach_crosshairs_categories_menu_title = "Customize by weapon type...",
-		menu_ach_crosshairs_categories_menu_desc = "Change how crosshairs appear based on weapon type and firemode",
-		menu_ach_set_override_title = "Override global settings",
-		menu_ach_set_override_desc = "If enabled, this category overrides your All Crosshairs settings",
-		menu_ach_set_color_title = "Set Color",
-		menu_ach_set_color_desc = "Change the color of your crosshair",
-		menu_ach_set_alpha_title = "Set Alpha",
-		menu_ach_set_alpha_desc = "Change the opacity of your crosshair",
-		menu_ach_set_bitmap_title = "Set Image",
-		menu_ach_set_bitmap_desc = "Select the bitmap you want to use",
-		menu_ach_preview_bloom_title = "Preview Bloom",
-		menu_ach_preview_bloom_desc = "Click to simulate firing reticle bloom",
-		menu_ach_change_crosshair_weapon_category_desc = "Edit the crosshair for this weapon category...",
-		menu_ach_change_crosshair_weapon_firemode_desc = "Edit the crosshair for this firemode...", --not used
-		menu_ach_prompt_missing_colorpicker_title = "Color Picker mod installation required",
-		menu_ach_prompt_missing_colorpicker_desc = "You must install \"Color Picker\" in order to use the Set Color feature!\n\nYou can install it from here: $URL",
-		menu_ach_prompt_ok = "OK",
-		menu_ach_set_bloom_enabled_title = "Show Crosshair Bloom",
-		menu_ach_set_bloom_enabled_desc = "Does not reflect actual weapon accuracy/stability.",
-		menu_ach_preview_label_title = "PREVIEW",
-		menu_ach_crosshairs_global_menu_title = "All Crosshairs",
-		menu_ach_crosshairs_global_menu_desc = "Applies to any weapons not overridden.",
-		menu_ach_crosshairs_general_menu_title = "General",
-		menu_ach_crosshairs_general_menu_desc = "General crosshair settings"
-	})
-end)
-
-
 --************************************************--
 		--menu
 --************************************************--
@@ -2854,7 +2794,7 @@ Hooks:Add("MenuManagerSetupCustomMenus", "advc_MenuManagerSetupCustomMenus", fun
 end)
 
 Hooks:Add("MenuManagerPopulateCustomMenus", "advc_MenuManagerPopulateCustomMenus", function(menu_manager, nodes)
-	local lm = managers.localization
+--	local lm = managers.localization
 --generate available crosshairs here, in the items subtable, along with a number index/name reverse lookup table?
 	local items = {}
 	local i = 1
@@ -3148,7 +3088,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "advc_MenuManagerPopulateCustomMenus
 end)
 
 Hooks:Add("MenuManagerBuildCustomMenus", "ach_MenuManagerBuildCustomMenus", function( menu_manager, nodes )
-	local lm = managers.localization
+--	local lm = managers.localization
 	local crosshairs_menu = MenuHelper:GetMenu(AdvancedCrosshair.crosshairs_menu_id)
 	
 	nodes[AdvancedCrosshair.crosshairs_categories_global_id] = MenuHelper:BuildMenu(AdvancedCrosshair.crosshairs_categories_global_id,{back_callback = MenuCallbackHandler.callback_ach_crosshairs_categories_global_close,focus_changed_callback = "callback_ach_crosshairs_categories_global_focus"})
@@ -3203,6 +3143,13 @@ Hooks:Add("MenuManagerInitialize", "advc_initmenu", function(menu_manager)
 		log("Changed ch cat focus")
 	end
 	MenuCallbackHandler.callback_ach_crosshairs_focus = function(self,item)
+		--todo check for if any options were actually changed before recreating?
+		if item == false then 
+			if game_state_machine:verify_game_state(GameStateFilters.any_ingame) and managers.player and alive(managers.player:local_player()) then
+				AdvancedCrosshair:CreateCrosshairs()
+	--			AdvancedCrosshair.clbk_create_preview()
+			end
+		end
 		log("changed ch focus " .. tostring(item))
 	end
 	

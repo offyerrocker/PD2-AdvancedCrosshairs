@@ -1,5 +1,8 @@
 <mod name="Advanced Crosshairs and Hitmarkers" author="Offyerrocker" color="Color(0.4,0.7,1)" >
-	<AssetUpdates id="28082" version="1" provider="modworkshop" install_directory = "mods/" version_is_number="true"/>
+	<AssetUpdates id="28082" version="1" provider="modworkshop" install_directory="mods/" version_is_number="true" />
+	<Localization directory="localization" default="english.txt">
+		<loc file="english.txt" language="english" />
+	</Localization>
 	<AddFiles directory="assets">
 		<texture path="guis/textures/advanced_crosshairs/targeting_crosshair"/>
 		<texture path="guis/textures/advanced_crosshairs/car_crosshair"/>
