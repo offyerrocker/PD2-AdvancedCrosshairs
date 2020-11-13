@@ -1,5 +1,4 @@
+
 Hooks:PostHook(HUDHitConfirm,"init","advc_init_hud",function(self,hud)
---	AdvancedCrosshair:CreateCrosshairPanel(hud.panel)
---	AdvancedCrosshair:CreateCrosshairs()
-	AdvancedCrosshair:Init()
+--	AdvancedCrosshair:Init()
 end)

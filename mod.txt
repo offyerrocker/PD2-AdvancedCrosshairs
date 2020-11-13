@@ -17,7 +17,7 @@
 			"script_path" : "lua/playermanager.lua"
 		},
 		{
-			"hook_id" : "lib/managers/hud/hudhitconfirm",
+			"DISABLED_hook_id" : "lib/managers/hud/hudhitconfirm",
 			"script_path" : "lua/hudhitconfirm.lua"
 		},
 		{
