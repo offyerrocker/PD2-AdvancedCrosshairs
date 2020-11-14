@@ -29,5 +29,6 @@
 		<texture path="guis/textures/advanced_crosshairs/rocket_crosshair"/>
 		<texture path="guis/textures/advanced_crosshairs/grenadelauncher_crosshair_1"/>
 		<texture path="guis/textures/advanced_crosshairs/grenadelauncher_crosshair_2"/>
+		<texture path="guis/textures/advanced_crosshairs/tf2_crit_text"/>
 	</AddFiles>
 </mod>

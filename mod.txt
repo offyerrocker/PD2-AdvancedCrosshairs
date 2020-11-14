@@ -17,7 +17,7 @@
 			"script_path" : "lua/playermanager.lua"
 		},
 		{
-			"DISABLED_hook_id" : "lib/managers/hud/hudhitconfirm",
+			"hook_id" : "lib/managers/hud/hudhitconfirm",
 			"script_path" : "lua/hudhitconfirm.lua"
 		},
 		{
@@ -25,8 +25,8 @@
 			"script_path" : "lua/playerstandard.lua"
 		},
 		{
-			"hook_id" : "lib/units/beings/player/states/playermaskoff",
-			"script_path" : "lua/playermaskoff.lua"
+			"hook_id" : "lib/units/beings/player/states/playermovementstate",
+			"script_path" : "lua/playermovementstate.lua"
 		},
 		{
 			"hook_id" : "lib/units/weapons/newraycastweaponbase",
