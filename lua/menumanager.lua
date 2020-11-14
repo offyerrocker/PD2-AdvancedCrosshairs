@@ -1,19 +1,11 @@
 		--todo list, loosely sorted by descending priority:
 
+-- hitsound volume sliders
 
+-- hitsounds file-exists check on add custom hitsound
 
---hitsounds file-exists check on add custom hitsound
---tf2 hit/crit popup
---fullscreen/halfscreen/none bg menus for all preview-related menus
---toggle option for scaling crosshairs with world distance at world position?
---dynamic color callbacks for crosshairs
---slider option for scaling hitmarker size?
+-- dynamic color callbacks for crosshairs
 
---halo reach head aim crosshair dot
---keep crosshair preview visible until ACH menu left, in order to allow previewing hitmarker and crosshair simultaneously?
-	--if so, must manage preview panels for crosshairs/hitmarkers separately
-	
--- angle check for hitmarkers (visible when facing opposite direction)
 -- add preview clbks to menu callbacks
 	--will require loading setting data for selected weapon type/firemode to memory, since focus_changed_callback does not pass menu id
 
@@ -24,10 +16,13 @@
 -- add hook to call wipe crosshair data/refresh crosshair
 
 
--- settings are multipliers/modifiers of crosshair/hitmarker-specific data, when possible?
--- bloom delay/add values per crosshair
+-- fullscreen/halfscreen/none bg menus for all preview-related menus
+-- toggle option for scaling crosshairs with world distance at world position?
+-- slider option for scaling hitmarker size?
 
+-- halo reach head aim crosshair dot
 -- import special halo reach crosshair + add option to pass relevant data to all crosshairs
+-- bloom delay/add values per crosshair
 
 -- test burstfire support
 -- hide character + bg menu like how blt mods menu does (and fails to restore after hitting back lol)
@@ -53,6 +48,11 @@ AdvancedCrosshair._hitmarker_panel = nil
 AdvancedCrosshair._crosshair_panel = nil
 
 AdvancedCrosshair.url_colorpicker = "https://modwork.shop/29641"
+AdvancedCrosshair.url_ach_github = "https://github.com/offyerrocker/PD2-AdvancedCrosshairs"
+AdvancedCrosshair.url_ach_mws = "https://modwork.shop/29585"
+
+AdvancedCrosshair.addons_readme_txt = "This directory is where you can install \"Simple\" add-on folders for Crosshairs, Hitmarkers, or Hitsounds.\nThese must be folders, no archives or files- .texture, .zip, .7zip, .tar, etc. will not be read!\nTo install add-ons, place the add-on folder(s) in one of the three subfolders according to the type of add-on- NOT directly in the same folder as this file.\n\nPlease refer to the documentation for more information: \n$LINK\n\nP.S. You can safely delete this readme file if you wish. It will only be re-generated on launch if ACH is installed and the ACH Addons folder is removed.\nHave a nice day!"
+
 AdvancedCrosshair.DEFAULT_CROSSHAIR_OPTIONS = {
 	crosshair_id = "ma37",
 	use_bloom = true,
@@ -135,6 +135,14 @@ AdvancedCrosshair.settings = {
 	hitsound_kill_bodyshot_id = "tf2_hit",
 	hitsound_kill_bodyshot_crit_id = "tf2_crit",
 	hitsound_kill_headshot_crit_id = "tf2_crit",
+	hitsound_hit_bodyshot_volume = 1,
+	hitsound_hit_headshot_volume = 1,
+	hitsound_hit_bodyshot_crit_volume = 1,
+	hitsound_hit_headshot_crit_volume = 1,
+	hitsound_kill_headshot_volume = 1,
+	hitsound_kill_bodyshot_volume = 1,
+	hitsound_kill_bodyshot_crit_volume = 1,
+	hitsound_kill_headshot_crit_volume = 1,
 	hitsound_suppress_doublesound = false,
 	crosshair_all_override = false,
 	crosshair_stability = 1,
@@ -219,7 +227,25 @@ end
 
 AdvancedCrosshair.path = ModPath
 AdvancedCrosshair.hitsound_path = AdvancedCrosshair.path .. "assets/snd/hitsounds/"
-AdvancedCrosshair.save_path = SavePath .. "AdvancedCrosshair.txt"
+AdvancedCrosshair.save_path = SavePath
+AdvancedCrosshair.save_data_path = AdvancedCrosshair.save_path .. "AdvancedCrosshair.txt"
+AdvancedCrosshair.mod_overrides_path = ""
+AdvancedCrosshair.ADDON_PATHS = {
+	crosshairs = {
+--		AdvancedCrosshair.mod_overrides_path .. "ACH Addons/Crosshairs/",
+		AdvancedCrosshair.save_path .. "ACH Addons/Crosshairs/"
+	},
+	hitmarkers = {
+--		AdvancedCrosshair.mod_overrides_path .. "ACH Addons/Hitmarkers/",
+		AdvancedCrosshair.save_path .. "ACH Addons/Hitmarkers/"
+	},
+	hitsounds = {
+--		AdvancedCrosshair.mod_overrides_path .. "ACH Addons/Hitsounds/",
+		AdvancedCrosshair.save_path .. "ACH Addons/Hitsounds/"
+	}
+}
+
+
 --holds some instance-specific stuff to save time + cycles
 AdvancedCrosshair._cache = {
 	current_crosshair_data = nil, --holds table reference to self._cache.weapons [...] .firemode
@@ -2024,6 +2050,115 @@ end
 --simple custom add-ons should simply be added inside the assets/mod_overrides/AdvancedCrosshairs or mods/saves/AdvancedCrosshairs folder, and this mod will take care of adding them
 
 
+
+
+
+
+
+
+--[[
+	for file in savepath/hitsounds/ do 
+		addHitsound(file,generatedata())
+	end
+	for file in savepath/hitmarkers/ do 
+		addhitmarker(file,hitmarkers())
+	end
+	for file in savepath/crosshairs/ do 
+		addcrosshair(file,hitmarkers())
+	end
+
+--]]
+
+function AdvancedCrosshair:LoadAllAddons()
+	
+	self:LoadCrosshairAddons()
+--	self:LoadHitmarkerAddons()
+--	self:LoadHitsoundAddons()
+end
+
+function AdvancedCrosshair:AddCustomCrosshair(id,data)
+	if self._crosshair_data[id] then 
+		self:log("Warning! Crosshair with id " .. id .. " already exists. Replacing existing data...",{color=Color(1,0.5,0)})
+	end
+	local crosshair_name = data.name_id and managers.localization:text(data.name_id) or "[ERROR]"
+	if id then 
+		AdvancedCrosshair._crosshair_data[id] = data
+		self:log("Added custom crosshair addon: " .. crosshair_name)
+	else
+		self:log("Error: Could not load crosshair add-on. (reason: invalid id)")
+		if type(data) == "table" then 
+			self:log("Dumping crosshair addon data to BLT log for identification...")
+			PrintTable(data)
+			self:log("Crosshair addon data dump complete.")
+		else
+			self:log("Crosshair addon data invalid: " .. tostring(data))
+		end
+	end
+end
+
+function AdvancedCrosshair:LoadCrosshairAddons()
+	local extension = ".texture"
+	for _,addon_path in pairs(self.ADDON_PATHS.crosshairs) do 
+		if SystemFS:exists(Application:nice_path(addon_path,true)) then 
+			for _,foldername in pairs(SystemFS:list(addon_path,true)) do 
+				local parts = {}
+				for _,filename in pairs(SystemFS:list(BeardLib.Utils.Path:Combine(addon_path,foldername))) do 
+					if string.find(filename,extension) and filename ~= extension then 
+						local raw_path = BeardLib.Utils.Path:Combine(addon_path,foldername,filename)
+						local texture_path = string.gsub(raw_path,"%.texture","")
+						texture_path = string.gsub(texture_path,AdvancedCrosshair.save_path,"")
+						texture_path = string.gsub(texture_path,AdvancedCrosshair.mod_overrides_path,"")
+						
+						DB:create_entry(Idstring("texture"),Idstring(texture_path),raw_path)
+						
+						table.insert(parts,#parts+1,{
+							texture = texture_path
+						})
+					end
+				end
+				
+				if #parts > 0 then 
+					local string_id = "menu_crosshair_addon_" .. foldername
+					managers.localization:add_localized_strings({
+						[string_id] = foldername
+					})
+					self:AddCustomCrosshair(foldername,{
+						name_id = string_id,
+						parts = parts,
+						is_addon = true
+					})
+				end
+			end
+		end
+	end
+end
+
+function AdvancedCrosshair:AddCustomHitmarker(data)
+	
+end
+
+function AdvancedCrosshair:LoadHitmarkerAddons()
+	
+end
+
+function AdvancedCrosshair:AddCustomHitsound(data)
+	
+end
+
+function AdvancedCrosshair:LoadHitsoundAddons()
+	
+end
+
+
+
+
+
+
+
+
+
+
+
 	--custom crosshair support
 Hooks:Register("AdvancedCrosshair_RegisterCustomCrosshair") --this is intended as safe way to add custom crosshairs since it's safe to call hooks that aren't defined
 --this way, it won't crash if you use this method and uninstall advanced crosshairs but forget to uninstall the custom crosshair add-on (even though uninstalling this mod would make me sad :'( )
@@ -2974,8 +3109,7 @@ function AdvancedCrosshair:Update(t,dt)
 		end
 		local viewport_cam_pos = managers.viewport:get_current_camera_position()
 		local viewport_cam_rot = managers.viewport:get_current_camera_rotation()
-		local viewport_cam_fwd
-		mrotation.y(viewport_cam_rot, viewport_cam_fwd)
+		local viewport_cam_fwd = viewport_cam_rot:y()
 		local ws = managers.hud._workspace
 		
 		if not player:inventory():equipped_unit() then 
@@ -2987,8 +3121,10 @@ function AdvancedCrosshair:Update(t,dt)
 		if self:IsHitmarkerEnabled() then
 			if self:UseHitmarkerHitPosition() then 
 				for hitmarker_index,hitmarker in pairs(self._cache.hitmarkers) do 
-					local h_p,h_dir,h_dir_normalized
-					mvector3.set(h_p,ws:world_to_screen(viewport_cam,hitmarker.position))
+				
+					local h_dir = Vector3()
+					local h_dir_normalized = Vector3()
+					local h_p = ws:world_to_screen(viewport_cam,hitmarker.position)
 					--angle check here
 					mvector3.set(h_dir, hitmarker.position)
 					mvector3.subtract(h_dir, viewport_cam_pos)
@@ -2997,7 +3133,7 @@ function AdvancedCrosshair:Update(t,dt)
 					
 					local dot = mvector3.dot(viewport_cam_fwd, h_dir_normalized)
 					if alive(hitmarker.panel) then 
-						if dot < 0 or hitmarker.panel:outside() then 
+						if dot < 0 or hitmarker.panel:outside(mvector3.x(h_p),mvector3.y(h_p)) then 
 							hitmarker.panel:hide()
 						else
 							hitmarker.panel:show()
@@ -3118,7 +3254,7 @@ end
 		--I/O
 --************************************************--
 function AdvancedCrosshair:Save()
-	local file = io.open(self.save_path,"w+")
+	local file = io.open(self.save_data_path,"w+")
 	if file then
 		file:write(json.encode(self.settings))
 		file:close()
@@ -3126,7 +3262,7 @@ function AdvancedCrosshair:Save()
 end
 
 function AdvancedCrosshair:Load()
-	local file = io.open(self.save_path, "r")
+	local file = io.open(self.save_data_path, "r")
 	if (file) then
 		for k, v in pairs(json.decode(file:read("*all"))) do
 			self.settings[k] = v
@@ -3135,51 +3271,6 @@ function AdvancedCrosshair:Load()
 		self:Save()
 	end
 end
-
-
---[[
-	for file in savepath/hitsounds/ do 
-		addHitsound(file,generatedata())
-	end
-	for file in savepath/hitmarkers/ do 
-		addhitmarker(file,hitmarkers())
-	end
-	for file in savepath/crosshairs/ do 
-		addcrosshair(file,hitmarkers())
-	end
-
---]]
-
-function AdvancedCrosshair:LoadAllAddons()
---	self:LoadCrosshairAddons()
---	self:LoadHitmarkerAddons()
---	self:LoadHitsoundAddons()
-end
-
-function AdvancedCrosshair:AddCustomCrosshair(data)
-
-end
-
-function AdvancedCrosshair:LoadCrosshairAddons()
-
-end
-
-function AdvancedCrosshair:AddCustomHitmarker(data)
-	
-end
-
-function AdvancedCrosshair:LoadHitmarkerAddons()
-	
-end
-
-function AdvancedCrosshair:AddCustomHitsound(data)
-	
-end
-
-function AdvancedCrosshair:LoadHitsoundAddons()
-	
-end
-
 
 --************************************************--
 		--Menu Creation
@@ -3725,7 +3816,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "advc_MenuManagerPopulateCustomMenus
 		local global_crosshair_index = 1
 		for _crosshair_index,_crosshair_id in ipairs(AdvancedCrosshair.crosshair_id_by_index) do 
 			if _crosshair_id == AdvancedCrosshair.settings.crosshair_global.crosshair_id then 
-				crosshair_index = _crosshair_index
+				global_crosshair_index = _crosshair_index
 				break
 			end
 		end
@@ -4107,6 +4198,7 @@ Hooks:Add("MenuManagerInitialize", "advc_initmenu", function(menu_manager)
 		--don't check for existing preview data; rebuild bitmap on crosshair type change clbk
 		AdvancedCrosshair.crosshair_preview_data = AdvancedCrosshair.clbk_create_crosshair_preview(AdvancedCrosshair.settings.crosshair_global)
 		AdvancedCrosshair:Save()
+		log("Saved global type " .. tostring(crosshair_id))
 	end
 	MenuCallbackHandler.callback_ach_crosshairs_categories_global_color = function(self,item)
 		AdvancedCrosshair.crosshair_preview_data = AdvancedCrosshair.crosshair_preview_data or AdvancedCrosshair.clbk_create_crosshair_preview(AdvancedCrosshair.settings.crosshair_global)
@@ -4228,7 +4320,7 @@ Hooks:Add("MenuManagerInitialize", "advc_initmenu", function(menu_manager)
 	
 	MenuCallbackHandler.callback_ach_hitmarkers_hit_set_bodyshot_color = function(self)
 		if AdvancedCrosshair._colorpicker then 
-			local function changed_cb(color,palettes)
+			local function changed_cb(color,palettes,success)
 				AdvancedCrosshair.clbk_hitmarker_preview({
 					headshot = AdvancedCrosshair.hitmarker_preview_data.headshot,
 					crit = AdvancedCrosshair.hitmarker_preview_data.crit,
@@ -4238,7 +4330,9 @@ Hooks:Add("MenuManagerInitialize", "advc_initmenu", function(menu_manager)
 				if palettes then 
 					AdvancedCrosshair:SetPaletteCodes(palettes)
 				end
-				AdvancedCrosshair.settings.hitmarker_hit_bodyshot_color = color:to_hex()
+				if success then 
+					AdvancedCrosshair.settings.hitmarker_hit_bodyshot_color = color:to_hex()
+				end
 			end
 			
 			AdvancedCrosshair.clbk_show_colorpicker_with_callbacks(AdvancedCrosshair:GetHitmarkerSettings("hit").bodyshot_color,changed_cb,changed_cb)
@@ -4249,7 +4343,7 @@ Hooks:Add("MenuManagerInitialize", "advc_initmenu", function(menu_manager)
 	
 	MenuCallbackHandler.callback_ach_hitmarkers_hit_set_bodyshot_crit_color = function(self)
 		if AdvancedCrosshair._colorpicker then 
-			local function changed_cb(color,palettes)
+			local function changed_cb(color,palettes,success)
 				AdvancedCrosshair.clbk_hitmarker_preview({
 					headshot = AdvancedCrosshair.hitmarker_preview_data.headshot,
 					crit = AdvancedCrosshair.hitmarker_preview_data.crit,
@@ -4259,7 +4353,9 @@ Hooks:Add("MenuManagerInitialize", "advc_initmenu", function(menu_manager)
 				if palettes then 
 					AdvancedCrosshair:SetPaletteCodes(palettes)
 				end
-				AdvancedCrosshair.settings.hitmarker_hit_bodyshot_crit_color = color:to_hex()
+				if success then 
+					AdvancedCrosshair.settings.hitmarker_hit_bodyshot_crit_color = color:to_hex()
+				end
 			end
 			
 			AdvancedCrosshair.clbk_show_colorpicker_with_callbacks(AdvancedCrosshair:GetHitmarkerSettings("hit").bodyshot_crit_color,changed_cb,changed_cb)
@@ -4270,7 +4366,7 @@ Hooks:Add("MenuManagerInitialize", "advc_initmenu", function(menu_manager)
 	
 	MenuCallbackHandler.callback_ach_hitmarkers_hit_set_headshot_color = function(self)
 		if AdvancedCrosshair._colorpicker then 
-			local function changed_cb(color,palettes)
+			local function changed_cb(color,palettes,success)
 				AdvancedCrosshair.clbk_hitmarker_preview({
 					headshot = AdvancedCrosshair.hitmarker_preview_data.headshot,
 					crit = AdvancedCrosshair.hitmarker_preview_data.crit,
@@ -4280,7 +4376,9 @@ Hooks:Add("MenuManagerInitialize", "advc_initmenu", function(menu_manager)
 				if palettes then 
 					AdvancedCrosshair:SetPaletteCodes(palettes)
 				end
-				AdvancedCrosshair.settings.hitmarker_hit_headshot_color = color:to_hex()
+				if success then 
+					AdvancedCrosshair.settings.hitmarker_hit_headshot_color = color:to_hex()
+				end
 			end
 			
 			AdvancedCrosshair.clbk_show_colorpicker_with_callbacks(AdvancedCrosshair:GetHitmarkerSettings("hit").headshot_color,changed_cb,changed_cb)
@@ -4290,7 +4388,7 @@ Hooks:Add("MenuManagerInitialize", "advc_initmenu", function(menu_manager)
 	end
 	MenuCallbackHandler.callback_ach_hitmarkers_hit_set_headshot_crit_color = function(self)
 		if AdvancedCrosshair._colorpicker then 
-			local function changed_cb(color,palettes)
+			local function changed_cb(color,palettes,success)
 				AdvancedCrosshair.clbk_hitmarker_preview({
 					headshot = AdvancedCrosshair.hitmarker_preview_data.headshot,
 					crit = AdvancedCrosshair.hitmarker_preview_data.crit,
@@ -4300,7 +4398,9 @@ Hooks:Add("MenuManagerInitialize", "advc_initmenu", function(menu_manager)
 				if palettes then 
 					AdvancedCrosshair:SetPaletteCodes(palettes)
 				end
-				AdvancedCrosshair.settings.hitmarker_hit_headshot_crit_color = color:to_hex()
+				if success then 
+					AdvancedCrosshair.settings.hitmarker_hit_headshot_crit_color = color:to_hex()
+				end
 			end
 			
 			AdvancedCrosshair.clbk_show_colorpicker_with_callbacks(AdvancedCrosshair:GetHitmarkerSettings("hit").headshot_crit_color,changed_cb,changed_cb)
@@ -4323,7 +4423,7 @@ Hooks:Add("MenuManagerInitialize", "advc_initmenu", function(menu_manager)
 	end
 	MenuCallbackHandler.callback_ach_hitmarkers_kill_set_bodyshot_color = function(self)
 		if AdvancedCrosshair._colorpicker then 
-			local function changed_cb(color,palettes)
+			local function changed_cb(color,palettes,success)
 				AdvancedCrosshair.clbk_hitmarker_preview({
 					headshot = AdvancedCrosshair.hitmarker_preview_data.headshot,
 					crit = AdvancedCrosshair.hitmarker_preview_data.crit,
@@ -4333,7 +4433,9 @@ Hooks:Add("MenuManagerInitialize", "advc_initmenu", function(menu_manager)
 				if palettes then 
 					AdvancedCrosshair:SetPaletteCodes(palettes)
 				end
-				AdvancedCrosshair.settings.hitmarker_kill_bodyshot_color = color:to_hex()
+				if success then 
+					AdvancedCrosshair.settings.hitmarker_kill_bodyshot_color = color:to_hex()
+				end
 			end
 			
 			AdvancedCrosshair.clbk_show_colorpicker_with_callbacks(AdvancedCrosshair:GetHitmarkerSettings("kill").bodyshot_color,changed_cb,changed_cb)
@@ -4343,7 +4445,7 @@ Hooks:Add("MenuManagerInitialize", "advc_initmenu", function(menu_manager)
 	end
 	MenuCallbackHandler.callback_ach_hitmarkers_kill_set_bodyshot_crit_color = function(self)
 		if AdvancedCrosshair._colorpicker then 
-			local function changed_cb(color,palettes)
+			local function changed_cb(color,palettes,success)
 				AdvancedCrosshair.clbk_hitmarker_preview({
 					headshot = AdvancedCrosshair.hitmarker_preview_data.headshot,
 					crit = AdvancedCrosshair.hitmarker_preview_data.crit,
@@ -4353,7 +4455,9 @@ Hooks:Add("MenuManagerInitialize", "advc_initmenu", function(menu_manager)
 				if palettes then 
 					AdvancedCrosshair:SetPaletteCodes(palettes)
 				end
-				AdvancedCrosshair.settings.hitmarker_kill_bodyshot_crit_color = color:to_hex()
+				if success then 
+					AdvancedCrosshair.settings.hitmarker_kill_bodyshot_crit_color = color:to_hex()
+				end
 			end
 			
 			AdvancedCrosshair.clbk_show_colorpicker_with_callbacks(AdvancedCrosshair:GetHitmarkerSettings("kill").bodyshot_crit_color,changed_cb,changed_cb)
@@ -4363,7 +4467,7 @@ Hooks:Add("MenuManagerInitialize", "advc_initmenu", function(menu_manager)
 	end
 	MenuCallbackHandler.callback_ach_hitmarkers_kill_set_headshot_color = function(self)
 		if AdvancedCrosshair._colorpicker then 
-			local function changed_cb(color,palettes)
+			local function changed_cb(color,palettes,success)
 				AdvancedCrosshair.clbk_hitmarker_preview({
 					headshot = AdvancedCrosshair.hitmarker_preview_data.headshot,
 					crit = AdvancedCrosshair.hitmarker_preview_data.crit,
@@ -4373,9 +4477,10 @@ Hooks:Add("MenuManagerInitialize", "advc_initmenu", function(menu_manager)
 				if palettes then 
 					AdvancedCrosshair:SetPaletteCodes(palettes)
 				end
-				AdvancedCrosshair.settings.hitmarker_kill_headshot_color = color:to_hex()
+				if success then 
+					AdvancedCrosshair.settings.hitmarker_kill_headshot_color = color:to_hex()
+				end
 			end
-			
 			AdvancedCrosshair.clbk_show_colorpicker_with_callbacks(AdvancedCrosshair:GetHitmarkerSettings("kill").headshot_color,changed_cb,changed_cb)
 		elseif not _G.ColorPicker then
 			AdvancedCrosshair.clbk_missing_colorpicker_prompt()
@@ -4383,7 +4488,7 @@ Hooks:Add("MenuManagerInitialize", "advc_initmenu", function(menu_manager)
 	end
 	MenuCallbackHandler.callback_ach_hitmarkers_kill_set_headshot_crit_color = function(self)
 		if AdvancedCrosshair._colorpicker then 
-			local function changed_cb(color,palettes)
+			local function changed_cb(color,palettes,success)
 				AdvancedCrosshair.clbk_hitmarker_preview({
 					headshot = AdvancedCrosshair.hitmarker_preview_data.headshot,
 					crit = AdvancedCrosshair.hitmarker_preview_data.crit,
@@ -4393,9 +4498,10 @@ Hooks:Add("MenuManagerInitialize", "advc_initmenu", function(menu_manager)
 				if palettes then 
 					AdvancedCrosshair:SetPaletteCodes(palettes)
 				end
-				AdvancedCrosshair.settings.hitmarker_kill_headshot_crit_color = color:to_hex()
+				if success then 
+					AdvancedCrosshair.settings.hitmarker_kill_headshot_crit_color = color:to_hex()
+				end
 			end
-			
 			AdvancedCrosshair.clbk_show_colorpicker_with_callbacks(AdvancedCrosshair:GetHitmarkerSettings("kill").headshot_crit_color,changed_cb,changed_cb)
 		elseif not _G.ColorPicker then
 			AdvancedCrosshair.clbk_missing_colorpicker_prompt()
@@ -4663,7 +4769,7 @@ function AdvancedCrosshair.clbk_create_crosshair_preview(crosshair_setting)
 	if alive(fullscreen_ws) then 
 		local menupanel = fullscreen_ws:panel()
 		
-		local crosshair_data = AdvancedCrosshair._crosshair_data[crosshair_id]
+		local crosshair_data = AdvancedCrosshair._crosshair_data[crosshair_id] or AdvancedCrosshair._crosshair_data[AdvancedCrosshair.DEFAULT_CROSSHAIR_OPTIONS.crosshair_id]
 		if alive(menupanel:child("ach_preview")) then 
 			menupanel:remove(menupanel:child("ach_preview"))
 		end
@@ -4779,3 +4885,28 @@ end
 
 AdvancedCrosshair:Init()
 AdvancedCrosshair:Load()
+
+--make addons folders
+local addons_path_saves = AdvancedCrosshair.save_path .. "ACH Addons/"
+for i,path in ipairs({
+	addons_path_saves,
+	addons_path_saves .. "Crosshairs/",
+	addons_path_saves .. "Hitmarkers/",
+	addons_path_saves .. "Hitsounds/"
+}) do 
+	local addon_path = Application:nice_path(path,true)
+	if not SystemFS:exists(addon_path,true) then 
+		SystemFS:make_dir(addon_path)
+		if i == 1 then
+			
+			local file = io.open(addon_path .. "README.txt","w+")
+			if file then
+				--this is executed on startup, before localizationmanager is loaded
+				local readme = string.gsub(AdvancedCrosshair.addons_readme_txt,"$LINK",AdvancedCrosshair.url_ach_github)
+				file:write(readme)
+				file:flush()
+				file:close()
+			end
+		end
+	end
+end
