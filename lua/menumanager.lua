@@ -1,5 +1,7 @@
 		--todo list, loosely sorted by descending priority:
 
+
+
 --hitsounds file-exists check on add custom hitsound
 --tf2 hit/crit popup
 --fullscreen/halfscreen/none bg menus for all preview-related menus
@@ -38,11 +40,6 @@
 -- super srs april fool's hitmarkers rain
 
 --write up documentation for custom hitmarkers/crosshairs
-
-
-
-
-
 
 --if you're looking for examples on how to add custom crosshairs, scroll down
 
@@ -2022,6 +2019,11 @@ function AdvancedCrosshair.interp_colors(one,two,percent) --interpolates colors 
 end
 
 --************************************************--
+
+--complex custom add-ons (crosshairs/hitmarkers/hitsounds) should be added before MenuManagerPopulateCustomMenus is called
+--simple custom add-ons should simply be added inside the assets/mod_overrides/AdvancedCrosshairs or mods/saves/AdvancedCrosshairs folder, and this mod will take care of adding them
+
+
 	--custom crosshair support
 Hooks:Register("AdvancedCrosshair_RegisterCustomCrosshair") --this is intended as safe way to add custom crosshairs since it's safe to call hooks that aren't defined
 --this way, it won't crash if you use this method and uninstall advanced crosshairs but forget to uninstall the custom crosshair add-on (even though uninstalling this mod would make me sad :'( )
@@ -2810,9 +2812,8 @@ function AdvancedCrosshair:ActivateHitsound(attack_data,hit_unit)
 					end
 					if unit then 
 						XAudio.UnitSource:new(unit, XAudio.Buffer:new(snd_path)):set_volume(volume)
-							if hitsound_data_2 then 
-								XAudio.UnitSource:new(unit, XAudio.Buffer:new(hitsound_data_2.path)):set_volume(volume_2)
-							end
+						if hitsound_data_2 then 
+							XAudio.UnitSource:new(unit, XAudio.Buffer:new(hitsound_data_2.path)):set_volume(volume_2)
 						end
 					else
 						XAudio.Source:new(XAudio.Buffer:new(snd_path)):set_volume(volume)
@@ -3136,6 +3137,50 @@ function AdvancedCrosshair:Load()
 end
 
 
+--[[
+	for file in savepath/hitsounds/ do 
+		addHitsound(file,generatedata())
+	end
+	for file in savepath/hitmarkers/ do 
+		addhitmarker(file,hitmarkers())
+	end
+	for file in savepath/crosshairs/ do 
+		addcrosshair(file,hitmarkers())
+	end
+
+--]]
+
+function AdvancedCrosshair:LoadAllAddons()
+--	self:LoadCrosshairAddons()
+--	self:LoadHitmarkerAddons()
+--	self:LoadHitsoundAddons()
+end
+
+function AdvancedCrosshair:AddCustomCrosshair(data)
+
+end
+
+function AdvancedCrosshair:LoadCrosshairAddons()
+
+end
+
+function AdvancedCrosshair:AddCustomHitmarker(data)
+	
+end
+
+function AdvancedCrosshair:LoadHitmarkerAddons()
+	
+end
+
+function AdvancedCrosshair:AddCustomHitsound(data)
+	
+end
+
+function AdvancedCrosshair:LoadHitsoundAddons()
+	
+end
+
+
 --************************************************--
 		--Menu Creation
 --************************************************--
@@ -3176,6 +3221,8 @@ Hooks:Add("MenuManagerSetupCustomMenus", "advc_MenuManagerSetupCustomMenus", fun
 end)
 
 Hooks:Add("MenuManagerPopulateCustomMenus", "advc_MenuManagerPopulateCustomMenus", function(menu_manager, nodes)
+
+	AdvancedCrosshair:LoadAllAddons() --load custom crosshairs, hitmarkers, and hitsounds
 
 --crosshair/hitmarker selections are saved as string keys to the data in question instead of indices, since the order is not guaranteed
 --so generate a number index/string key lookup table for the menu to reference,
@@ -4483,6 +4530,7 @@ end)
 --i was planning to pass them directly as menu callbacks, but apparently 
 --focus_changed_callback can only be the string-type name/key to the function inside menucallbackhandler itself, 
 --not a function type
+
 AdvancedCrosshair.hitmarker_preview_data = {
 	headshot = false,
 	crit = false,
