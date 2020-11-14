@@ -1,8 +1,7 @@
 		--todo list, loosely sorted by descending priority:
 
--- hitsound volume sliders
 
--- hitsounds file-exists check on add custom hitsound
+--write up documentation for custom hitmarkers/crosshairs
 
 -- dynamic color callbacks for crosshairs
 
@@ -15,10 +14,11 @@
 -- add hitmarkers on melee
 -- add hook to call wipe crosshair data/refresh crosshair
 
-
 -- fullscreen/halfscreen/none bg menus for all preview-related menus
+
 -- toggle option for scaling crosshairs with world distance at world position?
 -- slider option for scaling hitmarker size?
+-- hitsound volume sliders
 
 -- halo reach head aim crosshair dot
 -- import special halo reach crosshair + add option to pass relevant data to all crosshairs
@@ -33,10 +33,6 @@
 -- override by slot (needs menu options)
 -- override by weapon id (needs menu options)
 -- super srs april fool's hitmarkers rain
-
---write up documentation for custom hitmarkers/crosshairs
-
---if you're looking for examples on how to add custom crosshairs, scroll down
 
 --************************************************--
 		--init mod data
@@ -2072,18 +2068,17 @@ end
 function AdvancedCrosshair:LoadAllAddons()
 	
 	self:LoadCrosshairAddons()
---	self:LoadHitmarkerAddons()
---	self:LoadHitsoundAddons()
+	self:LoadHitmarkerAddons()
+	self:LoadHitsoundAddons()
 end
 
 function AdvancedCrosshair:AddCustomCrosshair(id,data)
 	if self._crosshair_data[id] then 
 		self:log("Warning! Crosshair with id " .. id .. " already exists. Replacing existing data...",{color=Color(1,0.5,0)})
 	end
-	local crosshair_name = data.name_id and managers.localization:text(data.name_id) or "[ERROR]"
 	if id then 
 		AdvancedCrosshair._crosshair_data[id] = data
-		self:log("Added custom crosshair addon: " .. crosshair_name)
+		self:log("Added custom crosshair addon: " .. (data.name_id and managers.localization:text(data.name_id) or "[ERROR]"))
 	else
 		self:log("Error: Could not load crosshair add-on. (reason: invalid id)")
 		if type(data) == "table" then 
@@ -2097,19 +2092,19 @@ function AdvancedCrosshair:AddCustomCrosshair(id,data)
 end
 
 function AdvancedCrosshair:LoadCrosshairAddons()
-	local extension = ".texture"
+	local extension = "texture"
 	for _,addon_path in pairs(self.ADDON_PATHS.crosshairs) do 
 		if SystemFS:exists(Application:nice_path(addon_path,true)) then 
 			for _,foldername in pairs(SystemFS:list(addon_path,true)) do 
 				local parts = {}
 				for _,filename in pairs(SystemFS:list(BeardLib.Utils.Path:Combine(addon_path,foldername))) do 
-					if string.find(filename,extension) and filename ~= extension then 
+					if string.find(filename,"%." .. extension) then
 						local raw_path = BeardLib.Utils.Path:Combine(addon_path,foldername,filename)
-						local texture_path = string.gsub(raw_path,"%.texture","")
+						local texture_path = string.gsub(raw_path,"%." .. extension,"")
 						texture_path = string.gsub(texture_path,AdvancedCrosshair.save_path,"")
 						texture_path = string.gsub(texture_path,AdvancedCrosshair.mod_overrides_path,"")
 						
-						DB:create_entry(Idstring("texture"),Idstring(texture_path),raw_path)
+						DB:create_entry(Idstring(extension),Idstring(texture_path),raw_path)
 						
 						table.insert(parts,#parts+1,{
 							texture = texture_path
@@ -2133,25 +2128,128 @@ function AdvancedCrosshair:LoadCrosshairAddons()
 	end
 end
 
-function AdvancedCrosshair:AddCustomHitmarker(data)
-	
+function AdvancedCrosshair:AddCustomHitmarker(id,data)
+	if self._hitmarker_data[id] then 
+		self:log("Warning! Hitmarker with id " .. id .. " already exists. Replacing existing data...",{color=Color(1,0.5,0)})
+	end
+	if id then 
+		AdvancedCrosshair._hitmarker_data[id] = data
+		self:log("Added custom hitmarker addon: " .. (data.name_id and managers.localization:text(data.name_id) or "[ERROR]"))
+	else
+		self:log("Error: Could not load hitmarker add-on. (reason: invalid id)")
+		if type(data) == "table" then 
+			self:log("Dumping hitmarker addon data to BLT log for identification...")
+			PrintTable(data)
+			self:log("Hitmarker addon data dump complete.")
+		else
+			self:log("Hitmarker addon data invalid: " .. tostring(data))
+		end
+	end
 end
 
 function AdvancedCrosshair:LoadHitmarkerAddons()
-	
+	local extension = "texture"
+	for _,addon_path in pairs(self.ADDON_PATHS.hitmarkers) do 
+		if SystemFS:exists(Application:nice_path(addon_path,true)) then 
+			for _,foldername in pairs(SystemFS:list(addon_path,true)) do 
+				local parts = {}
+				for _,filename in pairs(SystemFS:list(BeardLib.Utils.Path:Combine(addon_path,foldername))) do 
+					if string.find(filename,"%." .. extension) then
+						local raw_path = BeardLib.Utils.Path:Combine(addon_path,foldername,filename)
+						local texture_path = string.gsub(raw_path,"%." .. extension,"")
+						texture_path = string.gsub(texture_path,AdvancedCrosshair.save_path,"")
+						texture_path = string.gsub(texture_path,AdvancedCrosshair.mod_overrides_path,"")
+						
+						DB:create_entry(Idstring(extension),Idstring(texture_path),raw_path)
+						
+						table.insert(parts,#parts+1,{
+							texture = texture_path
+						})
+					end
+				end
+				
+				if #parts > 0 then 
+					local string_id = "menu_hitmarker_addon_" .. foldername
+					managers.localization:add_localized_strings({
+						[string_id] = foldername
+					})
+					self:AddCustomHitmarker(foldername,{
+						name_id = string_id,
+						parts = parts,
+						is_addon = true
+					})
+				end
+			end
+		end
+	end
 end
 
-function AdvancedCrosshair:AddCustomHitsound(data)
-	
+function AdvancedCrosshair:AddCustomHitsound(id,data)
+	if self._hitsound_data[id] then 
+		self:log("Warning! Hitsound with id " .. id .. " already exists. Replacing existing data...",{color=Color(1,0.5,0)})
+	end
+	if id then 
+		AdvancedCrosshair._hitsound_data[id] = data
+		self:log("Added custom hitsound addon: " .. (data.name_id and managers.localization:text(data.name_id) or "[ERROR]"))
+	else
+		self:log("Error: Could not load hitsound add-on. (reason: invalid id)")
+		if type(data) == "table" then 
+			self:log("Dumping hitsound addon data to BLT log for identification...")
+			PrintTable(data)
+			self:log("Hitsound addon data dump complete.")
+		else
+			self:log("Hitsound addon data invalid: " .. tostring(data))
+		end
+	end
 end
 
 function AdvancedCrosshair:LoadHitsoundAddons()
-	
+	local extension = "ogg"
+	for _,addon_path in pairs(self.ADDON_PATHS.hitsounds) do 
+		if SystemFS:exists(Application:nice_path(addon_path,true)) then 
+			for _,foldername in pairs(SystemFS:list(addon_path,true)) do 
+				local is_randomized = SystemFS:exists(Application:nice_path(BeardLib.Utils.Path:Combine(addon_path,foldername,"random.txt")))
+				local variations = {}
+				for _,filename in pairs(SystemFS:list(BeardLib.Utils.Path:Combine(addon_path,foldername))) do 
+					if string.find(filename,"%." .. extension) then 
+						local raw_path = BeardLib.Utils.Path:Combine(addon_path,foldername,filename)
+						
+						if is_randomized then
+							table.insert(variations,#variations + 1,raw_path)
+						else
+							local string_id = "menu_hitsound_addon_" .. filename
+							managers.localization:add_localized_strings({
+								[string_id] = string.sub(filename,1,string.len(filename) - string.len("." .. extension))
+							})
+							
+							self:AddCustomHitsound(filename,{
+								name_id = string_id,
+								path = raw_path,
+								is_addon = true
+							})
+						end
+					end
+				end
+				if is_randomized then 
+					local string_id = "menu_hitsound_addon_" .. foldername
+					managers.localization:add_localized_strings({
+						[string_id] = foldername
+					})
+					self:AddCustomHitsound(foldername,{
+						name_id = string_id,
+						path = "",
+						variations = variations
+					})
+				end
+			end
+			
+		end
+	end
 end
 
 
 
-
+--local extension = "ogg"; local duck = "Bumper_car_quack5.ogg"; return string.sub(duck,1,string.len(duck) - string.len("." .. extension))
 
 
 
@@ -2919,50 +3017,60 @@ function AdvancedCrosshair:GetHitsoundData(attack_data)
 		end
 	end
 	
-	return snd_name,volume
+	local snd_data = snd_name and self._hitsound_data[snd_name]
+	if not snd_data then 
+		return
+	end
+	
+	local snd_path = snd_data.path
+	if snd_data.variations then 
+		snd_path = snd_data.variations[math.random(#snd_data.variations)] or snd_path
+	end
+	if (not snd_path) or (snd_path == "") or (snd_path == "none") then 
+		return
+	end
+	
+	return snd_path,volume
 end
 
-function AdvancedCrosshair:ActivateHitsound(attack_data,hit_unit)
-	local snd_name,volume = self:GetHitsoundData(attack_data)
-	
-	if snd_name and (snd_name ~= "none") then 
-		local hitsound_data = self._hitsound_data[snd_name]
-		if hitsound_data then 
-			local snd_path = hitsound_data.path
-			if snd_path then 
-				if self:UseHitsoundHitPosition() then 
-					local hitsound_data_2,volume_2
-					if not self:ShouldSuppressDoubleSound() then 
-						local snd_name_2
-						if attack_data.crit or attack_data.headshot then 
-							snd_name_2,volume_2 = self:GetHitsoundData({
-								result = {
-									attack_data.result.type
-								},
-								headshot = false,
-								crit = false,
-							})
-							hitsound_data_2 = snd_name_2 and self._hitsound_data[snd_name_2]
-						end
-					end
-					if unit then 
-						XAudio.UnitSource:new(unit, XAudio.Buffer:new(snd_path)):set_volume(volume)
-						if hitsound_data_2 then 
-							XAudio.UnitSource:new(unit, XAudio.Buffer:new(hitsound_data_2.path)):set_volume(volume_2)
-						end
-					else
-						XAudio.Source:new(XAudio.Buffer:new(snd_path)):set_volume(volume)
-						if hitsound_data_2 then 
-							XAudio.UnitSource:new(unit, XAudio.Buffer:new(hitsound_data_2.path)):set_volume(volume_2)
-						end
+function AdvancedCrosshair:ActivateHitsound(attack_data,unit)
+	local snd_path,volume = self:GetHitsoundData(attack_data)
+	if snd_path then 
+		local snd_path_2,volume_2
+		if not self:ShouldSuppressDoubleSound() and (attack_data.crit or attack_data.headshot) then 
+			snd_path_2,volume_2 = self:GetHitsoundData({
+				result = {
+					type = attack_data.result and attack_data.result.type or "hurt"
+				},
+				headshot = false,
+				crit = false,
+			})
+		end
+		
+		if managers.player:local_player() then 
+			if self:UseHitsoundHitPosition() then 
+				if unit then 
+					XAudio.UnitSource:new(unit, XAudio.Buffer:new(snd_path)):set_volume(volume)
+					if snd_path_2 then 
+						XAudio.UnitSource:new(unit, XAudio.Buffer:new(snd_path_2)):set_volume(volume_2)
 					end
 				else
-					XAudio.UnitSource:new(XAudio.PLAYER, XAudio.Buffer:new(snd_path)):set_volume(volume)
-					if hitsound_data_2 then 
-						XAudio.UnitSource:new(XAudio.PLAYER, XAudio.Buffer:new(hitsound_data_2.path)):set_volume(volume_2)
+					XAudio.Source:new(XAudio.Buffer:new(snd_path)):set_volume(volume)
+					if snd_path_2 then 
+						XAudio.UnitSource:new(unit, XAudio.Buffer:new(snd_path_2)):set_volume(volume_2)
 					end
 				end
+			else
+				XAudio.UnitSource:new(XAudio.PLAYER, XAudio.Buffer:new(snd_path)):set_volume(volume)
+				if snd_path_2 then 
+					XAudio.UnitSource:new(XAudio.PLAYER, XAudio.Buffer:new(snd_path_2)):set_volume(volume_2)
+				end
 			end
+		else
+			if snd_path_2 then 
+				XAudio.Source:new(XAudio.Buffer:new(snd_path_2)):set_volume(volume_2)
+			end
+			XAudio.Source:new(XAudio.Buffer:new(snd_path)):set_volume(volume)
 		end
 	end
 end
@@ -4539,83 +4647,107 @@ Hooks:Add("MenuManagerInitialize", "advc_initmenu", function(menu_manager)
 	end
 	MenuCallbackHandler.callback_ach_hitsounds_set_hit_bodyshot_type = function(self,item)
 		AdvancedCrosshair.settings.hitsound_hit_bodyshot_id = AdvancedCrosshair.hitsound_id_by_index[tonumber(item:value())]
-		AdvancedCrosshair:ActivateHitsound({
-			result = {
-				type = "hurt"
-			},
-			headshot = false,
-			crit = false
-		})
+		if not Application:paused() then 
+			AdvancedCrosshair:ActivateHitsound({
+				result = {
+					type = "hurt"
+				},
+				headshot = false,
+				crit = false
+			})
+		end
 	end
 	
 	MenuCallbackHandler.callback_ach_hitsounds_set_hit_headshot_type = function(self,item)
-		AdvancedCrosshair.settings.hitsound_hit_headshot_id = AdvancedCrosshair.hitsound_id_by_index[tonumber(item:value())]		AdvancedCrosshair:ActivateHitsound({
-			result = {
-				type = "hurt"
-			},
-			headshot = true,
-			crit = false
-		})
+		AdvancedCrosshair.settings.hitsound_hit_headshot_id = AdvancedCrosshair.hitsound_id_by_index[tonumber(item:value())]	
+			
+		if not Application:paused() then 
+			AdvancedCrosshair:ActivateHitsound({
+				result = {
+					type = "hurt"
+				},
+				headshot = true,
+				crit = false
+			})
+		end
 	end
 	
 	MenuCallbackHandler.callback_ach_hitsounds_set_hit_bodyshot_crit_type = function(self,item)
-		AdvancedCrosshair.settings.hitsound_hit_bodyshot_crit_id = AdvancedCrosshair.hitsound_id_by_index[tonumber(item:value())]		AdvancedCrosshair:ActivateHitsound({
-			result = {
-				type = "hurt"
-			},
-			headshot = false,
-			crit = true
-		})
+		AdvancedCrosshair.settings.hitsound_hit_bodyshot_crit_id = AdvancedCrosshair.hitsound_id_by_index[tonumber(item:value())]	
+		if not Application:paused() then 
+			AdvancedCrosshair:ActivateHitsound({
+				result = {
+					type = "hurt"
+				},
+				headshot = false,
+				crit = true
+			})
+		end
 	end
 	
 	MenuCallbackHandler.callback_ach_hitsounds_set_hit_headshot_crit_type = function(self,item)
-		AdvancedCrosshair.settings.hitsound_hit_headshot_crit_id = AdvancedCrosshair.hitsound_id_by_index[tonumber(item:value())]		AdvancedCrosshair:ActivateHitsound({
-			result = {
-				type = "hurt"
-			},
-			headshot = true,
-			crit = true
-		})
+		AdvancedCrosshair.settings.hitsound_hit_headshot_crit_id = AdvancedCrosshair.hitsound_id_by_index[tonumber(item:value())]
+		if not Application:paused() then 
+			AdvancedCrosshair:ActivateHitsound({
+				result = {
+					type = "hurt"
+				},
+				headshot = true,
+				crit = true
+			})
+		end
 	end
 	
 	MenuCallbackHandler.callback_ach_hitsounds_set_kill_bodyshot_type = function(self,item)
-		AdvancedCrosshair.settings.hitsound_kill_bodyshot_id = AdvancedCrosshair.hitsound_id_by_index[tonumber(item:value())]		AdvancedCrosshair:ActivateHitsound({
-			result = {
-				type = "death"
-			},
-			headshot = false,
-			crit = false
-		})
+		AdvancedCrosshair.settings.hitsound_kill_bodyshot_id = AdvancedCrosshair.hitsound_id_by_index[tonumber(item:value())]
+		if not Application:paused() then 
+			AdvancedCrosshair:ActivateHitsound({
+				result = {
+					type = "death"
+				},
+				headshot = false,
+				crit = false
+			})
+		end
 	end
 	
 	MenuCallbackHandler.callback_ach_hitsounds_set_kill_headshot_type = function(self,item)
-		AdvancedCrosshair.settings.hitsound_kill_headshot_id = AdvancedCrosshair.hitsound_id_by_index[tonumber(item:value())]		AdvancedCrosshair:ActivateHitsound({
-			result = {
-				type = "death"
-			},
-			headshot = true,
-			crit = false
-		})
+		AdvancedCrosshair.settings.hitsound_kill_headshot_id = AdvancedCrosshair.hitsound_id_by_index[tonumber(item:value())]
+		if not Application:paused() then 
+			AdvancedCrosshair:ActivateHitsound({
+				result = {
+					type = "death"
+				},
+				headshot = true,
+				crit = false
+			})
+		end
 	end
 	
 	MenuCallbackHandler.callback_ach_hitsounds_set_kill_bodyshot_crit_type = function(self,item)
-		AdvancedCrosshair.settings.hitsound_kill_bodyshot_crit_id = AdvancedCrosshair.hitsound_id_by_index[tonumber(item:value())]		AdvancedCrosshair:ActivateHitsound({
-			result = {
-				type = "death"
-			},
-			headshot = false,
-			crit = true
-		})
+		AdvancedCrosshair.settings.hitsound_kill_bodyshot_crit_id = AdvancedCrosshair.hitsound_id_by_index[tonumber(item:value())]
+		if not Application:paused() then 
+			AdvancedCrosshair:ActivateHitsound({
+				result = {
+					type = "death"
+				},
+				headshot = false,
+				crit = true
+			})
+		end
 	end
 	
 	MenuCallbackHandler.callback_ach_hitsounds_set_kill_headshot_crit_type = function(self,item)
-		AdvancedCrosshair.settings.hitsound_kill_headshot_crit_id = AdvancedCrosshair.hitsound_id_by_index[tonumber(item:value())]		AdvancedCrosshair:ActivateHitsound({
-			result = {
-				type = "death"
-			},
-			headshot = true,
-			crit = true
-		})
+		AdvancedCrosshair.settings.hitsound_kill_headshot_crit_id = AdvancedCrosshair.hitsound_id_by_index[tonumber(item:value())]
+		if not Application:paused() then 
+			AdvancedCrosshair:ActivateHitsound({
+				result = {
+					type = "death"
+				},
+				headshot = true,
+				crit = true
+			})
+		end
 	end
 	
 	
