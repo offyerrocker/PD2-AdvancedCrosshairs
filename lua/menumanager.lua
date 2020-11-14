@@ -2,18 +2,14 @@
 
 
 --write up documentation for custom hitmarkers/crosshairs
-
--- dynamic color callbacks for crosshairs
-
--- add preview clbks to menu callbacks
-	--will require loading setting data for selected weapon type/firemode to memory, since focus_changed_callback does not pass menu id
-
--- fix crosshair being invisible upon game start in loud, or after refreshing crosshair from menu
-	-- call check immediately after generation/check game heist state?
+-- cover art
+-- add more example crosshairs
+-- add at least one multi-texture hitmarker example
 
 -- add hitmarkers on melee
--- add hook to call wipe crosshair data/refresh crosshair
-
+-- hitmarker data overrides for some settings such as force worldposition hitmarkers?
+-- add tf2 crit indicators in a nonintrusive/overlaid way on top of current settings?
+-- add hook to call wipe crosshair data/refresh crosshair?
 -- fullscreen/halfscreen/none bg menus for all preview-related menus
 
 -- toggle option for scaling crosshairs with world distance at world position?
