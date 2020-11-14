@@ -139,7 +139,7 @@ AdvancedCrosshair.settings = {
 	hitsound_kill_bodyshot_volume = 1,
 	hitsound_kill_bodyshot_crit_volume = 1,
 	hitsound_kill_headshot_crit_volume = 1,
-	hitsound_suppress_doublesound = false,
+	hitsound_suppress_doublesound = true,
 	crosshair_all_override = false,
 	crosshair_stability = 1,
 	crosshair_enemy_color = "ff0000",
@@ -2217,12 +2217,13 @@ function AdvancedCrosshair:LoadHitsoundAddons()
 						if is_randomized then
 							table.insert(variations,#variations + 1,raw_path)
 						else
-							local string_id = "menu_hitsound_addon_" .. filename
+							local clean_filename = string.sub(filename,1,string.len(filename) - string.len("." .. extension))
+							local string_id = "menu_hitsound_addon_" .. clean_filename
 							managers.localization:add_localized_strings({
-								[string_id] = string.sub(filename,1,string.len(filename) - string.len("." .. extension))
+								[string_id] = clean_filename
 							})
 							
-							self:AddCustomHitsound(filename,{
+							self:AddCustomHitsound(clean_filename,{
 								name_id = string_id,
 								path = raw_path,
 								is_addon = true
@@ -3037,7 +3038,7 @@ function AdvancedCrosshair:ActivateHitsound(attack_data,unit)
 	local snd_path,volume = self:GetHitsoundData(attack_data)
 	if snd_path then 
 		local snd_path_2,volume_2
-		if not self:ShouldSuppressDoubleSound() and (attack_data.crit or attack_data.headshot) then 
+		if (not self:ShouldSuppressDoubleSound()) and (attack_data.crit or attack_data.headshot) then 
 			snd_path_2,volume_2 = self:GetHitsoundData({
 				result = {
 					type = attack_data.result and attack_data.result.type or "hurt"
@@ -4251,9 +4252,12 @@ Hooks:Add("MenuManagerInitialize", "advc_initmenu", function(menu_manager)
 		AdvancedCrosshair.settings.use_color = item:value() == "on"
 	end
 	MenuCallbackHandler.callback_ach_crosshairs_general_set_dynamic_color_enemy = function(self)
-	--[[
+		local crosshair_setting = AdvancedCrosshair.settings.crosshair_global
+		
+		AdvancedCrosshair.crosshair_preview_data = AdvancedCrosshair.crosshair_preview_data or AdvancedCrosshair.clbk_create_crosshair_preview(crosshair_setting)
+		
 		if AdvancedCrosshair._colorpicker then
-			local function clbk_colorpicker (color,palettes)
+			local function clbk_colorpicker (color,palettes,success)
 				--set preview color here
 				local preview_data = AdvancedCrosshair.crosshair_preview_data
 				local parent_panel = preview_data and preview_data.panel
@@ -4267,31 +4271,129 @@ Hooks:Add("MenuManagerInitialize", "advc_initmenu", function(menu_manager)
 				end
 				
 				--save color to settings
-				crosshair_setting.color = color:to_hex()
-
+				if success then 
+					AdvancedCrosshair.settings.crosshair_enemy_color = color:to_hex()
+				end
 				--save palette swatches to settings
 				if palettes then 
 					AdvancedCrosshair:SetPaletteCodes(palettes)
 				end
 			end
 			
-			AdvancedCrosshair.clbk_show_colorpicker_with_callbacks(Color(crosshair_setting.color),clbk_colorpicker,clbk_colorpicker)
+			AdvancedCrosshair.clbk_show_colorpicker_with_callbacks(Color(AdvancedCrosshair.settings.crosshair_enemy_color),clbk_colorpicker,clbk_colorpicker)
 			
 			AdvancedCrosshair:Save()
 		elseif not _G.ColorPicker then
 			AdvancedCrosshair.clbk_missing_colorpicker_prompt()
 		end	
---]]
-		--AdvancedCrosshair.settings.crosshair_enemy_color
 	end
 	MenuCallbackHandler.callback_ach_crosshairs_general_set_dynamic_color_civilian = function(self)
-		--AdvancedCrosshair.settings.crosshair_civilian_color
+			local crosshair_setting = AdvancedCrosshair.settings.crosshair_global
+		
+		AdvancedCrosshair.crosshair_preview_data = AdvancedCrosshair.crosshair_preview_data or AdvancedCrosshair.clbk_create_crosshair_preview(crosshair_setting)
+		
+		if AdvancedCrosshair._colorpicker then
+			local function clbk_colorpicker (color,palettes,success)
+				--set preview color here
+				local preview_data = AdvancedCrosshair.crosshair_preview_data
+				local parent_panel = preview_data and preview_data.panel
+				local crosshair_data = preview_data and AdvancedCrosshair._crosshair_data[tostring(preview_data.crosshair_id)]
+				if preview_data and crosshair_data and preview_data.parts and alive(parent_panel) then 
+					for part_index,part in ipairs(preview_data.parts) do
+						if not crosshair_data.parts[part_index].UNRECOLORABLE then 
+							part:set_color(color)
+						end
+					end
+				end
+				
+				--save color to settings
+				if success then 
+					AdvancedCrosshair.settings.crosshair_civilian_color = color:to_hex()
+				end
+				--save palette swatches to settings
+				if palettes then 
+					AdvancedCrosshair:SetPaletteCodes(palettes)
+				end
+			end
+			
+			AdvancedCrosshair.clbk_show_colorpicker_with_callbacks(Color(AdvancedCrosshair.settings.crosshair_civilian_color),clbk_colorpicker,clbk_colorpicker)
+			
+			AdvancedCrosshair:Save()
+		elseif not _G.ColorPicker then
+			AdvancedCrosshair.clbk_missing_colorpicker_prompt()
+		end	
 	end
 	MenuCallbackHandler.callback_ach_crosshairs_general_set_dynamic_color_teammate = function(self)
-		--AdvancedCrosshair.settings.crosshair_teammate_color
+		local crosshair_setting = AdvancedCrosshair.settings.crosshair_global
+		
+		AdvancedCrosshair.crosshair_preview_data = AdvancedCrosshair.crosshair_preview_data or AdvancedCrosshair.clbk_create_crosshair_preview(crosshair_setting)
+		
+		if AdvancedCrosshair._colorpicker then
+			local function clbk_colorpicker (color,palettes,success)
+				--set preview color here
+				local preview_data = AdvancedCrosshair.crosshair_preview_data
+				local parent_panel = preview_data and preview_data.panel
+				local crosshair_data = preview_data and AdvancedCrosshair._crosshair_data[tostring(preview_data.crosshair_id)]
+				if preview_data and crosshair_data and preview_data.parts and alive(parent_panel) then 
+					for part_index,part in ipairs(preview_data.parts) do
+						if not crosshair_data.parts[part_index].UNRECOLORABLE then 
+							part:set_color(color)
+						end
+					end
+				end
+				
+				--save color to settings
+				if success then 
+					AdvancedCrosshair.settings.crosshair_teammate_color = color:to_hex()
+				end
+				--save palette swatches to settings
+				if palettes then 
+					AdvancedCrosshair:SetPaletteCodes(palettes)
+				end
+			end
+			
+			AdvancedCrosshair.clbk_show_colorpicker_with_callbacks(Color(AdvancedCrosshair.settings.crosshair_teammate_color),clbk_colorpicker,clbk_colorpicker)
+			
+			AdvancedCrosshair:Save()
+		elseif not _G.ColorPicker then
+			AdvancedCrosshair.clbk_missing_colorpicker_prompt()
+		end	
 	end
 	MenuCallbackHandler.callback_ach_crosshairs_general_set_dynamic_color_misc = function(self)
-		--AdvancedCrosshair.settings.crosshair_misc_color
+		local crosshair_setting = AdvancedCrosshair.settings.crosshair_global
+		
+		AdvancedCrosshair.crosshair_preview_data = AdvancedCrosshair.crosshair_preview_data or AdvancedCrosshair.clbk_create_crosshair_preview(crosshair_setting)
+		
+		if AdvancedCrosshair._colorpicker then
+			local function clbk_colorpicker (color,palettes,success)
+				--set preview color here
+				local preview_data = AdvancedCrosshair.crosshair_preview_data
+				local parent_panel = preview_data and preview_data.panel
+				local crosshair_data = preview_data and AdvancedCrosshair._crosshair_data[tostring(preview_data.crosshair_id)]
+				if preview_data and crosshair_data and preview_data.parts and alive(parent_panel) then 
+					for part_index,part in ipairs(preview_data.parts) do
+						if not crosshair_data.parts[part_index].UNRECOLORABLE then 
+							part:set_color(color)
+						end
+					end
+				end
+				
+				--save color to settings
+				if success then 
+					AdvancedCrosshair.settings.crosshair_misc_color = color:to_hex()
+				end
+				--save palette swatches to settings
+				if palettes then 
+					AdvancedCrosshair:SetPaletteCodes(palettes)
+				end
+			end
+			
+			AdvancedCrosshair.clbk_show_colorpicker_with_callbacks(Color(AdvancedCrosshair.settings.crosshair_misc_color),clbk_colorpicker,clbk_colorpicker)
+			
+			AdvancedCrosshair:Save()
+		elseif not _G.ColorPicker then
+			AdvancedCrosshair.clbk_missing_colorpicker_prompt()
+		end	
 	end
 	
 	MenuCallbackHandler.callback_ach_menu_crosshairs_categories_global_enable_override = function(self,item)
