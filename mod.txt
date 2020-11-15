@@ -6,7 +6,8 @@
 	"version" : "0.1",
 	"blt_version" : 2,
 	"priority" : 7,
-	"color" : "255 128 0",
+	"color" : "0 128 255",
+	"image" : "icon.png",
 	"hooks" : [
 		{
 			"hook_id" : "lib/managers/menumanager",
