@@ -6,15 +6,15 @@
 -- add more example crosshairs
 -- add at least one multi-texture hitmarker example
 
--- add hitmarkers on melee
 -- hitmarker data overrides for some settings such as force worldposition hitmarkers?
--- add tf2 crit indicators in a nonintrusive/overlaid way on top of current settings?
 -- add hook to call wipe crosshair data/refresh crosshair?
 -- fullscreen/halfscreen/none bg menus for all preview-related menus
 
+-- hitsound volume sliders
 -- toggle option for scaling crosshairs with world distance at world position?
 -- slider option for scaling hitmarker size?
--- hitsound volume sliders
+-- option to add tf2 crit indicators? (must mesh with current settings to avoid menu fatigue)
+-- option for separate melee hitsound? (must mesh with current settings to avoid menu fatigue)
 
 -- halo reach head aim crosshair dot
 -- import special halo reach crosshair + add option to pass relevant data to all crosshairs
@@ -2922,7 +2922,7 @@ function AdvancedCrosshair:ActivateHitmarker(attack_data)
 					num_id = num_id,
 					panel = panel,
 					parts = parts,
-					position = attack_data.pos
+					position = attack_data.pos or (attack_data.col_ray and attack_data.col_ray.position)
 				}
 			)
 			local function remove_panel(o)
@@ -2966,7 +2966,7 @@ function AdvancedCrosshair:animate_hitmarker_parts(o,t,dt,start_t,duration,parts
 end
 
 
-function AdvancedCrosshair:OnEnemyShot(unit,attack_data)
+function AdvancedCrosshair:OnEnemyHit(unit,attack_data)
 	if self:IsHitmarkerEnabled() then 
 		self:ActivateHitmarker(attack_data)
 	end
@@ -3226,23 +3226,24 @@ function AdvancedCrosshair:Update(t,dt)
 		if self:IsHitmarkerEnabled() then
 			if self:UseHitmarkerHitPosition() then 
 				for hitmarker_index,hitmarker in pairs(self._cache.hitmarkers) do 
-				
-					local h_dir = Vector3()
-					local h_dir_normalized = Vector3()
-					local h_p = ws:world_to_screen(viewport_cam,hitmarker.position)
-					--angle check here
-					mvector3.set(h_dir, hitmarker.position)
-					mvector3.subtract(h_dir, viewport_cam_pos)
-					mvector3.set(h_dir_normalized, h_dir)
-					mvector3.normalize(h_dir_normalized)
-					
-					local dot = mvector3.dot(viewport_cam_fwd, h_dir_normalized)
-					if alive(hitmarker.panel) then 
-						if dot < 0 or hitmarker.panel:outside(mvector3.x(h_p),mvector3.y(h_p)) then 
-							hitmarker.panel:hide()
-						else
-							hitmarker.panel:show()
-							hitmarker.panel:set_center(h_p.x,h_p.y)
+					if hitmarker.position then 
+						local h_dir = Vector3()
+						local h_dir_normalized = Vector3()
+						local h_p = ws:world_to_screen(viewport_cam,hitmarker.position)
+						--angle check here
+						mvector3.set(h_dir, hitmarker.position)
+						mvector3.subtract(h_dir, viewport_cam_pos)
+						mvector3.set(h_dir_normalized, h_dir)
+						mvector3.normalize(h_dir_normalized)
+						
+						local dot = mvector3.dot(viewport_cam_fwd, h_dir_normalized)
+						if alive(hitmarker.panel) then 
+							if dot < 0 or hitmarker.panel:outside(mvector3.x(h_p),mvector3.y(h_p)) then 
+								hitmarker.panel:hide()
+							else
+								hitmarker.panel:show()
+								hitmarker.panel:set_center(h_p.x,h_p.y)
+							end
 						end
 					end
 				end

@@ -12,3 +12,11 @@ function CopDamage:roll_critical_hit(attack_data,...)
 	end
 	return unpack(result)
 end
+
+
+Hooks:PostHook(CopDamage,"damage_melee","ach_copdamage_melee",function(self,attack_data)
+	--since the result is stored in attack_data.result, a posthook will suffice
+	if not self._dead then 
+		AdvancedCrosshair:OnEnemyHit(self._unit,attack_data)
+	end
+end)
