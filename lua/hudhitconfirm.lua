@@ -1,8 +1,3 @@
-
-Hooks:PostHook(HUDHitConfirm,"init","advc_init_hud",function(self,hud)
---	AdvancedCrosshair:Init()
-end)
-
 HUDHitConfirm._orig_on_hit_confirmed = HUDHitConfirm.on_hit_confirmed
 function HUDHitConfirm:on_hit_confirmed(...)
 	if not AdvancedCrosshair:IsHitmarkerEnabled() then 

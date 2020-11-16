@@ -1,6 +1,6 @@
 
 
-Hooks:PostHook(PlayerManager,"check_skills","advancedcrosshair_init_pm",function(self)
+Hooks:PostHook(PlayerManager,"check_skills","ach_init_pm",function(self)
 	self._message_system:unregister(Message.OnWeaponFired,"advancedcrosshair_OnWeaponFired")
 	self._message_system:unregister(Message.OnEnemyShot,"advancedcrosshair_OnEnemyShot")
 	
@@ -12,7 +12,7 @@ Hooks:PostHook(PlayerManager,"check_skills","advancedcrosshair_init_pm",function
 			end
 		end
 	)
-	self._message_system:register(Message.OnEnemyShot,"advancedcrosshair_OnEnemyShot",function(unit,attack_data,...) 
+	self._message_system:register(Message.OnEnemyShot,"ach_OnEnemyShot",function(unit,attack_data,...) 
 		if attack_data and attack_data.attacker_unit and (attack_data.attacker_unit == self:local_player()) then 
 			AdvancedCrosshair:OnEnemyHit(unit,attack_data,...)
 		end

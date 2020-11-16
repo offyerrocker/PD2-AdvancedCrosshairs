@@ -3559,7 +3559,7 @@ AdvancedCrosshair.crosshair_preview_data = nil
 AdvancedCrosshair.crosshair_id_by_index = {}
 AdvancedCrosshair.hitmarker_id_by_index = {}
 AdvancedCrosshair.hitsound_id_by_index = {}
-Hooks:Add("MenuManagerSetupCustomMenus", "advc_MenuManagerSetupCustomMenus", function(menu_manager, nodes)
+Hooks:Add("MenuManagerSetupCustomMenus", "ach_MenuManagerSetupCustomMenus", function(menu_manager, nodes)
 
 	MenuHelper:NewMenu(AdvancedCrosshair.main_menu_id)
 	MenuHelper:NewMenu(AdvancedCrosshair.crosshairs_menu_id)
@@ -3581,7 +3581,7 @@ Hooks:Add("MenuManagerSetupCustomMenus", "advc_MenuManagerSetupCustomMenus", fun
 	
 end)
 
-Hooks:Add("MenuManagerPopulateCustomMenus", "advc_MenuManagerPopulateCustomMenus", function(menu_manager, nodes)
+Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus", function(menu_manager, nodes)
 --	AdvancedCrosshair:log(Hooks:ReturnCall("ACHOnExampleHook","ABCDEFG",1234,{5,6,7,8}))
 	Hooks:Call("ACH_LoadAllAddons")
 	
@@ -4354,7 +4354,7 @@ Hooks:Add("MenuManagerBuildCustomMenus", "ach_MenuManagerBuildCustomMenus", func
 	end
 end)
 
-Hooks:Add("MenuManagerInitialize", "advc_initmenu", function(menu_manager)
+Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 	MenuCallbackHandler.callback_ach_main_close = function(self)
 	end
 	
