@@ -1,6 +1,9 @@
 		--todo list, loosely sorted by descending priority:
 
---get mod_overrides path to support addons in mod_overrides
+--screen blend mode 
+--save hitsound preview and stop others when new hitsound is selected
+--sanity check hitsounds on load addons
+--get mod_overrides path to support addons in mod_overrides?
 
 --write up documentation for custom hitmarkers/crosshairs
 
@@ -59,7 +62,7 @@ AdvancedCrosshair.DEFAULT_CROSSHAIR_OPTIONS = {
 	use_bloom = true,
 	color = "ffffff",
 	alpha = 1,
-	overrides_global = true
+	overrides_global = false
 }
 AdvancedCrosshair.DEFAULT_HITMARKER_OPTIONS = { --not used
 	hitmarker_id = "destiny",
@@ -2068,6 +2071,7 @@ function AdvancedCrosshair:AddCustomCrosshair(id,data)
 		if type(data) == "table" then 
 			local path_util = BeardLib.Utils.Path
 			local extension = "texture"
+			data.is_addon = true
 			if type(data.parts) == "table" then 
 				for part_index,part in ipairs(data.parts) do 
 					if part.texture then 
@@ -2106,7 +2110,7 @@ function AdvancedCrosshair:AddCustomCrosshair(id,data)
 		self:log("Error: Could not load crosshair add-on. (reason: invalid id)")
 		if type(data) == "table" then 
 			self:log("Dumping crosshair addon data to BLT log for identification...")
-			PrintTable(data)
+			AdvancedCrosshair.logtbl(data)
 			self:log("Crosshair addon data dump complete.")
 		else
 			self:log("Crosshair addon data invalid: " .. tostring(data))
@@ -2116,29 +2120,55 @@ end
 
 function AdvancedCrosshair:LoadCrosshairAddons()
 	local extension = "texture"
+	local path_util = BeardLib.Utils.Path
 	for _,addon_path in pairs(self.ADDON_PATHS.crosshairs) do 
 		if SystemFS:exists(Application:nice_path(addon_path,true)) then 
 			for _,foldername in pairs(SystemFS:list(addon_path,true)) do 
 				local parts = {}
-				for _,filename in pairs(SystemFS:list(BeardLib.Utils.Path:Combine(addon_path,foldername))) do 
-					if BeardLib.Utils.Path:GetFileExtension(filename) == extension then 
-						local raw_path = BeardLib.Utils.Path:Combine(addon_path,foldername,filename)
-						local texture_path = string.gsub(raw_path,"%." .. extension,"")
+				local is_advanced
+				local addon_lua_path = path_util:Combine(addon_path,foldername,"addon.lua")
+				if SystemFS:exists(addon_lua_path) then 
+					local addon_lua = blt.vm.loadfile(addon_lua_path) --thanks znix
+					if addon_lua then 
+						local addon_id,addon_data = addon_lua()
+						if addon_id and type(addon_data) == "table" then 
+							if type(addon_data.parts) == "table" then 
+								for part_index,part in ipairs(addon_data.parts) do 
+									if part.texture then 
+									elseif part.texture_path then 
+										part.texture_path = path_util:Combine(addon_path,foldername,part.texture_path)
+									end
+								end
+							else
+								self:log("Error: LoadCrosshairAddons() " .. addon_lua_path .. " contains invalid parts data: " .. tostring(addon_data.parts) .. " (table expected, got " .. type(addon_data.parts) .. ").")
+							end
 						
-						table.insert(parts,#parts+1,{
-							texture_path = texture_path
-						})
+							self:AddCustomCrosshair(addon_id,addon_data)
+							is_advanced = true
+						else
+							self:log("Error: LoadCrosshairAddons() " .. addon_lua_path .. " returned invalid data. Expected results: [string],[table]. Got: [" .. type(id) .. "] " .. tostring(id) .. ", [" .. type(addon_data) .. "] " .. tostring(addon_data) .. ".")
+						end
 					end
 				end
-				
-				if #parts > 0 then 
-					self:AddCustomCrosshair(string.gsub(foldername,"%s","_"),{
-						name = foldername,
-						parts = parts,
-						is_addon = true
-					})
-				else
-					self:log("Could not load crosshair add-on for: " .. foldername .. " (no valid files)")
+				if not is_advanced then 
+					for _,filename in pairs(SystemFS:list(path_util:Combine(addon_path,foldername))) do 
+						local raw_path = path_util:Combine(addon_path,foldername,filename)
+						if path_util:GetFileExtension(filename) == extension then 
+							local texture_path = string.gsub(raw_path,"%." .. extension,"")
+							
+							table.insert(parts,#parts+1,{
+								texture_path = texture_path
+							})
+						end
+					end
+					if #parts > 0 then 
+						self:AddCustomCrosshair(string.gsub(foldername,"%s","_"),{
+							name = foldername,
+							parts = parts
+						})
+					else 
+						self:log("Could not load crosshair add-on for: " .. foldername .. " (no valid files)")
+					end
 				end
 			end
 		end
@@ -2153,6 +2183,7 @@ function AdvancedCrosshair:AddCustomHitmarker(id,data)
 		if type(data) == "table" then 
 			local path_util = BeardLib.Utils.Path
 			local extension = "texture"
+			data.is_addon = true
 			if type(data.parts) == "table" then 
 				for part_index,part in ipairs(data.parts) do 
 					if part.texture then 
@@ -2191,7 +2222,7 @@ function AdvancedCrosshair:AddCustomHitmarker(id,data)
 		self:log("Error: Could not load hitmarker add-on. (reason: invalid id)")
 		if type(data) == "table" then 
 			self:log("Dumping hitmarker addon data to BLT log for identification...")
-			PrintTable(data)
+			AdvancedCrosshair.logtbl(data)
 			self:log("Hitmarker addon data dump complete.")
 		else
 			self:log("Hitmarker addon data invalid: " .. tostring(data))
@@ -2201,29 +2232,56 @@ end
 
 function AdvancedCrosshair:LoadHitmarkerAddons()
 	local extension = "texture"
+	local path_util = BeardLib.Utils.Path
 	for _,addon_path in pairs(self.ADDON_PATHS.hitmarkers) do 
 		if SystemFS:exists(Application:nice_path(addon_path,true)) then 
 			for _,foldername in pairs(SystemFS:list(addon_path,true)) do 
 				local parts = {}
-				for _,filename in pairs(SystemFS:list(BeardLib.Utils.Path:Combine(addon_path,foldername))) do 
-					if BeardLib.Utils.Path:GetFileExtension(filename) == extension then 
-						local raw_path = BeardLib.Utils.Path:Combine(addon_path,foldername,filename)
-						local texture_path = string.gsub(raw_path,"%." .. extension,"")
+				local is_advanced
+				local addon_lua_path = path_util:Combine(addon_path,foldername,"addon.lua")
+				if SystemFS:exists(addon_lua_path) then 
+					local addon_lua = blt.vm.loadfile(addon_lua_path)
+					if addon_lua then 
+						local addon_id,addon_data = addon_lua()
+						if addon_id and type(addon_data) == "table" then 
+							if type(addon_data.parts) == "table" then 
+								for part_index,part in ipairs(addon_data.parts) do 
+									if part.texture then 
+									elseif part.texture_path then 
+										part.texture_path = path_util:Combine(addon_path,foldername,part.texture_path)
+									end
+								end
+							else
+								self:log("Error: LoadHitmarkerAddons() " .. addon_lua_path .. " contains invalid parts data: " .. tostring(addon_data.parts) .. " (table expected, got " .. type(addon_data.parts) .. ").")
+							end
 						
-						table.insert(parts,#parts+1,{
-							texture_path = texture_path
-						})
+							self:AddCustomHitmarker(addon_id,addon_data)
+							is_advanced = true
+						else
+							self:log("Error: LoadHitmarkerAddons() " .. addon_lua_path .. " returned invalid data. Expected results: [string],[table]. Got: [" .. type(id) .. "] " .. tostring(id) .. ", [" .. type(addon_data) .. "] " .. tostring(addon_data) .. ".")
+						end
 					end
 				end
-				
-				if #parts > 0 then 
-					self:AddCustomHitmarker(string.gsub(foldername,"%s","_"),{
-						name = foldername,
-						parts = parts,
-						is_addon = true
-					})
-				else
-					self:log("Could not load hitmarker add-on for: " .. foldername .. " (no valid files)")
+				if not is_advanced then 
+					for _,filename in pairs(SystemFS:list(path_util:Combine(addon_path,foldername))) do 
+						local raw_path = path_util:Combine(addon_path,foldername,filename)
+						if path_util:GetFileExtension(filename) == extension then 
+							local texture_path = string.gsub(raw_path,"%." .. extension,"")
+							
+							table.insert(parts,#parts+1,{
+								texture_path = texture_path
+							})
+						end
+					end
+					
+					if #parts > 0 then 
+						self:AddCustomHitmarker(string.gsub(foldername,"%s","_"),{
+							name = foldername,
+							parts = parts
+						})
+					else
+						self:log("Could not load hitmarker add-on for: " .. foldername .. " (no valid files)")
+					end
 				end
 			end
 		end
@@ -2235,13 +2293,21 @@ function AdvancedCrosshair:AddCustomHitsound(id,data)
 		self:log("Warning! Hitsound with id " .. id .. " already exists. Replacing existing data...",{color=Color(1,0.5,0)})
 	end
 	if id then 
+		if data.name_id then 
+		elseif data.name then 
+			local name_id = "menu_hitmarker_addon_" .. id
+			managers.localization:add_localized_strings({
+				[name_id] = data.name
+			})
+			data.name_id = name_id
+		end
 		AdvancedCrosshair._hitsound_data[id] = data
 		self:log("Added custom hitsound addon: " .. (data.name_id and managers.localization:text(data.name_id) or "[ERROR]"))
 	else
 		self:log("Error: Could not load hitsound add-on. (reason: invalid id)")
 		if type(data) == "table" then 
 			self:log("Dumping hitsound addon data to BLT log for identification...")
-			PrintTable(data)
+			AdvancedCrosshair.logtbl(data)
 			self:log("Hitsound addon data dump complete.")
 		else
 			self:log("Hitsound addon data invalid: " .. tostring(data))
@@ -2251,42 +2317,74 @@ end
 
 function AdvancedCrosshair:LoadHitsoundAddons()
 	local extension = "ogg"
+	local path_util = BeardLib.Utils.Path
 	for _,addon_path in pairs(self.ADDON_PATHS.hitsounds) do 
 		if SystemFS:exists(Application:nice_path(addon_path,true)) then 
 			for _,foldername in pairs(SystemFS:list(addon_path,true)) do 
-				local is_randomized = SystemFS:exists(Application:nice_path(BeardLib.Utils.Path:Combine(addon_path,foldername,"random.txt")))
+				local is_randomized = SystemFS:exists(Application:nice_path(path_util:Combine(addon_path,foldername,"random.txt")))
 				local variations = {}
-				for _,filename in pairs(SystemFS:list(BeardLib.Utils.Path:Combine(addon_path,foldername))) do 
-					if string.find(filename,"%." .. extension) then 
-						local raw_path = BeardLib.Utils.Path:Combine(addon_path,foldername,filename)
-						
-						if is_randomized then
-							table.insert(variations,#variations + 1,raw_path)
-						else
-							local clean_filename = string.sub(filename,1,string.len(filename) - string.len("." .. extension))
-							local string_id = "menu_hitsound_addon_" .. clean_filename
-							managers.localization:add_localized_strings({
-								[string_id] = clean_filename
-							})
-							
-							self:AddCustomHitsound(clean_filename,{
-								name_id = string_id,
-								path = raw_path,
-								is_addon = true
-							})
+				local is_advanced
+				for _,filename in pairs(SystemFS:list(path_util:Combine(addon_path,foldername))) do 
+					--check for advanced hitsound addon
+					if filename == "addon.lua" then
+						local raw_path = path_util:Combine(addon_path,foldername,filename)
+						local addon_lua = blt.vm.loadfile(raw_path)
+						if addon_lua then 
+							local addon_id,addon_data = addon_lua()
+							if addon_id and type(addon_data) == "table" then 
+								if type(addon_data.variations_paths) == "table" then 
+									addon_data.variations = addon_data.variations or {}
+									for i,variation in pairs(addon_data.variations_paths) do
+										--write full path to soundfile which includes addon path
+										addon_data.variations[#addon_data.variations + 1] = path_util:Combine(addon_path,foldername,variation)
+									end
+								end
+								if addon_data.path_local then 
+									addon_data.path = path_util:Combine(addon_path,foldername,addon_data.path_local)
+								end
+								self:AddCustomHitsound(addon_id,addon_data)
+								is_advanced = true
+								break
+							else
+								self:log("Error: LoadHitsoundAddons() " .. raw_path .. " returned invalid data. Expected results: [string],[table]. Got: [" .. type(id) .. "] " .. tostring(id) .. ", [" .. type(addon_data) .. "] " .. tostring(addon_data) .. ".")
+							end
 						end
+						self:log("Error: LoadHitsoundAddons() Chunk " .. tostring(raw_path) .. " could not compile!")
 					end
 				end
-				if is_randomized then 
-					local string_id = "menu_hitsound_addon_" .. foldername
-					managers.localization:add_localized_strings({
-						[string_id] = foldername
-					})
-					self:AddCustomHitsound(foldername,{
-						name_id = string_id,
-						path = "",
-						variations = variations
-					})
+				if not is_advanced then
+					for _,filename in pairs(SystemFS:list(path_util:Combine(addon_path,foldername))) do 
+						if path_util:GetFileExtension(filename) == extension then 
+							local raw_path = path_util:Combine(addon_path,foldername,filename)
+							
+							if is_randomized then
+								table.insert(variations,#variations + 1,raw_path)
+							else
+								local clean_filename = string.sub(filename,1,string.len(filename) - string.len("." .. extension))
+								local clean_filename_no_spaces = string.gsub(clean_filename,"%s","_")
+								local string_id = "menu_hitsound_addon_" .. clean_filename_no_spaces
+								managers.localization:add_localized_strings({
+									[string_id] = clean_filename
+								})
+								
+								self:AddCustomHitsound(clean_filename_no_spaces,{
+									name_id = string_id,
+									path = raw_path,
+									is_addon = true
+								})
+							end
+						end
+					end
+					if is_randomized then 
+						local string_id = "menu_hitsound_addon_" .. foldername
+						managers.localization:add_localized_strings({
+							[string_id] = foldername
+						})
+						self:AddCustomHitsound(foldername,{
+							name_id = string_id,
+							variations = variations
+						})
+					end
 				end
 			end
 			
