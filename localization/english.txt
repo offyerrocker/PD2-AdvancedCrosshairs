@@ -98,6 +98,8 @@
 	"menu_ach_crosshairs_general_set_dynamic_color_teammate_desc" : "Set the crosshair color for teammates",
 	"menu_ach_crosshairs_general_set_dynamic_color_misc_title" : "Set Misc Color",
 	"menu_ach_crosshairs_general_set_dynamic_color_misc_desc" : "Set the crosshair color for miscellaneous teams like Gangsters",
+	"menu_ach_set_hide_on_ads_title" : "ADS Hides Crosshair",
+	"menu_ach_set_hide_on_ads_desc" : "If true, the crosshair will hide when aiming down sights.",
 	
 	"menu_ach_hitmarkers_master_enable_title" : "Enable Hitmarkers",
 	"menu_ach_hitmarkers_master_enable_desc" : "If true, shows a hitmarker when hitting an enemy",

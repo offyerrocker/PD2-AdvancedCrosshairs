@@ -1,12 +1,30 @@
 		--todo list, loosely sorted by descending priority:
 
---option to hide crosshairs when ads
+--vehicle crosshair
+---option to limit active hitmarkers amount to one, or one per enemy (gets pretty visually noisy when there's lots)
+---option to scale hitmarkers and crosshair
+---perhaps an example crosshair with bits that change based on gun ammo or player health (see hl2 crosshair)
+---there is vanilla crit hitmarker but standard vanilla hitmarker is missing i think? vanilla looks thicker than usual
+
+--pitch hitsounds with set_velocity()
+
+-- choice of pitch shift based on:
+--damage
+--enemy health remaining
+--and up or down
+
+
+--"trickle-down" options, eg "unchanged" inherit global setting
+
+
+
+
+
+
 --screen blend mode 
 --save hitsound preview and stop others when new hitsound is selected
 --sanity check hitsounds on load addons
 --get mod_overrides path to support addons in mod_overrides?
-
---write up documentation for custom hitmarkers/crosshairs
 
 -- add more example crosshairs
 -- add at least one multi-texture hitmarker example
@@ -28,12 +46,9 @@
 -- test burstfire support
 -- hide character + bg menu like how blt mods menu does (and fails to restore after hitting back lol)
 
--- change menu-changed recreate crosshair callback to also manually wipe existing weapon data in case in-heist weapon changes (eg. through weapon pickup mod)
-
 -- akimbo crosshair support
 -- override by slot (needs menu options)
 -- override by weapon id (needs menu options)
--- super srs april fool's hitmarkers rain
 
 --************************************************--
 		--init mod data
@@ -48,7 +63,7 @@ AdvancedCrosshair.url_colorpicker = "https://modwork.shop/29641"
 AdvancedCrosshair.url_ach_github = "https://github.com/offyerrocker/PD2-AdvancedCrosshairs"
 AdvancedCrosshair.url_ach_mws = "https://modwork.shop/29585"
 
-AdvancedCrosshair.addons_readme_txt = "This directory is where you can install \"Simple\" add-on folders for Crosshairs, Hitmarkers, or Hitsounds.\nThese must be folders, no archives or files- .texture, .zip, .7zip, .tar, etc. will not be read!\nTo install add-ons, place the add-on folder(s) in one of the three subfolders according to the type of add-on- NOT directly in the same folder as this file.\n\nPlease refer to the documentation for more information: \n$LINK\n\nP.S. You can safely delete this readme file if you wish. It will only be re-generated on launch if ACH is installed and the ACH Addons folder is removed.\nHave a nice day!"
+AdvancedCrosshair.addons_readme_txt = "README - generated from AdvancedCrosshair v2 - \n\nThis directory is where you can install add-on folders for Crosshairs, Hitmarkers, or Hitsounds.\nThese must be folders, no archives or files- .texture, .zip, .7zip, .tar, etc. will not be read!\nTo install add-ons, place the add-on folder(s) in one of the three subfolders according to the type of add-on- NOT directly in the same folder as this file.\n\nPlease refer to the documentation for more information: \n$LINK\n\nP.S. You can safely delete this readme file if you wish. It will only be re-generated on launch if ACH is installed and the ACH Addons folder is removed.\nHave a nice day!"
 AdvancedCrosshair.HITMARKER_RAIN_SPAWN_DELAY_INTERVAL_MIN = 0.01 --seconds
 AdvancedCrosshair.HITMARKER_RAIN_SPAWN_DELAY_INTERVAL_MAX = 0.1 --seconds
 AdvancedCrosshair.HITMARKER_RAIN_TRAVEL_DURATION_MAX = 1 --seconds
@@ -63,7 +78,8 @@ AdvancedCrosshair.DEFAULT_CROSSHAIR_OPTIONS = {
 	use_bloom = true,
 	color = "ffffff",
 	alpha = 1,
-	overrides_global = false
+	overrides_global = false,
+	hide_on_ads = false --since this was added post-1.0, be aware that this value can be nil in some users' settings
 }
 AdvancedCrosshair.DEFAULT_HITMARKER_OPTIONS = { --not used
 	hitmarker_id = "destiny",
@@ -3233,10 +3249,10 @@ function AdvancedCrosshair:ActivateHitsound(attack_data,unit)
 				end
 			end
 		else
+			XAudio.Source:new(XAudio.Buffer:new(snd_path)):set_volume(volume)
 			if snd_path_2 then 
 				XAudio.Source:new(XAudio.Buffer:new(snd_path_2)):set_volume(volume_2)
 			end
-			XAudio.Source:new(XAudio.Buffer:new(snd_path)):set_volume(volume)
 		end
 	end
 end
@@ -3273,7 +3289,11 @@ function AdvancedCrosshair:CheckCrosshair()
 	end
 	local player = managers.player:local_player()
 	if player then 
+	
+		local hidden = false
+		
 		local state_name = player:movement():current_state_name()
+		
 		
 		local inventory = player:inventory()
 		local equipped_index = inventory:equipped_selection()
@@ -3306,8 +3326,12 @@ function AdvancedCrosshair:CheckCrosshair()
 		if new_current_data and (new_current_data ~= self._cache.current_crosshair_data) then 
 			self._cache.current_crosshair_data.panel:hide()
 			self._cache.current_crosshair_data = new_current_data
+			
 		end
-		self._cache.current_crosshair_data.panel:show()
+		if self._cache.current_crosshair_data.settings.hide_on_ads and player:movement():current_state():in_steelsight() then 
+			hidden = true
+		end
+		self._cache.current_crosshair_data.panel:set_visible(not hidden)
 		
 		local state_allowed = self:CrosshairAllowedInState(state_name) 
 		if state_allowed ~= nil then 
@@ -3480,7 +3504,8 @@ function AdvancedCrosshair:Update(t,dt)
 					self:SetCrosshairBloom(self._cache.bloom)
 				end
 			end
-				
+			
+			
 		end
 
 	end
@@ -3914,11 +3939,14 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		
 		for firemode_menu_name,firemode_menu_data in pairs(cat_menu_data.child_menus) do 
 			local firemode = firemode_menu_data.firemode
+			
 			local crosshair_setting = AdvancedCrosshair.settings.crosshairs[category] and AdvancedCrosshair.settings.crosshairs[category][firemode]
+			
 			if not crosshair_setting then 
 				AdvancedCrosshair:log("FATAL ERROR: Invalid crosshair settings for [category " .. tostring(category) .. " | firemode " .. tostring(firemode) .. "], aborting menu generation",{color=Color.red})
 				return 
 			end
+			
 			
 		--define menu callbacks
 			
@@ -3945,10 +3973,11 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 			--set color
 			local set_crosshair_color_callback_name = firemode_menu_name .. "_set_crosshair_color"
 			MenuCallbackHandler[set_crosshair_color_callback_name] = function(self)
+				
 				AdvancedCrosshair.crosshair_preview_data = AdvancedCrosshair.crosshair_preview_data or AdvancedCrosshair.clbk_create_crosshair_preview(crosshair_setting)
 				
 				if AdvancedCrosshair._colorpicker then
-					local function clbk_colorpicker (color,palettes)
+					local function clbk_colorpicker (color,palettes,success)
 						--set preview color
 						local preview_data = AdvancedCrosshair.crosshair_preview_data
 						local parent_panel = preview_data and preview_data.panel
@@ -3962,8 +3991,11 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 						end
 						
 						--save color to settings
-						crosshair_setting.color = color:to_hex()
-
+						if success then 
+							crosshair_setting.color = color:to_hex()
+							AdvancedCrosshair:Save()
+						end
+						
 						--save palette swatches to settings
 						if palettes then 
 							AdvancedCrosshair:SetPaletteCodes(palettes)
@@ -3972,7 +4004,6 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 					
 					AdvancedCrosshair.clbk_show_colorpicker_with_callbacks(Color(crosshair_setting.color),clbk_colorpicker,clbk_colorpicker)
 					
-					AdvancedCrosshair:Save()
 				elseif not _G.ColorPicker then
 					AdvancedCrosshair.clbk_missing_colorpicker_prompt()
 				end
@@ -3990,14 +4021,22 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 					parent_panel:child("crosshair_preview_panel"):set_alpha(alpha)
 				end
 				crosshair_setting.alpha = alpha
+				AdvancedCrosshair:Save()
 			end
 			
 			--enable/disable bloom
 			local enable_crosshair_bloom_callback_name = firemode_menu_name .. "_set_bloom_enabled"
 			MenuCallbackHandler[enable_crosshair_bloom_callback_name] = function(self,item)
-				local enabled = item:value() == "on"
-				crosshair_setting.use_bloom = enabled
+				crosshair_setting.use_bloom = item:value() == "on"
+				AdvancedCrosshair:Save()
 				AdvancedCrosshair.crosshair_preview_data = AdvancedCrosshair.crosshair_preview_data or AdvancedCrosshair.clbk_create_crosshair_preview(crosshair_setting)
+			end
+			
+			--set hide on ads
+			local set_hide_on_ads_callback_name = firemode_menu_name .. "_set_hide_on_ads"
+			MenuCallbackHandler[set_hide_on_ads_callback_name] = function(self,item)
+				crosshair_setting.hide_on_ads = item:value() == "on"
+				AdvancedCrosshair:Save()
 			end
 			
 			--preview bloom
@@ -4022,7 +4061,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 				callback = set_crosshair_override_global_callback_name,
 				value = crosshair_setting.overrides_global,
 				menu_id = firemode_menu_name,
-				priority = 8
+				priority = 9
 			})
 			
 			MenuHelper:AddMultipleChoice({
@@ -4033,7 +4072,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 				items = table.deep_map_copy(crosshair_items),
 				value = crosshair_index,
 				menu_id = firemode_menu_name,
-				priority = 7
+				priority = 8
 			})
 			
 			MenuHelper:AddButton({
@@ -4042,7 +4081,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 				desc = "menu_ach_set_color_desc",
 				callback = set_crosshair_color_callback_name,
 				menu_id = firemode_menu_name,
-				priority = 6
+				priority = 7
 			})
 			
 			MenuHelper:AddSlider({
@@ -4056,7 +4095,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 				step = 0.05,
 				show_value = true,
 				menu_id = firemode_menu_name,
-				priority = 5
+				priority = 6
 			})
 			
 			MenuHelper:AddToggle({
@@ -4065,6 +4104,16 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 				desc = "menu_ach_set_bloom_enabled_desc",
 				callback = enable_crosshair_bloom_callback_name,
 				value = crosshair_setting.use_bloom,
+				menu_id = firemode_menu_name,
+				priority = 5
+			})
+			
+			MenuHelper:AddToggle({
+				id = "id_" .. set_hide_on_ads_callback_name,
+				title = "menu_ach_set_hide_on_ads_title",
+				desc = "menu_ach_set_hide_on_ads_desc",
+				callback = set_hide_on_ads_callback_name,
+				value = crosshair_setting.hide_on_ads,
 				menu_id = firemode_menu_name,
 				priority = 4
 			})
@@ -4103,7 +4152,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		items = table.deep_map_copy(crosshair_items),
 		value = global_crosshair_index,
 		menu_id = AdvancedCrosshair.crosshairs_categories_global_id,
-		priority = 6
+		priority = 7
 	})
 	MenuHelper:AddButton({
 		id = "id_ach_menu_crosshairs_categories_global_color",
@@ -4111,7 +4160,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		desc = "menu_ach_set_color_desc",
 		callback = "callback_ach_crosshairs_categories_global_color",
 		menu_id = AdvancedCrosshair.crosshairs_categories_global_id,
-		priority = 5
+		priority = 6
 	})
 	
 	MenuHelper:AddSlider({
@@ -4125,7 +4174,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		step = 0.05,
 		show_value = true,
 		menu_id = AdvancedCrosshair.crosshairs_categories_global_id,
-		priority = 4
+		priority = 5
 	})
 	
 	MenuHelper:AddToggle({
@@ -4134,6 +4183,16 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		desc = "menu_ach_set_bloom_enabled_desc",
 		callback = "callback_ach_crosshairs_categories_global_bloom_enabled",
 		value = AdvancedCrosshair.settings.crosshair_global.use_bloom,
+		menu_id = AdvancedCrosshair.crosshairs_categories_global_id,
+		priority = 4
+	})
+
+	MenuHelper:AddToggle({
+		id = "id_ach_menu_crosshairs_categories_global_set_ads_hides_crosshair",
+		title = "menu_ach_set_hide_on_ads_title",
+		desc = "menu_ach_set_hide_on_ads_desc",
+		callback = "callback_ach_crosshairs_categories_global_ads_hides_crosshair",
+		value = AdvancedCrosshair.settings.crosshair_global.hide_on_ads,
 		menu_id = AdvancedCrosshair.crosshairs_categories_global_id,
 		priority = 3
 	})
@@ -4220,6 +4279,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		menu_id = AdvancedCrosshair.crosshairs_menu_id,
 		priority = 1
 	})
+	
 	
 	
 	--hitsounds	
@@ -4546,14 +4606,20 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 			
 			AdvancedCrosshair.clbk_show_colorpicker_with_callbacks(Color(AdvancedCrosshair.settings.crosshair_misc_color),clbk_colorpicker,clbk_colorpicker)
 			
-			AdvancedCrosshair:Save()
+--			AdvancedCrosshair:CheckCrosshair()
+			
 		elseif not _G.ColorPicker then
 			AdvancedCrosshair.clbk_missing_colorpicker_prompt()
 		end	
 	end
+	MenuCallbackHandler.callback_ach_crosshairs_categories_global_ads_hides_crosshair = function(self,item)
+		AdvancedCrosshair.settings.crosshair_global.hide_crosshair_on_ads = item:value() == "on"
+		AdvancedCrosshair:Save()
+	end
 	
 	MenuCallbackHandler.callback_ach_menu_crosshairs_categories_global_enable_override = function(self,item)
 		AdvancedCrosshair.settings.crosshair_all_override = item:value() == "on"
+		--not used
 		AdvancedCrosshair:Save()
 	end
 	
