@@ -2424,7 +2424,7 @@ end
 function AdvancedCrosshair:UseCrosshairShake()
 	return self.settings.use_shake
 end
-function AdvancedCrosshair:UseDynamicColor() --not used
+function AdvancedCrosshair:UseDynamicColor()
 	return self.settings.use_color
 end
 function AdvancedCrosshair:IsCrosshairEnabled()
@@ -3432,10 +3432,10 @@ function AdvancedCrosshair:Update(t,dt)
 		
 		if self:IsCrosshairEnabled() then 
 			local current_crosshair_data = self._cache.current_crosshair_data
-			if alive(self._crosshair_panel) and current_crosshair_data then 
+			if alive(self._crosshair_panel) and current_crosshair_data and self:UseDynamicColor() then 
 				local fwd_ray = state._fwd_ray	
 				local focused_person = fwd_ray and fwd_ray.unit
-				local crosshair_color = current_crosshair_data.color
+				local crosshair_color = Color(current_crosshair_data.color)
 				if alive(focused_person) then
 					
 					if focused_person:character_damage() then 
