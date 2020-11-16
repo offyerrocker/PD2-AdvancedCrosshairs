@@ -2055,7 +2055,6 @@ end
 --simple custom add-ons should simply be added inside the mods/saves/AdvancedCrosshairs folder, and this mod will take care of adding them
 
 function AdvancedCrosshair:LoadAllAddons()
-	
 	self:LoadCrosshairAddons()
 	self:LoadHitmarkerAddons()
 	self:LoadHitsoundAddons()
@@ -2081,10 +2080,21 @@ function AdvancedCrosshair:AddCustomCrosshair(id,data)
 						part.texture = final_path
 						DB:create_entry(Idstring(extension),Idstring(final_path),part.texture_path .. "." .. extension)
 					else
-						self:log("Error: Invalid texture/texture path when reading part data for part #" .. tostring(part_index) .. " in addon: " .. tostring(id).. ". Aborting addon.")
+						self:log("Error: Invalid texture/texture path when reading crosshair part data for part #" .. tostring(part_index) .. " in addon: " .. tostring(id).. ". Aborting addon.")
 						return
 					end
 				end
+			else
+				self:log("Error: Could not load crosshair add-on (" .. tostring(id) .. "). Reason: Invalid parts data type: " .. tostring(data.parts) .. " (table expected, got " .. type(data) .. ")") 
+				return
+			end
+			if data.name_id then 
+			elseif data.name then 
+				local name_id = "menu_crosshair_addon_" .. id
+				managers.localization:add_localized_strings({
+					[name_id] = data.name
+				})
+				data.name_id = name_id
 			end
 		else
 			self:log("Error: Could not load crosshair add-on (" .. tostring(id) .. "). Reason: Invalid addon data type: " .. tostring(data) .. " (table expected, got " .. type(data) .. ")")
@@ -2122,15 +2132,13 @@ function AdvancedCrosshair:LoadCrosshairAddons()
 				end
 				
 				if #parts > 0 then 
-					local string_id = "menu_crosshair_addon_" .. foldername
-					managers.localization:add_localized_strings({
-						[string_id] = foldername
-					})
-					self:AddCustomCrosshair(foldername,{
-						name_id = string_id,
+					self:AddCustomCrosshair(string.gsub(foldername,"%s","_"),{
+						name = foldername,
 						parts = parts,
 						is_addon = true
 					})
+				else
+					self:log("Could not load crosshair add-on for: " .. foldername .. " (no valid files)")
 				end
 			end
 		end
@@ -2142,8 +2150,43 @@ function AdvancedCrosshair:AddCustomHitmarker(id,data)
 		self:log("Warning! Hitmarker with id " .. id .. " already exists. Replacing existing data...",{color=Color(1,0.5,0)})
 	end
 	if id then 
+		if type(data) == "table" then 
+			local path_util = BeardLib.Utils.Path
+			local extension = "texture"
+			if type(data.parts) == "table" then 
+				for part_index,part in ipairs(data.parts) do 
+					if part.texture then 
+						--assumes that you're either using textures that are already loaded (eg. textures from PAYDAY 2 itself, or loaded as part of another mod, or if you did it yourself)
+					elseif part.texture_path then 
+						--if using part.texture_path, ACH will handle loading your addon textures for you
+						local folder_name = path_util:GetFileName(path_util:GetDirectory(part.texture_path))
+						local filename = path_util:GetFileName(part.texture_path)
+						local final_path = path_util:Combine(self.TEXTURE_PATH,folder_name,filename)
+						part.texture = final_path
+						DB:create_entry(Idstring(extension),Idstring(final_path),part.texture_path .. "." .. extension)
+					else
+						self:log("Error: Invalid texture/texture path when reading hitmarker part data for part #" .. tostring(part_index) .. " in addon: " .. tostring(id).. ". Aborting addon.")
+						return
+					end
+				end
+			else
+				self:log("Error: Could not load crosshair add-on (" .. tostring(id) .. "). Reason: Invalid parts data type: " .. tostring(data.parts) .. " (table expected, got " .. type(data) .. ")") 
+				return
+			end
+			if data.name_id then 
+			elseif data.name then 
+				local name_id = "menu_hitmarker_addon_" .. id
+				managers.localization:add_localized_strings({
+					[name_id] = data.name
+				})
+				data.name_id = name_id
+			end
+		else
+			self:log("Error: Could not load hitmarker add-on (" .. tostring(id) .. "). Reason: Invalid addon data type: " .. tostring(data) .. " (table expected, got " .. type(data) .. ")")
+			return
+		end
 		AdvancedCrosshair._hitmarker_data[id] = data
-		self:log("Added custom hitmarker addon: " .. (data.name_id and managers.localization:text(data.name_id) or "[ERROR]"))
+		self:log("Added custom hitmarker addon: " .. (data.name_id and managers.localization:text(data.name_id) or (id .. " (No localized name found)")))
 	else
 		self:log("Error: Could not load hitmarker add-on. (reason: invalid id)")
 		if type(data) == "table" then 
@@ -2163,30 +2206,24 @@ function AdvancedCrosshair:LoadHitmarkerAddons()
 			for _,foldername in pairs(SystemFS:list(addon_path,true)) do 
 				local parts = {}
 				for _,filename in pairs(SystemFS:list(BeardLib.Utils.Path:Combine(addon_path,foldername))) do 
-					if string.find(filename,"%." .. extension) then
+					if BeardLib.Utils.Path:GetFileExtension(filename) == extension then 
 						local raw_path = BeardLib.Utils.Path:Combine(addon_path,foldername,filename)
 						local texture_path = string.gsub(raw_path,"%." .. extension,"")
-						texture_path = string.gsub(texture_path,AdvancedCrosshair.save_path,"")
-						texture_path = string.gsub(texture_path,AdvancedCrosshair.mod_overrides_path,"")
-						
-						DB:create_entry(Idstring(extension),Idstring(texture_path),raw_path)
 						
 						table.insert(parts,#parts+1,{
-							texture = texture_path
+							texture_path = texture_path
 						})
 					end
 				end
 				
 				if #parts > 0 then 
-					local string_id = "menu_hitmarker_addon_" .. foldername
-					managers.localization:add_localized_strings({
-						[string_id] = foldername
-					})
-					self:AddCustomHitmarker(foldername,{
-						name_id = string_id,
+					self:AddCustomHitmarker(string.gsub(foldername,"%s","_"),{
+						name = foldername,
 						parts = parts,
 						is_addon = true
 					})
+				else
+					self:log("Could not load hitmarker add-on for: " .. foldername .. " (no valid files)")
 				end
 			end
 		end
