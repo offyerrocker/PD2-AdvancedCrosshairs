@@ -230,7 +230,9 @@ AdvancedCrosshair.path = ModPath
 AdvancedCrosshair.hitsound_path = AdvancedCrosshair.path .. "assets/snd/hitsounds/"
 AdvancedCrosshair.save_path = SavePath
 AdvancedCrosshair.save_data_path = AdvancedCrosshair.save_path .. "AdvancedCrosshair.txt"
-AdvancedCrosshair.mod_overrides_path = ""
+AdvancedCrosshair.TEXTURE_PATH = "guis/textures/advanced_crosshairs/"
+AdvancedCrosshair.mod_overrides_path = "PAYDAY 2/assets/mod_overrides/"
+
 AdvancedCrosshair.ADDON_PATHS = {
 	crosshairs = {
 --		AdvancedCrosshair.mod_overrides_path .. "ACH Addons/Crosshairs/",
@@ -2064,8 +2066,32 @@ function AdvancedCrosshair:AddCustomCrosshair(id,data)
 		self:log("Warning! Crosshair with id " .. id .. " already exists. Replacing existing data...",{color=Color(1,0.5,0)})
 	end
 	if id then 
+		if type(data) == "table" then 
+			local path_util = BeardLib.Utils.Path
+			local extension = "texture"
+			if type(data.parts) == "table" then 
+				for part_index,part in ipairs(data.parts) do 
+					if part.texture then 
+						--assumes that you're either using textures that are already loaded (eg. textures from PAYDAY 2 itself, or loaded as part of another mod, or if you did it yourself)
+					elseif part.texture_path then 
+						--if using part.texture_path, ACH will handle loading your addon textures for you
+						local folder_name = path_util:GetFileName(path_util:GetDirectory(part.texture_path))
+						local filename = path_util:GetFileName(part.texture_path)
+						local final_path = path_util:Combine(self.TEXTURE_PATH,folder_name,filename)
+						part.texture = final_path
+						DB:create_entry(Idstring(extension),Idstring(final_path),part.texture_path .. "." .. extension)
+					else
+						self:log("Error: Invalid texture/texture path when reading part data for part #" .. tostring(part_index) .. " in addon: " .. tostring(id).. ". Aborting addon.")
+						return
+					end
+				end
+			end
+		else
+			self:log("Error: Could not load crosshair add-on (" .. tostring(id) .. "). Reason: Invalid addon data type: " .. tostring(data) .. " (table expected, got " .. type(data) .. ")")
+			return
+		end
 		AdvancedCrosshair._crosshair_data[id] = data
-		self:log("Added custom crosshair addon: " .. (data.name_id and managers.localization:text(data.name_id) or "[ERROR]"))
+		self:log("Added custom crosshair addon: " .. (data.name_id and managers.localization:text(data.name_id) or (id .. " (No localized name found)")))
 	else
 		self:log("Error: Could not load crosshair add-on. (reason: invalid id)")
 		if type(data) == "table" then 
@@ -2085,16 +2111,12 @@ function AdvancedCrosshair:LoadCrosshairAddons()
 			for _,foldername in pairs(SystemFS:list(addon_path,true)) do 
 				local parts = {}
 				for _,filename in pairs(SystemFS:list(BeardLib.Utils.Path:Combine(addon_path,foldername))) do 
-					if string.find(filename,"%." .. extension) then
+					if BeardLib.Utils.Path:GetFileExtension(filename) == extension then 
 						local raw_path = BeardLib.Utils.Path:Combine(addon_path,foldername,filename)
 						local texture_path = string.gsub(raw_path,"%." .. extension,"")
-						texture_path = string.gsub(texture_path,AdvancedCrosshair.save_path,"")
-						texture_path = string.gsub(texture_path,AdvancedCrosshair.mod_overrides_path,"")
-						
-						DB:create_entry(Idstring(extension),Idstring(texture_path),raw_path)
 						
 						table.insert(parts,#parts+1,{
-							texture = texture_path
+							texture_path = texture_path
 						})
 					end
 				end
@@ -2970,18 +2992,19 @@ function AdvancedCrosshair:animate_hitmarker_parts(o,t,dt,start_t,duration,parts
 	end
 end
 
-
 function AdvancedCrosshair:OnEnemyHit(unit,attack_data)
-	if self:IsHitmarkerEnabled() then 
-		self:ActivateHitmarker(attack_data)
-	end
-	if self:IsHitsoundEnabled() then 
-		AdvancedCrosshair:ActivateHitsound(attack_data,unit)
-		--screw your existing argument order, i'm a loose cannon who got nothing to lose and don't play by the rules
-	end
-	if self._cache.HITMARKER_RAIN_ENABLED and attack_data and attack_data.result and attack_data.result.type == "death" then 
-		if (not self._cache._hitmarker_rain_count_remaining) and (math.random() <= self.HITMARKER_RAIN_PROC_CHANCE) then 
-			self:StartHitmarkerRain()
+	if attack_data.attacker_unit and (attack_data.attacker_unit == managers.player:local_player()) then 
+		if self:IsHitmarkerEnabled() then 
+			self:ActivateHitmarker(attack_data)
+		end
+		if self:IsHitsoundEnabled() then 
+			AdvancedCrosshair:ActivateHitsound(attack_data,unit)
+			--screw your existing argument order, i'm a loose cannon who got nothing to lose and don't play by the rules
+		end
+		if self._cache.HITMARKER_RAIN_ENABLED and attack_data and attack_data.result and attack_data.result.type == "death" then 
+			if (not self._cache._hitmarker_rain_count_remaining) and (math.random() <= self.HITMARKER_RAIN_PROC_CHANCE) then 
+				self:StartHitmarkerRain()
+			end
 		end
 	end
 end
@@ -3434,10 +3457,10 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "advc_MenuManagerPopulateCustomMenus
 --since multiplechoice menus can only use number indices (afaik)
 
 --for crosshairs:
-	local items = {}
+	local crosshair_items = {}
 	local i = 1
 	for id,crosshair_data in pairs(AdvancedCrosshair._crosshair_data) do 
-		table.insert(items,i,crosshair_data.name_id)
+		table.insert(crosshair_items,i,crosshair_data.name_id)
 		table.insert(AdvancedCrosshair.crosshair_id_by_index,i,id)
 		i = i + 1
 	end
@@ -3871,7 +3894,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "advc_MenuManagerPopulateCustomMenus
 				title = "menu_ach_set_bitmap_title",
 				desc = "menu_ach_set_bitmap_desc",
 				callback = set_crosshair_type_callback_name,
-				items = items,
+				items = table.deep_map_copy(crosshair_items),
 				value = crosshair_index,
 				menu_id = firemode_menu_name,
 				priority = 7
@@ -3926,13 +3949,13 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "advc_MenuManagerPopulateCustomMenus
 				priority = 2
 			})
 		end
-		
-		local global_crosshair_index = 1
-		for _crosshair_index,_crosshair_id in ipairs(AdvancedCrosshair.crosshair_id_by_index) do 
-			if _crosshair_id == AdvancedCrosshair.settings.crosshair_global.crosshair_id then 
-				global_crosshair_index = _crosshair_index
-				break
-			end
+	end
+	
+	local global_crosshair_index = 1
+	for _crosshair_index,_crosshair_id in ipairs(AdvancedCrosshair.crosshair_id_by_index) do 
+		if _crosshair_id == AdvancedCrosshair.settings.crosshair_global.crosshair_id then 
+			global_crosshair_index = _crosshair_index
+			break
 		end
 	end
 	
@@ -3941,7 +3964,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "advc_MenuManagerPopulateCustomMenus
 		title = "menu_ach_set_bitmap_title",
 		desc = "menu_ach_set_bitmap_desc",
 		callback = "callback_ach_crosshairs_categories_global_type",
-		items = table.deep_map_copy(items),
+		items = table.deep_map_copy(crosshair_items),
 		value = global_crosshair_index,
 		menu_id = AdvancedCrosshair.crosshairs_categories_global_id,
 		priority = 6
