@@ -159,6 +159,7 @@
 	"menu_ach_blend_mode_add" : "Additive",
 	"menu_ach_blend_mode_sub" : "Subtractive",
 	"menu_ach_blend_mode_mul" : "Multiplicative",
+	"menu_ach_blend_mode_screen" : "Screen",
 	
 	"menu_ach_hitsounds_menu_title" : "Hitsounds...",
 	"menu_ach_hitsounds_master_enable_title" : "Enable Hitsounds",

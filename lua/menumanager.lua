@@ -2,14 +2,12 @@
 
 --migrate the more obscure options to "Advanced Settings" menus
  
-
---vehicle crosshair
----option to limit active hitmarkers amount to one, or one per enemy (gets pretty visually noisy when there's lots)
----perhaps an example crosshair with bits that change based on gun ammo or player health (see hl2 crosshair)
-
 -- slider option for scaling crosshairs
 -- slider option for scaling hitmarker size?
 	--toggle scaling with world distance at world position?
+
+--vehicle crosshair
+---perhaps an example crosshair with bits that change based on gun ammo or player health (see hl2 crosshair)
 
 --"trickle-down" options, eg "unchanged" inherit global setting (requires conversion from most option types to multiple choice, or else the addition of a toggle checkbox to enable global override any given option)
 
@@ -110,7 +108,7 @@ AdvancedCrosshair.BLEND_MODES = { --for getting the blend mode from the number i
 	"add",
 	"sub",
 	"mul"
---	, "screen"
+--	"screen" --doesn't appear to be implemented as a valid blend_mode
 }
 
 AdvancedCrosshair.VALID_WEAPON_CATEGORIES = {
@@ -2142,14 +2140,17 @@ function AdvancedCrosshair:LoadCrosshairAddons()
 	local extension = "texture"
 	local path_util = BeardLib.Utils.Path
 	for _,addon_path in pairs(self.ADDON_PATHS.crosshairs) do 
-		if SystemFS:exists(Application:nice_path(addon_path,true)) then 
+		if SystemFS:exists(addon_path) then 
 			for _,foldername in pairs(SystemFS:list(addon_path,true)) do 
 				local parts = {}
 				local is_advanced
 				local addon_lua_path = path_util:Combine(addon_path,foldername,"addon.lua")
-				if SystemFS:exists(addon_lua_path) then 
-					local addon_lua = blt.vm.loadfile(addon_lua_path) --thanks znix
-					if addon_lua then 
+				if SystemFS:exists(Application:nice_path(addon_lua_path,true)) then 
+					is_advanced = true
+					local addon_lua,s_error = blt.vm.loadfile(addon_lua_path) --thanks znix
+					if s_error then 
+						self:log("FATAL ERROR: LoadCrosshairAddons(): " .. tostring(s_error),{color=Color.red})
+					elseif addon_lua then 
 						local addon_id,addon_data = addon_lua()
 						if addon_id and type(addon_data) == "table" then 
 							if type(addon_data.parts) == "table" then 
@@ -2162,15 +2163,15 @@ function AdvancedCrosshair:LoadCrosshairAddons()
 							else
 								self:log("Error: LoadCrosshairAddons() " .. addon_lua_path .. " contains invalid parts data: " .. tostring(addon_data.parts) .. " (table expected, got " .. type(addon_data.parts) .. ").")
 							end
-						
+							
 							self:AddCustomCrosshair(addon_id,addon_data)
-							is_advanced = true
 						else
 							self:log("Error: LoadCrosshairAddons() " .. addon_lua_path .. " returned invalid data. Expected results: [string],[table]. Got: [" .. type(id) .. "] " .. tostring(id) .. ", [" .. type(addon_data) .. "] " .. tostring(addon_data) .. ".")
 						end
 					end
 				end
-				if not is_advanced then 
+				if is_advanced then 
+				elseif not is_advanced then 
 					for _,filename in pairs(SystemFS:list(path_util:Combine(addon_path,foldername))) do 
 						local raw_path = path_util:Combine(addon_path,foldername,filename)
 						if path_util:GetFileExtension(filename) == extension then 
@@ -2260,8 +2261,11 @@ function AdvancedCrosshair:LoadHitmarkerAddons()
 				local is_advanced
 				local addon_lua_path = path_util:Combine(addon_path,foldername,"addon.lua")
 				if SystemFS:exists(addon_lua_path) then 
+					is_advanced = true
 					local addon_lua = blt.vm.loadfile(addon_lua_path)
-					if addon_lua then 
+					if s_error then 
+						self:log("FATAL ERROR: LoadHitmarkerAddons(): " .. tostring(s_error),{color=Color.red})
+					elseif addon_lua then 
 						local addon_id,addon_data = addon_lua()
 						if addon_id and type(addon_data) == "table" then 
 							if type(addon_data.parts) == "table" then 
@@ -2276,7 +2280,6 @@ function AdvancedCrosshair:LoadHitmarkerAddons()
 							end
 						
 							self:AddCustomHitmarker(addon_id,addon_data)
-							is_advanced = true
 						else
 							self:log("Error: LoadHitmarkerAddons() " .. addon_lua_path .. " returned invalid data. Expected results: [string],[table]. Got: [" .. type(id) .. "] " .. tostring(id) .. ", [" .. type(addon_data) .. "] " .. tostring(addon_data) .. ".")
 						end
@@ -2347,9 +2350,12 @@ function AdvancedCrosshair:LoadHitsoundAddons()
 				for _,filename in pairs(SystemFS:list(path_util:Combine(addon_path,foldername))) do 
 					--check for advanced hitsound addon
 					if filename == "addon.lua" then
+						is_advanced = true
 						local raw_path = path_util:Combine(addon_path,foldername,filename)
-						local addon_lua = blt.vm.loadfile(raw_path)
-						if addon_lua then 
+						local addon_lua,s_error = blt.vm.loadfile(raw_path)
+						if s_error then 
+							self:log("FATAL ERROR: LoadHitsoundAddons(): " .. tostring(s_error),{color=Color.red})
+						elseif addon_lua then 
 							local addon_id,addon_data = addon_lua()
 							if addon_id and type(addon_data) == "table" then 
 								if type(addon_data.variations_paths) == "table" then 
@@ -2363,7 +2369,6 @@ function AdvancedCrosshair:LoadHitsoundAddons()
 									addon_data.path = path_util:Combine(addon_path,foldername,addon_data.path_local)
 								end
 								self:AddCustomHitsound(addon_id,addon_data)
-								is_advanced = true
 								break
 							else
 								self:log("Error: LoadHitsoundAddons() " .. raw_path .. " returned invalid data. Expected results: [string],[table]. Got: [" .. type(id) .. "] " .. tostring(id) .. ", [" .. type(addon_data) .. "] " .. tostring(addon_data) .. ".")
@@ -2614,7 +2619,6 @@ function AdvancedCrosshair:animate_move_linear_endpoints(o,t,dt,start_t,duration
 	end
 end
 
-
 function AdvancedCrosshair:StartHitmarkerRain()
 	if (self._cache._hitmarker_rain_count_remaining and self._cache._hitmarker_rain_count_remaining > 0) or not alive(self._hitmarker_panel) then 
 		return
@@ -2674,6 +2678,7 @@ function AdvancedCrosshair:StartHitmarkerRain()
 	
 	
 end
+
 
 --************************************************--
 		--stuff that happens during gameplay
@@ -3519,54 +3524,69 @@ function AdvancedCrosshair:Update(t,dt)
 		
 		if self:IsCrosshairEnabled() then 
 			local current_crosshair_data = self._cache.current_crosshair_data
-			if alive(self._crosshair_panel) and current_crosshair_data and self:UseDynamicColor() then 
-				local fwd_ray = state._fwd_ray	
-				local focused_person = fwd_ray and fwd_ray.unit
-				local crosshair_color = current_crosshair_data.color
-				if alive(focused_person) then
-					
-					if focused_person:character_damage() then 
-						if not focused_person:character_damage():dead() then 
-							local f_m = focused_person:movement()
-							local f_t = f_m and f_m:team() and f_m:team().id
-							if f_t then 
-								if focused_person.brain and focused_person:brain() and focused_person:brain().is_current_logic and focused_person:brain():is_current_logic("intimidated") then 
-									f_t = "converted_enemy"
+			if alive(self._crosshair_panel) and current_crosshair_data then
+				local crosshair_td = self._crosshair_data[current_crosshair_data.crosshair_id]
+				if crosshair_td and type(crosshair_td.update_func) == "function" then 
+					local current_crosshair_panel = current_crosshair_data.panel
+					crosshair_td.update_func(t,dt,{
+						crosshair_data = crosshair_td,
+						settings = current_crosshair_data.settings,
+						weapon_base = current_crosshair_data.base,
+						parts = current_crosshair_data.parts,
+						panel_w = current_crosshair_panel:w(),
+						panel_h = current_crosshair_panel:h()
+					})
+				end
+				
+				if self:UseDynamicColor() then 
+					local fwd_ray = state._fwd_ray	
+					local focused_person = fwd_ray and fwd_ray.unit
+					local crosshair_color = current_crosshair_data.color
+					if alive(focused_person) then
+						
+						if focused_person:character_damage() then 
+							if not focused_person:character_damage():dead() then 
+								local f_m = focused_person:movement()
+								local f_t = f_m and f_m:team() and f_m:team().id
+								if f_t then 
+									if focused_person.brain and focused_person:brain() and focused_person:brain().is_current_logic and focused_person:brain():is_current_logic("intimidated") then 
+										f_t = "converted_enemy"
+									end
+									crosshair_color = self:GetColorByTeam(f_t)
+								elseif not f_m then --old color determination method
+					--							self:log("NO CROSSHAIR UNIT TEAM")
+					--							if managers.enemy:is_enemy(focused_person) then 
+					--							elseif managers.enemy:is_civilian(focused_person) then
+					--							elseif managers.criminals:character_name_by_unit(focused_person) then
+									--else, is probably a car.
 								end
-								crosshair_color = self:GetColorByTeam(f_t)
-							elseif not f_m then --old color determination method
-				--							self:log("NO CROSSHAIR UNIT TEAM")
-				--							if managers.enemy:is_enemy(focused_person) then 
-				--							elseif managers.enemy:is_civilian(focused_person) then
-				--							elseif managers.criminals:character_name_by_unit(focused_person) then
-								--else, is probably a car.
 							end
+						elseif focused_person:base() and focused_person:base().can_apply_tape_loop and focused_person:base():can_apply_tape_loop() then 	
+							crosshair_color = self:GetColorByTeam("law1")
 						end
-					elseif focused_person:base() and focused_person:base().can_apply_tape_loop and focused_person:base():can_apply_tape_loop() then 	
-						crosshair_color = self:GetColorByTeam("law1")
+						self:SetCrosshairColor(crosshair_color)
 					end
-					self:SetCrosshairColor(crosshair_color)
 				end
-			end
 
-			if self:UseCrosshairShake() then 
-				local crosshair_stability = (fwd_ray and fwd_ray.distance or 1000) * self:GetCrosshairStability() --fwd_ray.length
-				--theoretically, the raycast position (assuming perfect accuracy) at [crosshair_stability] meters;
-				--practically, the higher the number, the less sway shake (to a certain extent)
-				local c_p = ws:world_to_screen(viewport_cam,state:get_fire_weapon_position() + (state:get_fire_weapon_direction() * crosshair_stability))
-				local c_w = (c_p.x or 0)
-				local c_h = (c_p.y or 0)
-				self:SetCrosshairCenter(c_w,c_h)
-			end
-
-			--bloom
-			if current_crosshair_data.settings.use_bloom then 
-				if self._cache.bloom > 0 then 
-					self._cache.bloom = self:DecayBloom(self._cache.bloom,t,dt)
-					self:SetCrosshairBloom(self._cache.bloom)
+				if self:UseCrosshairShake() then 
+					local crosshair_stability = (fwd_ray and fwd_ray.distance or 1000) * self:GetCrosshairStability() --fwd_ray.length
+					--theoretically, the raycast position (assuming perfect accuracy) at [crosshair_stability] meters;
+					--practically, the higher the number, the less sway shake (to a certain extent)
+					local c_p = ws:world_to_screen(viewport_cam,state:get_fire_weapon_position() + (state:get_fire_weapon_direction() * crosshair_stability))
+					local c_w = (c_p.x or 0)
+					local c_h = (c_p.y or 0)
+					self:SetCrosshairCenter(c_w,c_h)
 				end
+
+				--bloom
+				if current_crosshair_data.settings.use_bloom then 
+					if self._cache.bloom > 0 then 
+						self._cache.bloom = self:DecayBloom(self._cache.bloom,t,dt)
+						self:SetCrosshairBloom(self._cache.bloom)
+					end
+				end
+				
 			end
-			
 			
 		end
 
@@ -3670,7 +3690,6 @@ Hooks:Add("MenuManagerSetupCustomMenus", "ach_MenuManagerSetupCustomMenus", func
 end)
 
 Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus", function(menu_manager, nodes)
---	AdvancedCrosshair:log(Hooks:ReturnCall("ACHOnExampleHook","ABCDEFG",1234,{5,6,7,8}))
 	Hooks:Call("ACH_LoadAllAddons")
 	
 	AdvancedCrosshair:LoadAllAddons() --load custom crosshairs, hitmarkers, and hitsounds
@@ -3850,6 +3869,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 			"menu_ach_blend_mode_add",
 			"menu_ach_blend_mode_sub",
 			"menu_ach_blend_mode_mul"
+--			"menu_ach_blend_mode_screen"
 		},
 		value = AdvancedCrosshair.settings.hitmarker_hit_blend_mode,
 		menu_id = AdvancedCrosshair.hitmarkers_menu_id,
@@ -3941,6 +3961,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 			"menu_ach_blend_mode_add",
 			"menu_ach_blend_mode_sub",
 			"menu_ach_blend_mode_mul"
+--			"menu_ach_blend_mode_screen"
 		},
 		value = AdvancedCrosshair.settings.hitmarker_kill_blend_mode,
 		menu_id = AdvancedCrosshair.hitmarkers_menu_id,
