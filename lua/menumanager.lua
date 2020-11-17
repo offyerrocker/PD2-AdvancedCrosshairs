@@ -1,27 +1,26 @@
 		--todo list, loosely sorted by descending priority:
 
+--migrate the more obscure options to "Advanced Settings" menus
+ 
+
 --vehicle crosshair
 ---option to limit active hitmarkers amount to one, or one per enemy (gets pretty visually noisy when there's lots)
----option to scale hitmarkers and crosshair
 ---perhaps an example crosshair with bits that change based on gun ammo or player health (see hl2 crosshair)
----there is vanilla crit hitmarker but standard vanilla hitmarker is missing i think? vanilla looks thicker than usual
 
---pitch hitsounds with set_velocity()
+-- slider option for scaling crosshairs
+-- slider option for scaling hitmarker size?
+	--toggle scaling with world distance at world position?
 
--- choice of pitch shift based on:
---damage
---enemy health remaining
---and up or down
+--"trickle-down" options, eg "unchanged" inherit global setting (requires conversion from most option types to multiple choice, or else the addition of a toggle checkbox to enable global override any given option)
 
-
---"trickle-down" options, eg "unchanged" inherit global setting
-
-
-
-
-
+--bug znix about pitch hitsounds with set_velocity() (currently does nothing from what testing i've done)
+	-- choice of pitch shift based on:
+	--damage
+	--enemy health remaining
+	--and up or down
 
 --screen blend mode 
+--	convert blend mode number indices in settings to strings
 --save hitsound preview and stop others when new hitsound is selected
 --sanity check hitsounds on load addons
 --get mod_overrides path to support addons in mod_overrides?
@@ -34,8 +33,6 @@
 -- fullscreen/halfscreen/none bg menus for all preview-related menus
 
 -- hitsound volume sliders
--- toggle option for scaling crosshairs with world distance at world position?
--- slider option for scaling hitmarker size?
 -- option to add tf2 crit indicators? (must mesh with current settings to avoid menu fatigue)
 -- option for separate melee hitsound? (must mesh with current settings to avoid menu fatigue)
 
@@ -113,6 +110,7 @@ AdvancedCrosshair.BLEND_MODES = { --for getting the blend mode from the number i
 	"add",
 	"sub",
 	"mul"
+--	, "screen"
 }
 
 AdvancedCrosshair.VALID_WEAPON_CATEGORIES = {
@@ -148,6 +146,8 @@ AdvancedCrosshair.settings = {
 	use_color = true,
 	use_hitpos = true,
 	use_hitsound_pos = false,
+	hitsound_limit_behavior = 1,
+	hitsound_max_count = 1,
 	hitsound_hit_bodyshot_id = "tf2_hit",
 	hitsound_hit_headshot_id = "tf2_hit",
 	hitsound_hit_bodyshot_crit_id = "tf2_crit",
@@ -156,14 +156,14 @@ AdvancedCrosshair.settings = {
 	hitsound_kill_bodyshot_id = "tf2_hit",
 	hitsound_kill_bodyshot_crit_id = "tf2_crit",
 	hitsound_kill_headshot_crit_id = "tf2_crit",
-	hitsound_hit_bodyshot_volume = 1,
-	hitsound_hit_headshot_volume = 1,
-	hitsound_hit_bodyshot_crit_volume = 1,
-	hitsound_hit_headshot_crit_volume = 1,
-	hitsound_kill_headshot_volume = 1,
-	hitsound_kill_bodyshot_volume = 1,
-	hitsound_kill_bodyshot_crit_volume = 1,
-	hitsound_kill_headshot_crit_volume = 1,
+	hitsound_hit_bodyshot_volume = 0.5,
+	hitsound_hit_headshot_volume = 0.5,
+	hitsound_hit_bodyshot_crit_volume = 0.5,
+	hitsound_hit_headshot_crit_volume = 0.5,
+	hitsound_kill_headshot_volume = 0.5,
+	hitsound_kill_bodyshot_volume = 0.5,
+	hitsound_kill_bodyshot_crit_volume = 0.5,
+	hitsound_kill_headshot_crit_volume = 0.5,
 	hitsound_suppress_doublesound = true,
 	crosshair_all_override = false,
 	crosshair_stability = 1,
@@ -171,6 +171,8 @@ AdvancedCrosshair.settings = {
 	crosshair_civilian_color = "7ff77f",
 	crosshair_teammate_color = "0171ff",
 	crosshair_misc_color = "f51b83",
+	hitmarker_max_count = 5,
+	hitmarker_limit_behavior = 1,
 	hitmarker_hit_id = "destiny",
 	hitmarker_hit_duration = 0.75,
 	hitmarker_hit_alpha = 0.5,
@@ -278,7 +280,8 @@ AdvancedCrosshair._cache = {
 	bloom = 0,
 	bloom_t = -69,
 	hitmarkers = {},
-	num_hitmarkers = 0
+	num_hitmarkers = 0,
+	sound_sources = {}
 }
 
 _G.queued_delay_advanced_crosshair_data = {}
@@ -2430,13 +2433,30 @@ end)
 --this way, it won't crash if you use this method and uninstall advanced crosshairs but forget to uninstall the custom crosshair add-on (even though uninstalling this mod would make me sad :'( )
 
 --************************************************--
-		--settings getters
+		--settings getters (and a few setters)
 --************************************************--
+	--General
+	
+function AdvancedCrosshair:GetPaletteColors()
+	local result = {}
+	for i,hex in ipairs(self.settings.palettes) do 
+		result[i] = Color(hex)
+	end
+	return result
+end
+function AdvancedCrosshair:SetPaletteCodes(tbl)
+	if type(tbl) == "table" then 
+		for i,color in ipairs(tbl) do 
+			self.settings.palettes[i] = color:to_hex()
+		end
+	else
+		self:log("Error: SetPaletteCodes(" .. tostring(tbl) .. ") Bad palettes table from ColorPicker callback")
+	end
+end
+
+	--Crosshairs
 function AdvancedCrosshair:GetCrosshairStability()
 	return self.settings.crosshair_stability
-end
-function AdvancedCrosshair:UseBloom() --deprecated
-	return self.settings.use_bloom
 end
 function AdvancedCrosshair:UseCrosshairShake()
 	return self.settings.use_shake
@@ -2447,11 +2467,11 @@ end
 function AdvancedCrosshair:IsCrosshairEnabled()
 	return self.settings.crosshair_enabled
 end
-function AdvancedCrosshair:IsHitmarkerEnabled()
-	return self.settings.hitmarker_enabled
+function AdvancedCrosshair:UseGlobalCrosshair()
+	return self.settings.crosshair_all_override
 end
-function AdvancedCrosshair:UseHitmarkerHitPosition()
-	return self.settings.use_hitpos
+function AdvancedCrosshair:GetBloomCooldown() --no menu option; returns constant
+	return 0.05
 end
 function AdvancedCrosshair:GetColorByTeam(team)
 	local result = self.settings.crosshair_misc_color
@@ -2472,53 +2492,17 @@ function AdvancedCrosshair:GetColorByTeam(team)
 	
 	return result and Color(result) or Color.white
 end
-function AdvancedCrosshair:IsHitsoundEnabled()
-	return self.settings.hitsound_enabled
+function AdvancedCrosshair:CrosshairAllowedInState(state_name)
+	return state_name and self.STATES_CROSSHAIR_ALLOWED[state_name]
 end
 
-function AdvancedCrosshair:ShouldSuppressDoubleSound() --determines whether hit+critsounds should both be played, or just one
-	return self.settings.hitsound_suppress_doublesound
+	--Hitmarkers
+function AdvancedCrosshair:IsHitmarkerEnabled()
+	return self.settings.hitmarker_enabled
 end
-
-function AdvancedCrosshair:GetHitmarkerDuration() --deprecated
-	return 1
+function AdvancedCrosshair:UseHitmarkerHitPosition()
+	return self.settings.use_hitpos
 end
-function AdvancedCrosshair:GetHitmarkerType() --deprecated
-	return "destiny"
-end
-function AdvancedCrosshair:GetHitmarkerBlendMode() --deprecated
-	return "normal" --"add"
-end
-function AdvancedCrosshair:GetHitmarkerAlpha() --deprecated
-	return 1
-end
-
-function AdvancedCrosshair:GetPaletteColors()
-	local result = {}
-	for i,hex in ipairs(self.settings.palettes) do 
-		result[i] = Color(hex)
-	end
-	return result
-end
-
-function AdvancedCrosshair:SetPaletteCodes(tbl)
-	if type(tbl) == "table" then 
-		for i,color in ipairs(tbl) do 
-			self.settings.palettes[i] = color:to_hex()
-		end
-	else
-		self:log("Error: SetPaletteCodes(" .. tostring(tbl) .. ") Bad palettes table from ColorPicker callback")
-	end
-end
-
-function AdvancedCrosshair:UseGlobalCrosshair()
-	return self.settings.crosshair_all_override
-end
-
-function AdvancedCrosshair:GetBloomCooldown()
-	return 0.05
-end
-
 function AdvancedCrosshair:GetHitmarkerSettings(hitmarker_type)
 	if (hitmarker_type == "kill") or (hitmarker_type == "death") then 
 		return {
@@ -2543,14 +2527,32 @@ function AdvancedCrosshair:GetHitmarkerSettings(hitmarker_type)
 		headshot_crit_color = Color(self.settings.hitmarker_hit_headshot_crit_color)
 	}
 end	
-
-function AdvancedCrosshair:CrosshairAllowedInState(state_name)
-	return state_name and self.STATES_CROSSHAIR_ALLOWED[state_name]
+function AdvancedCrosshair:GetHitmarkerMaxCount()
+	return self.settings.hitmarker_max_count
+end
+function AdvancedCrosshair:GetHitmarkerLimitBehavior()
+	return self.settings.hitmarker_limit_behavior
 end
 
-function AdvancedCrosshair:UseHitsoundHitPosition()
+	--Hitsounds
+function AdvancedCrosshair:IsHitsoundEnabled()
+	return self.settings.hitsound_enabled
+end
+function AdvancedCrosshair:GetHitsoundLimitBehavior()
+	return self.settings.hitsound_limit_behavior
+end
+
+function AdvancedCrosshair:GetHitsoundMaxCount()
+	return self.settings.hitsound_max_count
+end
+
+function AdvancedCrosshair:UseHitsoundHitPosition() -- no menu option
 	return self.settings.use_hitsound_pos
 end
+function AdvancedCrosshair:ShouldSuppressDoubleSound() --determines whether hit+critsounds should both be played, or just one
+	return self.settings.hitsound_suppress_doublesound
+end
+
 
 --************************************************--
 		--hud animate functions
@@ -3047,86 +3049,103 @@ function AdvancedCrosshair:RemoveHitmarker(num_id)
 	
 	for index,hitmarkers_data in pairs(self._cache.hitmarkers) do 
 		if hitmarkers_data.num_id == num_id then 
-			table.remove(self._cache.hitmarkers,index)
-			return true
+			return table.remove(self._cache.hitmarkers,index)
 		end
 	end
 end
 
+function AdvancedCrosshair:RemoveHitmarkerByIndex(index)
+	return index and table.remove(self._cache.hitmarkers,index)
+end
+
 function AdvancedCrosshair:ActivateHitmarker(attack_data)
 --unit is just passed because it's called from Message.OnEnemyShot, i don't actually need it
-	local attacker_unit = attack_data and attack_data.attacker_unit
-	if attacker_unit == managers.player:local_player() then 
-		local result = attack_data.result
-		local result_type = result and result.type
-		local pos = attack_data.pos
-		local headshot = attack_data.headshot
-		local crit = attack_data.crit --flag indicating crit is added from the mod, not here in vanilla
-
-		local hitmarker_setting = self:GetHitmarkerSettings(result_type)
-		
-		local hitmarker_id = hitmarker_setting.hitmarker_id
-		if not (hitmarker_id and self._hitmarker_data[hitmarker_id]) then
-			self:log("ERROR: CreateHitmarker(): Bad hitmarker_id (" .. tostring(hitmarker_id) .. "); Aborting!",{color=Color.red})
+	local limit_behavior = self:GetHitmarkerLimitBehavior()
+	if (#self._cache.hitmarkers >= self:GetHitmarkerMaxCount()) then 
+		--unlike hitsounds, hitmarkers are already managed in update(), so we just need to check the table count
+		if limit_behavior == 1 then
+			--hard cap, so leave if cap reached
 			return
+		elseif limit_behavior == 2 then 
+			--remove others to make room
+			local replaced_hitmarker = self:RemoveHitmarkerByIndex(1)
+			if replaced_hitmarker and alive(replaced_hitmarker.panel) then
+				self:animate_stop(replaced_hitmarker.panel)
+				replaced_hitmarker.panel:parent():remove(replaced_hitmarker.panel)
+			end
+		--if limit_behavior == 3 then hitmaker count is uncapped, so do nothing
 		end
-		local hitmarker_data = self._hitmarker_data[hitmarker_id]
-		
-		local color = hitmarker_setting.bodyshot_color
-		if headshot and crit then 
-			color = hitmarker_setting.headshot_crit_color
-		elseif headshot then 
-			color = hitmarker_setting.headshot_color
-		elseif crit then 
-			color = hitmarker_setting.bodyshot_crit_color
-		end
-		
-		local hitmarker_duration = hitmarker_setting.duration
-		local hitmarker_alpha = hitmarker_setting.alpha
-		
-		local num_id = self._cache.num_hitmarkers + 1
-		
-		local panel = self._hitmarker_panel:panel({
-			alpha = (hitmarker_data.alpha or 1) * hitmarker_setting.alpha,
-			name = "hitmarker_" .. tostring(num_id)
+	end
+	
+	
+	local result = attack_data.result
+	local result_type = result and result.type
+	local pos = attack_data.pos
+	local headshot = attack_data.headshot
+	local crit = attack_data.crit --flag indicating crit is added from the mod, not here in vanilla
+
+	local hitmarker_setting = self:GetHitmarkerSettings(result_type)
+	
+	local hitmarker_id = hitmarker_setting.hitmarker_id
+	if not (hitmarker_id and self._hitmarker_data[hitmarker_id]) then
+		self:log("ERROR: CreateHitmarker(): Bad hitmarker_id (" .. tostring(hitmarker_id) .. "); Aborting!",{color=Color.red})
+		return
+	end
+	local hitmarker_data = self._hitmarker_data[hitmarker_id]
+	
+	local color = hitmarker_setting.bodyshot_color
+	if headshot and crit then 
+		color = hitmarker_setting.headshot_crit_color
+	elseif headshot then 
+		color = hitmarker_setting.headshot_color
+	elseif crit then 
+		color = hitmarker_setting.bodyshot_crit_color
+	end
+	
+	local hitmarker_duration = hitmarker_setting.duration
+	local hitmarker_alpha = hitmarker_setting.alpha
+	
+	local num_id = self._cache.num_hitmarkers + 1
+	
+	local panel = self._hitmarker_panel:panel({
+		alpha = (hitmarker_data.alpha or 1) * hitmarker_setting.alpha,
+		name = "hitmarker_" .. tostring(num_id)
+	})
+	if alive(panel) then 
+		local parts = self:CreateHitmarker(panel,{
+			parts = hitmarker_data.parts,
+			color = color,
+			blend_mode = self.BLEND_MODES[hitmarker_setting.blend_mode]
 		})
-		if alive(panel) then 
-			local parts = self:CreateHitmarker(panel,{
-				parts = hitmarker_data.parts,
-				color = color,
-				blend_mode = self.BLEND_MODES[hitmarker_setting.blend_mode]
-			})
-			table.insert(self._cache.hitmarkers,#self._cache.hitmarkers + 1,
-				{ --this is only used for the "3D hitmarkers" feature
-					num_id = num_id,
+		table.insert(self._cache.hitmarkers,#self._cache.hitmarkers + 1,
+			{ --this is only used for the "3D hitmarkers" feature
+				num_id = num_id,
+				panel = panel,
+				parts = parts,
+				position = attack_data.pos or (attack_data.col_ray and attack_data.col_ray.position)
+			}
+		)
+		local function remove_panel(o)
+			o:parent():remove(o)
+			self:RemoveHitmarker(num_id)
+		end
+		
+		if hitmarker_data and type(hitmarker_data.hit_func) == "function" then 
+			self:animate(panel,"animate_hitmarker_parts",remove_panel,hitmarker_duration,parts,hitmarker_data.hit_func,
+				{
 					panel = panel,
-					parts = parts,
-					position = attack_data.pos or (attack_data.col_ray and attack_data.col_ray.position)
+					result_type = result_type,
+					position = pos,
+					headshot = headshot,
+					crit = crit,
+					attack_data = attack_data,
+					hitmarker_data = hitmarker_data
 				}
 			)
-			local function remove_panel(o)
-				o:parent():remove(o)
-				self:RemoveHitmarker(num_id)
-			end
-			
-			if hitmarker_data and type(hitmarker_data.hit_func) == "function" then 
-				self:animate(panel,"animate_hitmarker_parts",remove_panel,hitmarker_duration,parts,hitmarker_data.hit_func,
-					{
-						panel = panel,
-						result_type = result_type,
-						position = pos,
-						headshot = headshot,
-						crit = crit,
-						attack_data = attack_data,
-						hitmarker_data = hitmarker_data
-					}
-				)
-			else
-				self:animate(panel,"animate_fadeout",remove_panel,hitmarker_duration,hitmarker_alpha,nil,nil)
-			end
-			self._cache.num_hitmarkers = num_id
+		else
+			self:animate(panel,"animate_fadeout",remove_panel,hitmarker_duration,hitmarker_alpha,nil,nil)
 		end
-		
+		self._cache.num_hitmarkers = num_id
 	end
 end
 
@@ -3227,34 +3246,77 @@ function AdvancedCrosshair:ActivateHitsound(attack_data,unit)
 				headshot = false,
 				crit = false,
 			})
+			--note: secondary hitsounds can temporarily exceed the hitsound count since i consider them part of the primary hitsound
 		end
 		
+		local limit_behavior = self:GetHitsoundLimitBehavior()
+		
+		if not snd_path then 
+			return
+		end
+		local max_sounds_count = self:GetHitsoundMaxCount()
+		if #self._cache.sound_sources >= max_sounds_count then 
+			local available_slot
+			for i,sound_source in ipairs(self._cache.sound_sources) do 
+				if (limit_behavior == 1) and (i >= max_sounds_count) then
+					--no sound slots available
+					return
+				end
+				if (not sound_source) or sound_source:is_closed() then 
+					available_slot = i
+					break
+				end
+			end
+			if available_slot then 
+				--don't operate on the table until out of the for loop
+				table.remove(self._cache.sound_sources,available_slot)
+			elseif limit_behavior == 2 then 
+				local replaced_source = table.remove(self._cache.sound_sources,1)
+				replaced_source:set_volume(0)
+--				replaced_source:stop()
+				replaced_source:close()
+				replaced_source._buffer:close()
+			end
+		end
+		
+		local source_1,source_2
 		if managers.player:local_player() then 
 			if self:UseHitsoundHitPosition() then 
 				if unit then 
-					XAudio.UnitSource:new(unit, XAudio.Buffer:new(snd_path)):set_volume(volume)
 					if snd_path_2 then 
-						XAudio.UnitSource:new(unit, XAudio.Buffer:new(snd_path_2)):set_volume(volume_2)
+						source_2 = XAudio.UnitSource:new(unit, XAudio.Buffer:new(snd_path_2))
 					end
+					source_1 = XAudio.UnitSource:new(unit, XAudio.Buffer:new(snd_path))
 				else
-					XAudio.Source:new(XAudio.Buffer:new(snd_path)):set_volume(volume)
 					if snd_path_2 then 
-						XAudio.UnitSource:new(unit, XAudio.Buffer:new(snd_path_2)):set_volume(volume_2)
+						source_2 = XAudio.UnitSource:new(unit, XAudio.Buffer:new(snd_path_2))
 					end
+					source_1 = XAudio.Source:new(XAudio.Buffer:new(snd_path))
 				end
 			else
-				XAudio.UnitSource:new(XAudio.PLAYER, XAudio.Buffer:new(snd_path)):set_volume(volume)
 				if snd_path_2 then 
-					XAudio.UnitSource:new(XAudio.PLAYER, XAudio.Buffer:new(snd_path_2)):set_volume(volume_2)
+					source_2 = XAudio.UnitSource:new(XAudio.PLAYER, XAudio.Buffer:new(snd_path_2))
 				end
+				source_1 = XAudio.UnitSource:new(XAudio.PLAYER, XAudio.Buffer:new(snd_path))
 			end
 		else
-			XAudio.Source:new(XAudio.Buffer:new(snd_path)):set_volume(volume)
 			if snd_path_2 then 
-				XAudio.Source:new(XAudio.Buffer:new(snd_path_2)):set_volume(volume_2)
+				source_2 = XAudio.Source:new(XAudio.Buffer:new(snd_path_2))
 			end
+			source_1 = XAudio.Source:new(XAudio.Buffer:new(snd_path))
+		end
+		
+		
+		if source_1 then 
+			source_1:set_volume(volume)
+			table.insert(self._cache.sound_sources,#self._cache.sound_sources + 1,source_1)
+		end
+		if source_2 then 
+			source_2:set_volume(volume_2)
+			table.insert(self._cache.sound_sources,#self._cache.sound_sources + 1,source_2)
 		end
 	end
+	
 end
 
 function AdvancedCrosshair:ClearCache(skip_destroy)
@@ -3691,7 +3753,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		callback = "callback_ach_hitmarkers_master_enable",
 		value = AdvancedCrosshair.settings.hitmarker_enabled,
 		menu_id = AdvancedCrosshair.hitmarkers_menu_id,
-		priority = 25
+		priority = 27
 	})
 	MenuHelper:AddToggle({
 		id = "ach_hitmarkers_set_3d_enabled",
@@ -3700,8 +3762,40 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		callback = "callback_ach_hitmarkers_set_3d_enabled",
 		value = AdvancedCrosshair.settings.use_hitpos,
 		menu_id = AdvancedCrosshair.hitmarkers_menu_id,
+		priority = 26
+	})
+	
+	MenuHelper:AddMultipleChoice({
+		id = "ach_hitmarkers_set_limit_behavior",
+		title = "menu_ach_hitmarkers_set_limit_behavior_title",
+		desc = "menu_ach_hitmarkers_set_limit_behavior_desc",
+		callback = "callback_ach_hitmarkers_set_limit_behavior",
+		items = {
+			"menu_ach_limit_hard",
+			"menu_ach_limit_replace",
+			"menu_ach_limit_unlimited"
+		},
+		value = AdvancedCrosshair.settings.hitmarker_limit_behavior,
+		menu_id = AdvancedCrosshair.hitmarkers_menu_id,
+		priority = 25
+	})
+	
+	MenuHelper:AddSlider({
+		id = "ach_hitmarkers_set_max_count",
+		title = "menu_ach_hitmarkers_set_max_count_title",
+		desc = "menu_ach_hitmarkers_set_max_count_desc",
+		callback = "callback_ach_hitmarkers_set_max_count",
+		value = AdvancedCrosshair.settings.hitmarker_max_count,
+		default_value = 3,
+		min = 1,
+		max = 10,
+		step = 1,
+		show_value = true,
+		menu_id = AdvancedCrosshair.hitmarkers_menu_id,
 		priority = 24
 	})
+	
+	
 	MenuHelper:AddDivider({
 		id = "ach_hitmarkers_div_1",
 		size = 16,
@@ -4291,8 +4385,47 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		callback = "callback_ach_hitsounds_master_enable",
 		value = AdvancedCrosshair.settings.hitsound_enabled,
 		menu_id = AdvancedCrosshair.hitsounds_menu_id,
-		priority = 10
+		priority = 27
 	})
+	
+	MenuHelper:AddMultipleChoice({
+		id = "ach_hitsounds_set_limit_behavior",
+		title = "menu_ach_hitsounds_set_limit_behavior_title",
+		desc = "menu_ach_hitsounds_set_limit_behavior_desc",
+		callback = "callback_ach_hitsounds_set_limit_behavior",
+		items = {
+			"menu_ach_limit_hard",
+			"menu_ach_limit_replace",
+			"menu_ach_limit_unlimited"
+		},
+		value = AdvancedCrosshair.settings.hitsound_limit_behavior,
+		menu_id = AdvancedCrosshair.hitsounds_menu_id,
+		priority = 26
+	})
+	
+	
+	MenuHelper:AddSlider({
+		id = "ach_hitsounds_max_count",
+		title = "menu_ach_hitsounds_max_count_title",
+		desc = "menu_ach_hitsounds_max_count_desc",
+		callback = "callback_ach_hitsounds_max_count",
+		value = AdvancedCrosshair.settings.hitsound_max_count,
+		min = 1,
+		max = 10,
+		step = 1,
+		show_value = true,
+		menu_id = AdvancedCrosshair.hitsounds_menu_id,
+		priority = 25
+	})
+	
+	
+	MenuHelper:AddDivider({
+		id = "ach_hitsounds_divider_1",
+		size = 24,
+		menu_id = AdvancedCrosshair.hitsounds_menu_id,
+		priority = 24
+	})
+	
 	
 	MenuHelper:AddMultipleChoice({
 		id = "ach_hitsounds_set_hit_bodyshot_type",
@@ -4302,8 +4435,31 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		items = table.deep_map_copy(hitsound_items),
 		value = hitsound_hit_bodyshot_index,
 		menu_id = AdvancedCrosshair.hitsounds_menu_id,
-		priority = 9
+		priority = 23
 	})
+	MenuHelper:AddSlider({
+		id = "ach_hitsounds_set_hit_bodyshot_volume",
+		title = "menu_ach_hitsounds_set_hit_bodyshot_volume_title",
+		desc = "menu_ach_hitsounds_set_hit_bodyshot_volume_desc",
+		callback = "callback_ach_hitsounds_set_hit_bodyshot_volume",
+		value = AdvancedCrosshair.settings.hitsound_hit_bodyshot_volume,
+		min = 0,
+		max = 1,
+		step = 0.1,
+		show_value = true,
+		menu_id = AdvancedCrosshair.hitsounds_menu_id,
+		priority = 22
+	})
+	
+	
+	MenuHelper:AddDivider({
+		id = "ach_hitsounds_divider_1",
+		size = 8,
+		menu_id = AdvancedCrosshair.hitsounds_menu_id,
+		priority = 21
+	})
+	
+	
 	MenuHelper:AddMultipleChoice({
 		id = "ach_hitsounds_set_hit_headshot_type",
 		title = "menu_ach_hitsounds_set_hit_headshot_type_title",
@@ -4312,8 +4468,30 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		items = table.deep_map_copy(hitsound_items),
 		value = hitsound_hit_headshot_index,
 		menu_id = AdvancedCrosshair.hitsounds_menu_id,
-		priority = 8
+		priority = 20
 	})
+	MenuHelper:AddSlider({
+		id = "ach_hitsounds_set_hit_headshot_volume",
+		title = "menu_ach_hitsounds_set_hit_headshot_volume_title",
+		desc = "menu_ach_hitsounds_set_hit_headshot_volume_desc",
+		callback = "callback_ach_hitsounds_set_hit_headshot_volume",
+		value = AdvancedCrosshair.settings.hitsound_hit_headshot_volume,
+		min = 0,
+		max = 1,
+		step = 0.1,
+		show_value = true,
+		menu_id = AdvancedCrosshair.hitsounds_menu_id,
+		priority = 19
+	})
+	
+	MenuHelper:AddDivider({
+		id = "ach_hitsounds_divider_1",
+		size = 8,
+		menu_id = AdvancedCrosshair.hitsounds_menu_id,
+		priority = 18
+	})
+	
+	
 	MenuHelper:AddMultipleChoice({
 		id = "ach_hitsounds_set_hit_bodyshot_crit_type",
 		title = "menu_ach_hitsounds_set_hit_bodyshot_crit_type_title",
@@ -4322,8 +4500,30 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		items = table.deep_map_copy(hitsound_items),
 		value = hitsound_hit_bodyshot_crit_index,
 		menu_id = AdvancedCrosshair.hitsounds_menu_id,
-		priority = 7
+		priority = 17
 	})
+	MenuHelper:AddSlider({
+		id = "ach_hitsounds_set_hit_bodyshot_crit_volume",
+		title = "menu_ach_hitsounds_set_hit_bodyshot_crit_volume_title",
+		desc = "menu_ach_hitsounds_set_hit_bodyshot_crit_volume_desc",
+		callback = "callback_ach_hitsounds_set_hit_bodyshot_crit_volume",
+		value = AdvancedCrosshair.settings.hitsound_hit_bodyshot_crit_volume,
+		min = 0,
+		max = 1,
+		step = 0.1,
+		show_value = true,
+		menu_id = AdvancedCrosshair.hitsounds_menu_id,
+		priority = 16
+	})
+	
+	MenuHelper:AddDivider({
+		id = "ach_hitsounds_divider_1",
+		size = 8,
+		menu_id = AdvancedCrosshair.hitsounds_menu_id,
+		priority = 15
+	})
+	
+	
 	MenuHelper:AddMultipleChoice({
 		id = "ach_hitsounds_set_hit_headshot_crit_type",
 		title = "menu_ach_hitsounds_set_hit_headshot_crit_type_title",
@@ -4332,14 +4532,29 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		items = table.deep_map_copy(hitsound_items),
 		value = hitsound_hit_headshot_crit_index,
 		menu_id = AdvancedCrosshair.hitsounds_menu_id,
-		priority = 6
+		priority = 14
 	})
+	MenuHelper:AddSlider({
+		id = "ach_hitsounds_set_hit_headshot_crit_volume",
+		title = "menu_ach_hitsounds_set_hit_headshot_crit_volume_title",
+		desc = "menu_ach_hitsounds_set_hit_headshot_crit_volume_desc",
+		callback = "callback_ach_hitsounds_set_hit_headshot_crit_volume",
+		value = AdvancedCrosshair.settings.hitsound_hit_headshot_crit_volume,
+		min = 0,
+		max = 1,
+		step = 0.1,
+		show_value = true,
+		menu_id = AdvancedCrosshair.hitsounds_menu_id,
+		priority = 13
+	})
+	
 	MenuHelper:AddDivider({
 		id = "ach_hitsounds_divider_1",
 		size = 16,
 		menu_id = AdvancedCrosshair.hitsounds_menu_id,
-		priority = 5
+		priority = 12
 	})
+	
 	MenuHelper:AddMultipleChoice({
 		id = "ach_hitsounds_set_kill_bodyshot_type",
 		title = "menu_ach_hitsounds_set_kill_bodyshot_type_title",
@@ -4348,8 +4563,29 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		items = table.deep_map_copy(hitsound_items),
 		value = hitsound_kill_bodyshot_index,
 		menu_id = AdvancedCrosshair.hitsounds_menu_id,
-		priority = 4
+		priority = 11
 	})
+	MenuHelper:AddSlider({
+		id = "ach_hitsounds_set_kill_bodyshot_volume",
+		title = "menu_ach_hitsounds_set_kill_bodyshot_volume_title",
+		desc = "menu_ach_hitsounds_set_kill_bodyshot_volume_desc",
+		callback = "callback_ach_hitsounds_set_kill_bodyshot_volume",
+		value = AdvancedCrosshair.settings.hitsound_kill_bodyshot_volume,
+		min = 0,
+		max = 1,
+		step = 0.1,
+		show_value = true,
+		menu_id = AdvancedCrosshair.hitsounds_menu_id,
+		priority = 10
+	})
+	
+	MenuHelper:AddDivider({
+		id = "ach_hitsounds_divider_1",
+		size = 8,
+		menu_id = AdvancedCrosshair.hitsounds_menu_id,
+		priority = 9
+	})
+	
 	MenuHelper:AddMultipleChoice({
 		id = "ach_hitsounds_set_kill_headshot_type",
 		title = "menu_ach_hitsounds_set_kill_headshot_type_title",
@@ -4358,7 +4594,27 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		items = table.deep_map_copy(hitsound_items),
 		value = hitsound_kill_headshot_index,
 		menu_id = AdvancedCrosshair.hitsounds_menu_id,
-		priority = 3
+		priority = 8
+	})
+	MenuHelper:AddSlider({
+		id = "ach_hitsounds_set_kill_headshot_volume",
+		title = "menu_ach_hitsounds_set_kill_headshot_volume_title",
+		desc = "menu_ach_hitsounds_set_kill_headshot_volume_desc",
+		callback = "callback_ach_hitsounds_set_kill_headshot_volume",
+		value = AdvancedCrosshair.settings.hitsound_kill_headshot_volume,
+		min = 0,
+		max = 1,
+		step = 0.1,
+		show_value = true,
+		menu_id = AdvancedCrosshair.hitsounds_menu_id,
+		priority = 7
+	})
+	
+	MenuHelper:AddDivider({
+		id = "ach_hitsounds_divider_1",
+		size = 8,
+		menu_id = AdvancedCrosshair.hitsounds_menu_id,
+		priority = 6
 	})
 	MenuHelper:AddMultipleChoice({
 		id = "ach_hitsounds_set_kill_bodyshot_crit_type",
@@ -4368,7 +4624,27 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		items = table.deep_map_copy(hitsound_items),
 		value = hitsound_kill_bodyshot_crit_index,
 		menu_id = AdvancedCrosshair.hitsounds_menu_id,
-		priority = 2
+		priority = 5
+	})
+	MenuHelper:AddSlider({
+		id = "ach_hitsounds_set_kill_bodyshot_crit_volume",
+		title = "menu_ach_hitsounds_set_kill_bodyshot_crit_volume_title",
+		desc = "menu_ach_hitsounds_set_kill_bodyshot_crit_volume_desc",
+		callback = "callback_ach_hitsounds_set_kill_bodyshot_crit_volume",
+		value = AdvancedCrosshair.settings.hitsound_kill_bodyshot_crit_volume,
+		min = 0,
+		max = 1,
+		step = 0.1,
+		show_value = true,
+		menu_id = AdvancedCrosshair.hitsounds_menu_id,
+		priority = 4
+	})
+
+	MenuHelper:AddDivider({
+		id = "ach_hitsounds_divider_1",
+		size = 8,
+		menu_id = AdvancedCrosshair.hitsounds_menu_id,
+		priority = 3
 	})
 	MenuHelper:AddMultipleChoice({
 		id = "ach_hitsounds_set_kill_headshot_crit_type",
@@ -4377,6 +4653,19 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		callback = "callback_ach_hitsounds_set_kill_headshot_crit_type",
 		items = table.deep_map_copy(hitsound_items),
 		value = hitsound_kill_headshot_crit_index,
+		menu_id = AdvancedCrosshair.hitsounds_menu_id,
+		priority = 2
+	})
+	MenuHelper:AddSlider({
+		id = "ach_hitsounds_set_kill_headshot_crit_volume",
+		title = "menu_ach_hitsounds_set_kill_headshot_crit_volume_title",
+		desc = "menu_ach_hitsounds_set_kill_headshot_crit_volume_desc",
+		callback = "callback_ach_hitsounds_set_kill_headshot_crit_volume",
+		value = AdvancedCrosshair.settings.hitsound_kill_headshot_crit_volume,
+		min = 0,
+		max = 1,
+		step = 0.1,
+		show_value = true,
 		menu_id = AdvancedCrosshair.hitsounds_menu_id,
 		priority = 1
 	})
@@ -4733,6 +5022,17 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 		AdvancedCrosshair.settings.use_hitpos = item:value() == "on"
 		AdvancedCrosshair:Save()
 	end
+	
+	MenuCallbackHandler.callback_ach_hitmarkers_set_limit_behavior = function(self,item)
+		AdvancedCrosshair.settings.hitmarker_limit_behavior = tonumber(item:value())
+		AdvancedCrosshair:Save()
+	end
+	
+	MenuCallbackHandler.callback_ach_hitmarkers_set_max_count = function(self,item)
+		AdvancedCrosshair.settings.hitmarker_max_count = math.round(tonumber(item:value()))
+		AdvancedCrosshair:Save()
+	end
+	
 	MenuCallbackHandler.callback_ach_hitmarkers_hit_set_bitmap = function(self,item)
 		AdvancedCrosshair.settings.hitmarker_hit_id = AdvancedCrosshair.hitmarker_id_by_index[tonumber(item:value())]
 		AdvancedCrosshair:Save()
@@ -4979,10 +5279,22 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 	MenuCallbackHandler.callback_ach_hitsounds_focus = function(self)
 		
 	end
+
 	MenuCallbackHandler.callback_ach_hitsounds_master_enable = function(self,item)
 		AdvancedCrosshair.settings.hitsound_enabled = item:value() == "on"
 		AdvancedCrosshair:Save()
 	end
+
+	MenuCallbackHandler.callback_ach_hitsounds_set_limit_behavior = function(self,item)
+		AdvancedCrosshair.settings.hitsound_limit_behavior = tonumber(item:value())
+		AdvancedCrosshair:Save()
+	end
+	
+	MenuCallbackHandler.callback_ach_hitsounds_max_count = function(self,item)
+		AdvancedCrosshair.settings.hitsound_max_count = math.round(tonumber(item:value()))
+		AdvancedCrosshair:Save()
+	end
+	
 	MenuCallbackHandler.callback_ach_hitsounds_set_hit_bodyshot_type = function(self,item)
 		AdvancedCrosshair.settings.hitsound_hit_bodyshot_id = AdvancedCrosshair.hitsound_id_by_index[tonumber(item:value())]
 		if not Application:paused() then 
@@ -4995,6 +5307,9 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 			})
 		end
 		AdvancedCrosshair:Save()
+	end
+	MenuCallbackHandler.callback_ach_hitsounds_set_hit_bodyshot_volume = function(self,item)
+		AdvancedCrosshair.settings.hitsound_hit_bodyshot_volume = tonumber(item:value())
 	end
 	
 	MenuCallbackHandler.callback_ach_hitsounds_set_hit_headshot_type = function(self,item)
@@ -5011,6 +5326,9 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 		end
 		AdvancedCrosshair:Save()
 	end
+	MenuCallbackHandler.callback_ach_hitsounds_set_hit_headshot_volume = function(self,item)
+		AdvancedCrosshair.settings.hitsound_hit_headshot_volume = tonumber(item:value())
+	end
 	
 	MenuCallbackHandler.callback_ach_hitsounds_set_hit_bodyshot_crit_type = function(self,item)
 		AdvancedCrosshair.settings.hitsound_hit_bodyshot_crit_id = AdvancedCrosshair.hitsound_id_by_index[tonumber(item:value())]	
@@ -5024,6 +5342,9 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 			})
 		end
 		AdvancedCrosshair:Save()
+	end
+	MenuCallbackHandler.callback_ach_hitsounds_set_hit_bodyshot_crit_volume = function(self,item)
+		AdvancedCrosshair.settings.hitsound_hit_bodyshot_crit_volume = tonumber(item:value())
 	end
 	
 	MenuCallbackHandler.callback_ach_hitsounds_set_hit_headshot_crit_type = function(self,item)
@@ -5039,7 +5360,9 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 		end
 		AdvancedCrosshair:Save()
 	end
-	
+		MenuCallbackHandler.callback_ach_hitsounds_set_hit_headshot_crit_volume = function(self,item)
+		AdvancedCrosshair.settings.hitsound_hit_headshot_crit_volume = tonumber(item:value())
+	end
 	MenuCallbackHandler.callback_ach_hitsounds_set_kill_bodyshot_type = function(self,item)
 		AdvancedCrosshair.settings.hitsound_kill_bodyshot_id = AdvancedCrosshair.hitsound_id_by_index[tonumber(item:value())]
 		if not Application:paused() then 
@@ -5053,7 +5376,9 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 		end
 		AdvancedCrosshair:Save()
 	end
-	
+		MenuCallbackHandler.callback_ach_hitsounds_set_kill_bodyshot_volume = function(self,item)
+		AdvancedCrosshair.settings.hitsound_kill_bodyshot_volume = tonumber(item:value())
+	end
 	MenuCallbackHandler.callback_ach_hitsounds_set_kill_headshot_type = function(self,item)
 		AdvancedCrosshair.settings.hitsound_kill_headshot_id = AdvancedCrosshair.hitsound_id_by_index[tonumber(item:value())]
 		if not Application:paused() then 
@@ -5067,7 +5392,9 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 		end
 		AdvancedCrosshair:Save()
 	end
-	
+		MenuCallbackHandler.callback_ach_hitsounds_set_kill_headshot_volume = function(self,item)
+		AdvancedCrosshair.settings.hitsound_kill_headshot_volume = tonumber(item:value())
+	end
 	MenuCallbackHandler.callback_ach_hitsounds_set_kill_bodyshot_crit_type = function(self,item)
 		AdvancedCrosshair.settings.hitsound_kill_bodyshot_crit_id = AdvancedCrosshair.hitsound_id_by_index[tonumber(item:value())]
 		if not Application:paused() then 
@@ -5081,7 +5408,9 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 		end
 		AdvancedCrosshair:Save()
 	end
-	
+		MenuCallbackHandler.callback_ach_hitsounds_set_kill_bodyshot_crit_volume = function(self,item)
+		AdvancedCrosshair.settings.hitsound_kill_bodyshot_crit_volume = tonumber(item:value())
+	end
 	MenuCallbackHandler.callback_ach_hitsounds_set_kill_headshot_crit_type = function(self,item)
 		AdvancedCrosshair.settings.hitsound_kill_headshot_crit_id = AdvancedCrosshair.hitsound_id_by_index[tonumber(item:value())]
 		if not Application:paused() then 
@@ -5095,7 +5424,9 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 		end
 		AdvancedCrosshair:Save()
 	end
-	
+		MenuCallbackHandler.callback_ach_hitsounds_set_kill_headshot_crit_volume = function(self,item)
+		AdvancedCrosshair.settings.hitsound_kill_headshot_crit_volume = tonumber(item:value())
+	end
 	
 	--creates colorpicker menu for AdvancedCrosshair mod; this menu is reused for all color-related callbacks in this mod,
 	--so it's also necessary to also update the callback whenever calling the menu
