@@ -1,27 +1,26 @@
 		--todo list, loosely sorted by descending priority:
 
---get mod version
---check mod version with settings version (last launch)
-	--if mismatch, find all messages since last launch
-		--if table not empty, show compilation of messages (localized)
-				--always append with "change notification settings in settings
-			--confirm callback is set settings version to current version
-		--if table empty, set settings version to current version
-	--set settings version to current version
-	
---sort options alphabetically
+--rework hitmarker preview to loop hitmarker preview (toggle-able)
+--sort options in each given category (crosshairs,hitmarkers,hitsounds) alphabetically
 
 --migrate the more obscure options to "Advanced Settings" menus
- --reset settings button
+
 -- slider option for scaling crosshairs
 -- slider option for scaling hitmarker size?
 	--toggle scaling with world distance at world position?
 
---separate halo reach weapons into a separate pack
---add some better fucking crosshairs to base jfc
+--hide crosshair when interacting/when weapon is not available (chk action forbidden in playerstandard)
 
---vehicle crosshair
----perhaps an example crosshair with bits that change based on gun ammo or player health (see hl2 crosshair)
+--notifications/message to users: 
+	--get mod version
+	--check mod version with settings version (last launch)
+		--if mismatch, find all messages since last launch
+			--if table not empty, show compilation of messages (localized)
+					--always append with "change notification settings in settings
+				--confirm callback is set settings version to current version
+			--if table empty, set settings version to current version
+		--set settings version to current version
+	
 
 --"trickle-down" options, eg "unchanged" inherit global setting (requires conversion from most option types to multiple choice, or else the addition of a toggle checkbox to enable global override any given option)
 
@@ -32,13 +31,12 @@
 	--and up or down
 
 --screen blend mode 
---	convert blend mode number indices in settings to strings
+--	convert blend mode number indices in settings to strings?
 --save hitsound preview and stop others when new hitsound is selected
 --sanity check hitsounds on load addons
 --get mod_overrides path to support addons in mod_overrides?
 
 -- add more example crosshairs
--- add at least one multi-texture hitmarker example
 
 -- hitmarker data overrides for some settings such as force worldposition hitmarkers?
 -- add hook to call wipe crosshair data/refresh crosshair?
@@ -54,6 +52,7 @@
 
 -- test burstfire support
 -- hide character + bg menu like how blt mods menu does (and fails to restore after hitting back lol)
+--vehicle crosshair
 
 -- akimbo crosshair support
 -- override by slot (needs menu options)
@@ -201,31 +200,31 @@ AdvancedCrosshair.default_settings = {
 	hitmarker_kill_headshot_color = "ff0000",
 	hitmarker_kill_headshot_crit_color = "ff00ff",
 	palettes = { --for colorpicker
-		"ff7a7a",
-		"ffbd7a",
-		"ffff7a",
-		"ff7abd",
-		"ff7aff",
-		"87ff7a",
-		"7affb0",
-		"7afff2",
-		"caff7a",
-		"fff27a",
-		"7afdff",
-		"7abbff",
-		"7c7aff",
-		"7affbf",
-		"7aff7c",
-		"7a7eff",
-		"b87aff",
-		"fb7aff",
-		"7ac1ff",
-		"7afff8",
-		"d57aff",
-		"ff7ae7",
-		"ff7aa4",
-		"937aff",
-		"7aa4ff"
+		"ff0000",
+		"ffff00",
+		"00ff00",
+		"00ffff",
+		"0000ff",
+		"880000",
+		"888800",
+		"008800",
+		"008888",
+		"000088",
+		"ff8800",
+		"88ff00",
+		"00ff88",
+		"0088ff",
+		"8800ff",
+		"884400",
+		"448800",
+		"008844",
+		"004488",
+		"440088",
+		"ffffff",
+		"bbbbbb",
+		"888888",
+		"444444",
+		"000000"
 	},
 	crosshair_global = table.deep_map_copy(AdvancedCrosshair.DEFAULT_CROSSHAIR_OPTIONS),
 	crosshairs = {},
@@ -856,7 +855,7 @@ AdvancedCrosshair._hitsound_data = {
 	}
 }
 
-
+AdvancedCrosshair.hitmarker_menu_preview_loops = true
 
 --************************************************--
 --					Utils
@@ -2579,6 +2578,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 --so generate a number index/string key lookup table for the menu to reference,
 --since multiplechoice menus can only use number indices (afaik)
 
+
 --for crosshairs:
 	local crosshair_items = {}
 	local i = 1
@@ -2587,7 +2587,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		table.insert(AdvancedCrosshair.crosshair_id_by_index,i,id)
 		i = i + 1
 	end
-
+	
 --for hitmarkers:
 	local hitmarker_kill_bitmap_index = 1
 	local hitmarker_hit_bitmap_index = 1
@@ -2921,7 +2921,15 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		menu_id = AdvancedCrosshair.hitmarkers_menu_id,
 		priority = 1
 	})
-	
+	MenuHelper:AddToggle({
+		id = "ach_hitmarkers_preview_toggle_loop",
+		title = "menu_ach_hitmarkers_preview_toggle_loop_title",
+		desc = "menu_ach_hitmarkers_preview_toggle_loop_desc",
+		callback = "callback_ach_hitmarkers_preview_toggle_loop",
+		value = AdvancedCrosshair.hitmarker_menu_preview_loops,
+		menu_id = AdvancedCrosshair.hitmarkers_menu_id,
+		priority = 1
+	})
 	
 	
 	
@@ -3908,14 +3916,9 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 			})
 		end
 	end
-	
-	
-	
-	
 	MenuCallbackHandler.callback_ach_hitmarkers_close = function(self)
 		AdvancedCrosshair.clbk_remove_crosshair_preview()
 	end
-	
 	MenuCallbackHandler.callback_ach_hitmarkers_master_enable = function(self,item)
 		AdvancedCrosshair.settings.hitmarker_enabled = item:value() == "on"
 		AdvancedCrosshair:Save()
@@ -3924,17 +3927,14 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 		AdvancedCrosshair.settings.use_hitpos = item:value() == "on"
 		AdvancedCrosshair:Save()
 	end
-	
 	MenuCallbackHandler.callback_ach_hitmarkers_set_limit_behavior = function(self,item)
 		AdvancedCrosshair.settings.hitmarker_limit_behavior = tonumber(item:value())
 		AdvancedCrosshair:Save()
 	end
-	
 	MenuCallbackHandler.callback_ach_hitmarkers_set_max_count = function(self,item)
 		AdvancedCrosshair.settings.hitmarker_max_count = math.round(tonumber(item:value()))
 		AdvancedCrosshair:Save()
 	end
-	
 	MenuCallbackHandler.callback_ach_hitmarkers_hit_set_bitmap = function(self,item)
 		AdvancedCrosshair.settings.hitmarker_hit_id = AdvancedCrosshair.hitmarker_id_by_index[tonumber(item:value())]
 		AdvancedCrosshair:Save()
@@ -3951,8 +3951,6 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 		AdvancedCrosshair.settings.hitmarker_hit_blend_mode = tonumber(item:value())
 		AdvancedCrosshair:Save()
 	end
-	
-	
 	MenuCallbackHandler.callback_ach_hitmarkers_hit_set_bodyshot_color = function(self)
 		if AdvancedCrosshair._colorpicker then 
 			local function changed_cb(color,palettes,success)
@@ -3976,7 +3974,6 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 			AdvancedCrosshair.clbk_missing_colorpicker_prompt()
 		end
 	end
-	
 	MenuCallbackHandler.callback_ach_hitmarkers_hit_set_bodyshot_crit_color = function(self)
 		if AdvancedCrosshair._colorpicker then 
 			local function changed_cb(color,palettes,success)
@@ -4000,7 +3997,6 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 			AdvancedCrosshair.clbk_missing_colorpicker_prompt()
 		end
 	end
-	
 	MenuCallbackHandler.callback_ach_hitmarkers_hit_set_headshot_color = function(self)
 		if AdvancedCrosshair._colorpicker then 
 			local function changed_cb(color,palettes,success)
@@ -4047,7 +4043,6 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 			AdvancedCrosshair.clbk_missing_colorpicker_prompt()
 		end
 	end
-	
 	MenuCallbackHandler.callback_ach_hitmarkers_kill_set_bitmap = function(self,item)
 		AdvancedCrosshair.settings.hitmarker_kill_id = AdvancedCrosshair.hitmarker_id_by_index[tonumber(item:value())]
 		AdvancedCrosshair:Save()
@@ -4154,7 +4149,6 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 			AdvancedCrosshair.clbk_missing_colorpicker_prompt()
 		end
 	end
-	
 	MenuCallbackHandler.callback_ach_hitmarkers_preview_toggle_headshot = function(self,item)
 		AdvancedCrosshair.hitmarker_preview_data.headshot = item:value() == "on"
 	end
@@ -4171,32 +4165,29 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 			result_type = AdvancedCrosshair.hitmarker_preview_data.result_type
 		})
 	end
-	
+	MenuCallbackHandler.callback_ach_hitmarkers_preview_toggle_loop = function(self,item)
+		AdvancedCrosshair.hitmarker_menu_preview_loops = item:value() == "on"
+	end
 	
 	--hitsounds
 	MenuCallbackHandler.callback_ach_hitsounds_close = function(self)
 		
-	end
-	
+	end	
 	MenuCallbackHandler.callback_ach_hitsounds_focus = function(self)
 		
 	end
-
 	MenuCallbackHandler.callback_ach_hitsounds_master_enable = function(self,item)
 		AdvancedCrosshair.settings.hitsound_enabled = item:value() == "on"
 		AdvancedCrosshair:Save()
 	end
-
 	MenuCallbackHandler.callback_ach_hitsounds_set_limit_behavior = function(self,item)
 		AdvancedCrosshair.settings.hitsound_limit_behavior = tonumber(item:value())
 		AdvancedCrosshair:Save()
 	end
-	
 	MenuCallbackHandler.callback_ach_hitsounds_max_count = function(self,item)
 		AdvancedCrosshair.settings.hitsound_max_count = math.round(tonumber(item:value()))
 		AdvancedCrosshair:Save()
 	end
-	
 	MenuCallbackHandler.callback_ach_hitsounds_set_hit_bodyshot_type = function(self,item)
 		AdvancedCrosshair.settings.hitsound_hit_bodyshot_id = AdvancedCrosshair.hitsound_id_by_index[tonumber(item:value())]
 		if not Application:paused() then 
@@ -4213,7 +4204,6 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 	MenuCallbackHandler.callback_ach_hitsounds_set_hit_bodyshot_volume = function(self,item)
 		AdvancedCrosshair.settings.hitsound_hit_bodyshot_volume = tonumber(item:value())
 	end
-	
 	MenuCallbackHandler.callback_ach_hitsounds_set_hit_headshot_type = function(self,item)
 		AdvancedCrosshair.settings.hitsound_hit_headshot_id = AdvancedCrosshair.hitsound_id_by_index[tonumber(item:value())]	
 			
@@ -4231,7 +4221,6 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 	MenuCallbackHandler.callback_ach_hitsounds_set_hit_headshot_volume = function(self,item)
 		AdvancedCrosshair.settings.hitsound_hit_headshot_volume = tonumber(item:value())
 	end
-	
 	MenuCallbackHandler.callback_ach_hitsounds_set_hit_bodyshot_crit_type = function(self,item)
 		AdvancedCrosshair.settings.hitsound_hit_bodyshot_crit_id = AdvancedCrosshair.hitsound_id_by_index[tonumber(item:value())]	
 		if not Application:paused() then 
@@ -4248,7 +4237,6 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 	MenuCallbackHandler.callback_ach_hitsounds_set_hit_bodyshot_crit_volume = function(self,item)
 		AdvancedCrosshair.settings.hitsound_hit_bodyshot_crit_volume = tonumber(item:value())
 	end
-	
 	MenuCallbackHandler.callback_ach_hitsounds_set_hit_headshot_crit_type = function(self,item)
 		AdvancedCrosshair.settings.hitsound_hit_headshot_crit_id = AdvancedCrosshair.hitsound_id_by_index[tonumber(item:value())]
 		if not Application:paused() then 
@@ -4337,7 +4325,7 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 			for _,key in pairs(AdvancedCrosshair.setting_categories.crosshair) do 
 				AdvancedCrosshair.settings[key] = AdvancedCrosshair.default_settings[key]
 			end
-			QuickMenu:new({
+			QuickMenu:new(
 				managers.localization:text("menu_ach_reset_crosshair_settings_prompt_success_title"),managers.localization:text("menu_ach_reset_crosshair_settings_prompt_success_desc"),{
 					{
 						text = managers.localization:text("menu_ach_prompt_ok"),
@@ -4345,11 +4333,11 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 						is_focused_button = true
 					}
 				}
-			},true)
+			,true)
 			AdvancedCrosshair:Save()
 		end
-		QuickMenu:new({
-			managers.localization:text("menu_ach_reset_crosshair_settings_title"),managers.localization:text("menu_ach_reset_crosshair_settings_desc"),{
+		QuickMenu:new(
+			managers.localization:text("menu_ach_reset_crosshair_settings_prompt_confirm_title"),managers.localization:text("menu_ach_reset_crosshair_settings_prompt_confirm_desc"),{
 				{
 					text = managers.localization:text("menu_ach_prompt_confirm"),
 					callback = confirm_reset
@@ -4360,25 +4348,26 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 					is_cancel_button = true
 				}
 			}
-		},true)
+		,true)
 	end
 	MenuCallbackHandler.callback_ach_reset_hitmarker_settings = function(self)
 		local function confirm_reset()
 			for _,key in pairs(AdvancedCrosshair.setting_categories.hitmarker) do 
 				AdvancedCrosshair.settings[key] = AdvancedCrosshair.default_settings[key]
 			end
-			QuickMenu:new({
-				managers.localization:text("menu_ach_reset_hitmarker_settings_prompt_success_title"),managers.localization:text("menu_ach_reset_hitmarker_settings_prompt_success_desc"),{
+			QuickMenu:new(
+				managers.localization:text("menu_ach_reset_hitmarker_settings_prompt_success_title"),
+				managers.localization:text("menu_ach_reset_hitmarker_settings_prompt_success_desc"),
+				{
 					{
 						text = managers.localization:text("menu_ach_prompt_ok"),
-						is_cancel_button = true,
-						is_focused_button = true
+						is_cancel_button = true
 					}
 				}
-			},true)
+			,true)
 		end
 		AdvancedCrosshair:Save()
-		QuickMenu:new({
+		QuickMenu:new(
 			managers.localization:text("menu_ach_reset_hitmarker_settings_prompt_confirm_title"),managers.localization:text("menu_ach_reset_hitmarker_settings_prompt_confirm_desc"),{
 				{
 					text = managers.localization:text("menu_ach_prompt_confirm"),
@@ -4390,14 +4379,14 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 					is_cancel_button = true
 				}
 			}
-		},true)
+		,true)
 	end
 	MenuCallbackHandler.callback_ach_reset_hitsound_settings = function(self)
 		local function confirm_reset()
 			for _,key in pairs(AdvancedCrosshair.setting_categories.hitsound) do 
 				AdvancedCrosshair.settings[key] = AdvancedCrosshair.default_settings[key]
 			end
-			QuickMenu:new({
+			QuickMenu:new(
 				managers.localization:text("menu_ach_reset_hitsound_settings_prompt_success_title"),managers.localization:text("menu_ach_reset_hitsound_settings_prompt_success_desc"),{
 					{
 						text = managers.localization:text("menu_ach_prompt_ok"),
@@ -4405,10 +4394,10 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 						is_focused_button = true
 					}
 				}
-			},true)
+			,true)
 		end
 		AdvancedCrosshair:Save()
-		QuickMenu:new({
+		QuickMenu:new(
 			managers.localization:text("menu_ach_reset_hitsound_settings_prompt_confirm_title"),managers.localization:text("menu_ach_reset_hitsound_settings_prompt_confirm_desc"),{
 				{
 					text = managers.localization:text("menu_ach_prompt_confirm"),
@@ -4420,14 +4409,14 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 					is_cancel_button = true
 				}
 			}
-		},true)
+		,true)
 	end
 	MenuCallbackHandler.callback_ach_reset_palettes = function(self)
 		local function confirm_reset()
 			for _,key in pairs(AdvancedCrosshair.setting_categories.palettes) do 
 				AdvancedCrosshair.settings[key] = AdvancedCrosshair.default_settings[key]
 			end
-			QuickMenu:new({
+			QuickMenu:new(
 				managers.localization:text("menu_ach_reset_palettes_prompt_success_title"),managers.localization:text("menu_ach_reset_palettes_prompt_success_desc"),{
 					{
 						text = managers.localization:text("menu_ach_prompt_ok"),
@@ -4435,10 +4424,10 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 						is_focused_button = true
 					}
 				}
-			},true)
+			,true)
 		end
 		AdvancedCrosshair:Save()
-		QuickMenu:new({
+		QuickMenu:new(
 			managers.localization:text("menu_ach_reset_palettes_prompt_confirm_title"),managers.localization:text("menu_ach_reset_palettes_prompt_confirm_desc"),{
 				{
 					text = managers.localization:text("menu_ach_prompt_confirm"),
@@ -4450,15 +4439,14 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 					is_cancel_button = true
 				}
 			}
-		},true)
+		,true)
 	end
-	
 	MenuCallbackHandler.callback_ach_reset_all_settings = function(self)
 		--open confirm dialogue
 		local function confirm_reset()
 			AdvancedCrosshair.settings = table.deep_map_copy(AdvancedCrosshair.default_settings)
 			AdvancedCrosshair:Save()
-			QuickMenu:new({
+			QuickMenu:new(
 				managers.localization:text("menu_ach_reset_all_settings_prompt_success_title"),managers.localization:text("menu_ach_reset_all_settings_prompt_success_desc"),{
 					{
 						text = managers.localization:text("menu_ach_prompt_ok"),
@@ -4466,9 +4454,9 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 						is_focused_button = true
 					}
 				}
-			},true)
+			,true)
 		end
-		QuickMenu:new({
+		QuickMenu:new(
 			managers.localization:text("menu_ach_reset_all_settings_prompt_confirm_title"),managers.localization:text("menu_ach_reset_all_settings_prompt_confirm_desc"),{
 				{
 					text = managers.localization:text("menu_ach_prompt_confirm"),
@@ -4480,7 +4468,7 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 					is_cancel_button = true
 				}
 			}
-		},true)
+		,true)
 	end
 	MenuCallbackHandler.callback_ach_reset_close = function(self)
 		--
@@ -4590,6 +4578,7 @@ function AdvancedCrosshair.clbk_hitmarker_preview(preview_data)
 			alpha = (hitmarker_data.alpha or 1) * hitmarker_setting.alpha,
 			name = "hitmarker_preview"
 		})
+		
 		if alive(panel) then 
 			local parts = AdvancedCrosshair:CreateHitmarker(panel,{
 				parts = hitmarker_data.parts,

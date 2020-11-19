@@ -131,6 +131,8 @@
 	"menu_ach_hitmarkers_preview_toggle_lethal_desc" : "Preview the Kill Hitmarker if true, else preview the Hit Hitmarker",
 	"menu_ach_hitmarkers_preview_show_title" : ">>Preview Hitmarker<<",
 	"menu_ach_hitmarkers_preview_show_desc" : "Show a hitmarker preview",
+	"menu_ach_hitmarkers_preview_toggle_loop_title" : "Loop Hitmarker Preview",
+	"menu_ach_hitmarkers_preview_toggle_loop_desc" : "If true, continuously plays hitmarker animation",
 	"menu_ach_hitmarkers_set_3d_enabled_title" : "Hitmarkers at World Position",
 	"menu_ach_hitmarkers_set_3d_enabled_desc" : "If true, hitmarkers will be shown at the hit location instead of the screen center",
 	
@@ -200,11 +202,11 @@
 	"menu_ach_reset_hitmarker_settings_prompt_confirm_title" : "Confirm Hitmarker Reset",
 	"menu_ach_reset_hitmarker_settings_prompt_confirm_desc" : "Are you sure you want to reset your hitmarker settings?\nYour hitmarker settings will be set back to the default settings.",
 	"menu_ach_reset_hitmarker_settings_prompt_success_title" : "Successfully reset hitmarker settings",
-	"menu_ach_reset_hitmarker_settings_prompt_success_desc" : "Hitmarker settings have been reset back to their defaults.",
+	"menu_ach_reset_hitmarker_settings_prompt_success_desc" : "Hitmarker settings have been reset back to their defaults.\nPlease restart the game or heist day for menu changes to take effect.",
 	"menu_ach_reset_hitsound_settings_prompt_confirm_title" : "Confirm Hitsounds Reset",
 	"menu_ach_reset_hitsound_settings_prompt_confirm_desc" : "Are you sure you want to reset your hitsound settings?\nYour hitsound settings will be set back to the default settings.",
 	"menu_ach_reset_hitsound_settings_prompt_success_title" : "Successfully reset hitsound settings",
-	"menu_ach_reset_hitsound_settings_prompt_success_desc" : "Hitsound settings have been reset back to their defaults.",
+	"menu_ach_reset_hitsound_settings_prompt_success_desc" : "Hitsound settings have been reset back to their defaults.\nPlease restart the game or heist day for menu changes to take effect.",
 	"menu_ach_reset_palettes_prompt_confirm_title" : "Confirm Palettes Reset",
 	"menu_ach_reset_palettes_prompt_confirm_desc" : "Are you sure you want to reset your ColorPicker palette swatches?\nYour swatches will be set back to the default settings.",
 	"menu_ach_reset_palettes_prompt_success_title" : "Successfully reset palette swatches",
@@ -212,5 +214,5 @@
 	"menu_ach_reset_all_settings_prompt_confirm_title" : "Confirm Reset All Settings",
 	"menu_ach_reset_all_settings_prompt_confirm_desc" : "Are you sure you want to reset your settings?\nAll settings will be set back to the defaults.",
 	"menu_ach_reset_all_settings_prompt_success_title" : "Successfully reset all settings",
-	"menu_ach_reset_all_settings_prompt_success_desc" : "All settings have been reset to their default values.\nThank you for flying Air Offyerrocker, and have a nice day."
+	"menu_ach_reset_all_settings_prompt_success_desc" : "All settings have been reset to their default values.\nPlease restart the game or heist day for menu changes to take effect.\nThank you for flying Air Offyerrocker, and have a nice day."
 }
