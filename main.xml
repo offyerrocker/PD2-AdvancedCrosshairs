@@ -1,34 +1,13 @@
 <mod name="Advanced Crosshairs and Hitmarkers" author="Offyerrocker" color="Color(0.4,0.7,1)" >
-	<AssetUpdates id="28082" version="2" provider="modworkshop" install_directory="mods/" version_is_number="true" />
+	<AssetUpdates id="28082" version="3" provider="modworkshop" install_directory="mods/" version_is_number="true" />
 	<Localization directory="localization" default="english.txt">
 		<loc file="english.txt" language="english" />
 	</Localization>
 	<AddFiles directory="assets">
-		<texture path="guis/textures/advanced_crosshairs/targeting_crosshair"/>
-		<texture path="guis/textures/advanced_crosshairs/car_crosshair"/>
+		<texture path="guis/textures/advanced_crosshairs/destiny_hitmarker"/>
 		<texture path="guis/textures/advanced_crosshairs/crosshair_circle_64"/>
 		<texture path="guis/textures/advanced_crosshairs/crosshair_circle_128"/>
-		<texture path="guis/textures/advanced_crosshairs/spiker_crosshair_1"/>
-		<texture path="guis/textures/advanced_crosshairs/spiker_crosshair_2"/>
-		<texture path="guis/textures/advanced_crosshairs/concussion_crosshair"/>
-		<texture path="guis/textures/advanced_crosshairs/needler_crosshair_1"/>
-		<texture path="guis/textures/advanced_crosshairs/needler_crosshair_2"/>
-		<texture path="guis/textures/advanced_crosshairs/nrif_crosshair_2"/>
-		<texture path="guis/textures/advanced_crosshairs/plasma_crosshair_1"/>
-		<texture path="guis/textures/advanced_crosshairs/plasma_crosshair_2"/>
-		<texture path="guis/textures/advanced_crosshairs/needler_crosshair_1"/>
-		<texture path="guis/textures/advanced_crosshairs/pis_crosshair_1"/>
-		<texture path="guis/textures/advanced_crosshairs/trt_crosshair"/>
-		<texture path="guis/textures/advanced_crosshairs/smg_crosshair"/>
-		<texture path="guis/textures/advanced_crosshairs/ar_crosshair_1"/>
-		<texture path="guis/textures/advanced_crosshairs/ar_crosshair_2"/>
-		<texture path="guis/textures/advanced_crosshairs/dmr_crosshair_1"/>
-		<texture path="guis/textures/advanced_crosshairs/dmr_crosshair_2"/>
-		<texture path="guis/textures/advanced_crosshairs/hammer_crosshair"/>
-		<texture path="guis/textures/advanced_crosshairs/sword_crosshair"/>
-		<texture path="guis/textures/advanced_crosshairs/rocket_crosshair"/>
-		<texture path="guis/textures/advanced_crosshairs/grenadelauncher_crosshair_1"/>
-		<texture path="guis/textures/advanced_crosshairs/grenadelauncher_crosshair_2"/>
 		<texture path="guis/textures/advanced_crosshairs/tf2_crit_text"/>
+		<texture path="guis/textures/advanced_crosshairs/ar_crosshair_2"/>
 	</AddFiles>
 </mod>

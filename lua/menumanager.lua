@@ -1,10 +1,24 @@
 		--todo list, loosely sorted by descending priority:
 
+--get mod version
+--check mod version with settings version (last launch)
+	--if mismatch, find all messages since last launch
+		--if table not empty, show compilation of messages (localized)
+				--always append with "change notification settings in settings
+			--confirm callback is set settings version to current version
+		--if table empty, set settings version to current version
+	--set settings version to current version
+	
+--sort options alphabetically
+
 --migrate the more obscure options to "Advanced Settings" menus
- 
+ --reset settings button
 -- slider option for scaling crosshairs
 -- slider option for scaling hitmarker size?
 	--toggle scaling with world distance at world position?
+
+--separate halo reach weapons into a separate pack
+--add some better fucking crosshairs to base jfc
 
 --vehicle crosshair
 ---perhaps an example crosshair with bits that change based on gun ammo or player health (see hl2 crosshair)
@@ -68,23 +82,6 @@ AdvancedCrosshair.HITMARKER_RAIN_COUNT_MAX = 128
 AdvancedCrosshair.HITMARKER_RAIN_PROC_CHANCE = 0.01 --chance to proc hitmarker rain on any kill
 AdvancedCrosshair.HITMARKER_RAIN_TEXT_FLASH_SPEED = 600
 
-AdvancedCrosshair.DEFAULT_CROSSHAIR_OPTIONS = {
-	crosshair_id = "ma37",
-	use_bloom = true,
-	color = "ffffff",
-	alpha = 1,
-	overrides_global = false,
-	hide_on_ads = false --since this was added post-1.0, be aware that this value can be nil in some users' settings
-}
-AdvancedCrosshair.DEFAULT_HITMARKER_OPTIONS = { --not used
-	hitmarker_id = "destiny",
-	use_animate = true,
-	default_color = "eeeeee",
-	headshot_color = "ff0000",
-	crit_color = "0000ff",
-	headcrit_color = "ff00ff"
-}
-
 AdvancedCrosshair.STATES_CROSSHAIR_ALLOWED = {
 	empty = false,
 	standard = true,
@@ -133,13 +130,29 @@ AdvancedCrosshair.VALID_WEAPON_FIREMODES = {
 }
 --revolver and akimbo are subtypes; akimbo is checked but revolver is ignored
 
+AdvancedCrosshair.DEFAULT_CROSSHAIR_OPTIONS = {
+	crosshair_id = "pdth_classic",
+	use_bloom = true,
+	color = "ffffff",
+	alpha = 1,
+	overrides_global = false,
+	hide_on_ads = false --since this was added post-1.0, be aware that this value can be nil in some users' settings
+}
+AdvancedCrosshair.DEFAULT_HITMARKER_OPTIONS = { --not used
+	hitmarker_id = "destiny",
+	use_animate = true,
+	default_color = "eeeeee",
+	headshot_color = "ff0000",
+	crit_color = "0000ff",
+	headcrit_color = "ff00ff"
+}
+
 --init default settings values
 --these are later overwritten by values read from save data, if present
-AdvancedCrosshair.settings = {
+AdvancedCrosshair.default_settings = {
 	crosshair_enabled = true,
 	hitmarker_enabled = true,
 	hitsound_enabled = false,
-	use_bloom = true,
 	use_shake = true,
 	use_color = true,
 	use_hitpos = true,
@@ -171,7 +184,7 @@ AdvancedCrosshair.settings = {
 	crosshair_misc_color = "f51b83",
 	hitmarker_max_count = 5,
 	hitmarker_limit_behavior = 1,
-	hitmarker_hit_id = "destiny",
+	hitmarker_hit_id = "destiny_hit",
 	hitmarker_hit_duration = 0.75,
 	hitmarker_hit_alpha = 0.5,
 	hitmarker_hit_blend_mode = "normal",
@@ -179,7 +192,7 @@ AdvancedCrosshair.settings = {
 	hitmarker_hit_bodyshot_crit_color = "00ffff",
 	hitmarker_hit_headshot_color = "ff0000",
 	hitmarker_hit_headshot_crit_color = "ff00ff",
-	hitmarker_kill_id = "destiny",
+	hitmarker_kill_id = "destiny_kill",
 	hitmarker_kill_duration = 0.25,
 	hitmarker_kill_alpha = 1,
 	hitmarker_kill_blend_mode = "normal",
@@ -219,7 +232,7 @@ AdvancedCrosshair.settings = {
 	crosshair_weapon_id_overrides = {
 	--EG:
 --		deagle = {
---			crosshair_id = "m6g",
+--			crosshair_id = "pdth_classic",
 --			use_bloom = true,
 --			color = "ffffff",
 --			alpha = 0.9,
@@ -229,7 +242,7 @@ AdvancedCrosshair.settings = {
 	crosshair_slot_overrides = {
 	--EG:
 --		1 = { --overrides all primary slots
---			crosshair_id = "ma37",
+--			crosshair_id = "pdth_classic",
 --			use_bloom = true,
 --			color = "ffffff",
 --			alpha = 0.5,
@@ -238,13 +251,71 @@ AdvancedCrosshair.settings = {
 	}
 }
 
+AdvancedCrosshair.setting_categories = {
+	crosshair = {
+		"crosshairs",
+		"crosshair_global",
+		"crosshair_weapon_id_overrides",
+		"crosshair_slot_overrides",
+		"use_shake",
+		"use_color"
+	},
+	hitmarker = {
+		"use_hitpos",
+		"hitmarker_limit_behavior",
+		"hitmarker_max_count",
+		"hitmarker_hit_id",
+		"hitmarker_hit_duration",
+		"hitmarker_hit_alpha",
+		"hitmarker_hit_blend_mode",
+		"hitmarker_hit_bodyshot_color",
+		"hitmarker_hit_bodyshot_crit_color",
+		"hitmarker_hit_headshot_color",
+		"hitmarker_hit_headshot_crit_color",
+		"hitmarker_kill_id",
+		"hitmarker_kill_duration",
+		"hitmarker_kill_alpha",
+		"hitmarker_kill_blend_mode",
+		"hitmarker_kill_bodyshot_color",
+		"hitmarker_kill_bodyshot_crit_color",
+		"hitmarker_kill_headshot_color"
+	},
+	hitsound = {
+		"use_hitsound_pos",
+		"hitsound_limit_behavior",
+		"hitsound_max_count",
+		"hitsound_hit_bodyshot_id",
+		"hitsound_hit_headshot_id",
+		"hitsound_hit_bodyshot_crit_id",
+		"hitsound_hit_headshot_crit_id",
+		"hitsound_kill_headshot_id",
+		"hitsound_kill_bodyshot_id",
+		"hitsound_kill_bodyshot_crit_id",
+		"hitsound_kill_headshot_crit_id",
+		"hitsound_hit_bodyshot_volume",
+		"hitsound_hit_headshot_volume",
+		"hitsound_hit_bodyshot_crit_volume",
+		"hitsound_hit_headshot_crit_volume",
+		"hitsound_kill_headshot_volume",
+		"hitsound_kill_bodyshot_volume",
+		"hitsound_kill_bodyshot_crit_volume",
+		"hitsound_kill_headshot_crit_volume",
+		"hitsound_suppress_doublesound"
+	},
+	palettes = {
+		"palettes"
+	}
+}
+
 --init settings for every variation of weapon + firemode (even for combinations that don't exist in-game)
 for _,cat in pairs(AdvancedCrosshair.VALID_WEAPON_CATEGORIES) do 
-	AdvancedCrosshair.settings.crosshairs[cat] = {}
+	AdvancedCrosshair.default_settings.crosshairs[cat] = {}
 	for _,firemode in pairs(AdvancedCrosshair.VALID_WEAPON_FIREMODES) do 
-		AdvancedCrosshair.settings.crosshairs[cat][firemode] = table.deep_map_copy(AdvancedCrosshair.DEFAULT_CROSSHAIR_OPTIONS)
+		AdvancedCrosshair.default_settings.crosshairs[cat][firemode] = table.deep_map_copy(AdvancedCrosshair.DEFAULT_CROSSHAIR_OPTIONS)
 	end
 end
+
+AdvancedCrosshair.settings = table.deep_map_copy(AdvancedCrosshair.default_settings)
 
 AdvancedCrosshair.path = ModPath
 AdvancedCrosshair.hitsound_path = AdvancedCrosshair.path .. "assets/snd/hitsounds/"
@@ -269,6 +340,8 @@ AdvancedCrosshair.ADDON_PATHS = {
 }
 
 
+
+
 --holds some instance-specific stuff to save time + cycles
 AdvancedCrosshair._cache = {
 	current_crosshair_data = nil, --holds table reference to self._cache.weapons [...] .firemode
@@ -286,1249 +359,66 @@ _G.queued_delay_advanced_crosshair_data = {}
 
 --do not change this. refer to the guide if you want to add custom crosshairs to this mod
 AdvancedCrosshair._crosshair_data = {
-	ma37 = { --halo reach assault rifle; four circle subquadrants + four aiming ticks
-		name_id = "menu_crosshair_ma37",
+	pdth_classic = {
+		name_id = "menu_crosshair_pdth_classic",
 		bloom_func = function(index,bitmap,data)
 			local bloom = data.bloom
-			if index == 1 then 
-				bitmap:set_alpha((1.25 - bloom) / 2)
-				--main
-			else
-				local crosshair_data = data.crosshair_data and data.crosshair_data.parts[index] or {}
-				local angle = crosshair_data.rotation or 60
-				local c_x = data.panel_w/2
-				local c_y = data.panel_h/2
-				local distance = (crosshair_data.distance or 10) * ((1.5 * bloom) + 1)
-				bitmap:set_alpha(bloom + 0.5)
-				bitmap:set_center(c_x + (math.sin(angle) * distance),c_y - (math.cos(angle) * distance))
-			end
-		end,
-		parts = {
-			{
-				texture = "guis/textures/advanced_crosshairs/ar_crosshair_1",
-				w = 48,
-				h = 48
-			},
-			{
-				texture = "guis/textures/advanced_crosshairs/ar_crosshair_2",
-				rotation = 0,
-				distance = 10,
-				w = 4,
-				h = 8
-			},
-			{
-				texture = "guis/textures/advanced_crosshairs/ar_crosshair_2",
-				rotation = 90,
-				distance = 10,
-				w = 4,
-				h = 8
-			},
-			{
-				texture = "guis/textures/advanced_crosshairs/ar_crosshair_2",
-				rotation = 180,
-				distance = 10,
-				w = 4,
-				h = 8
-			},
-			{
-				texture = "guis/textures/advanced_crosshairs/ar_crosshair_2",
-				rotation = 270,
-				distance = 10,
-				w = 4,
-				h = 8
-			}
-		}
-	},
-	m392 = { --halo reach dmr; circle w/ four circle subquadrants
-		name_id = "menu_crosshair_m392",
-		bloom_func = function(index,bitmap,data)
-			local bloom = data.bloom
-			local max_distance = 48
-			if index == 1 then 
-				bitmap:set_alpha(1.25 - bloom)
-			elseif index == 2 then 
-				local size = 16 + (max_distance * bloom)
-				bitmap:set_size(size,size)
-				bitmap:set_rotation(bloom * 45)
-				bitmap:set_alpha(bloom + 0.33)
-			end
-			bitmap:set_center(data.panel_w/2,data.panel_h/2)
-		end,
-		parts = {
-			{
-				texture = "guis/textures/advanced_crosshairs/dmr_crosshair_1",
-				w = 32,
-				h = 32
-			},
-			{
-				texture = "guis/textures/advanced_crosshairs/dmr_crosshair_2",
-				w = 16,
-				h = 16,
-				alpha = 0.75
-			}
-		}
-	},
-	m6g = { --halo reach pistol; similar to dmr
-		name_id = "menu_crosshair_m6g",
-		bloom_func = function(index,bitmap,data)
-			local bloom = data.bloom
-			local crosshair_data = data.crosshair_data and data.crosshair_data.parts[index] or {}
-			local distance = (crosshair_data.distance or 10) * (1 + bloom)
-			local angle = crosshair_data.rotation or 60
-			local c_x = data.panel_w/2
-			local c_y = data.panel_h/2
-			if index == 1 then 
-				--main
-			else
-				bitmap:set_center(c_x + (math.sin(angle) * distance),c_y - (math.cos(angle) * distance))
-			end
-		end,
-		parts = {
-			{
-				is_center = true,
-				texture = "guis/textures/advanced_crosshairs/pis_crosshair_1",
-				w = 28,
-				h = 28
-			},
-			{
-				texture = "guis/textures/advanced_crosshairs/ar_crosshair_2",
-				rotation = 0,
-				distance = 8,
-				w = 2,
-				h = 6
-			},
-			{
-				texture = "guis/textures/advanced_crosshairs/ar_crosshair_2",
-				rotation = 90,
-				distance = 8,
-				w = 2,
-				h = 6
-			},
-			{
-				texture = "guis/textures/advanced_crosshairs/ar_crosshair_2",
-				rotation = 180,
-				distance = 8,
-				w = 2,
-				h = 6
-			},
-			{
-				texture = "guis/textures/advanced_crosshairs/ar_crosshair_2",
-				rotation = 270,
-				distance = 8,
-				w = 2,
-				h = 6
-			}
-		}
-	},
-	m7 = { --halo 2/3 smg
-		name_id = "menu_crosshair_m7",
-		--[[
-		bloom_func = function(index,bitmap,data) 
-		--not sure what to do for the bloom, since the SMG was not in reach, 
-		--and other games do not feature reticle bloom.
-		--this one's a bit of a placeholder.
-		--in fact, i don't even like it that much. it's TOO bloom-y. no bloom for you.
-
-			local bloom = data.bloom 
-			local crosshair_data = data.crosshair_data and data.crosshair_data.parts[index] or {}
-			local distance = (crosshair_data.distance or 16) * (1 + (bloom * 1.5))
-			local angle = crosshair_data.rotation or 60
-			local c_x = data.panel_w/2
-			local c_y = data.panel_h/2
-			bitmap:set_size((crosshair_data.w or 1) * (1 + bloom),(crosshair_data.h or 1) * (1 + bloom))
-			bitmap:set_center(c_x + (math.sin(angle) * distance),c_y - (math.cos(angle) * distance))
 			
-		end,
-		--]]
-		parts = {
-			{
-				texture = "guis/textures/advanced_crosshairs/smg_crosshair",
-				w = 24,
-				h = 8,
-				distance = 16,
-				rotation = 0
-			},
-			{
-				texture = "guis/textures/advanced_crosshairs/smg_crosshair",
-				w = 24,
-				h = 8,
-				distance = 16,
-				rotation = 90
-			},
-			{
-				texture = "guis/textures/advanced_crosshairs/smg_crosshair",
-				w = 24,
-				h = 8,
-				distance = 16,
-				rotation = 180
-			},
-			{
-				texture = "guis/textures/advanced_crosshairs/smg_crosshair",
-				w = 24,
-				h = 8,
-				distance = 16,
-				rotation = 270
-			}
-		}
-	},
-	m90 = { --halo reach shotgun; big circle
-		name_id = "menu_crosshair_m90",
-		--no bloom func
-		parts = {
-			{
-				texture = "guis/textures/advanced_crosshairs/crosshair_circle_64",
-				w = 64,
-				h = 64
-			}
-		}
-	},
-	srs99 = { --halo reach sniper; small dot
-		name_id = "menu_crosshair_srs99",
-		bloom_func = function(index,bitmap,data)
-			local bloom = data.bloom
-			if index == 1 then 
-				
-			elseif index == 2 then
-				bitmap:set_size(16 + (64 * bloom),16 + (64 * bloom))
-				bitmap:set_center(data.panel_w/2,data.panel_h/2)
-			end
-		end,
-		parts = {
-			{
-				texture = "guis/textures/advanced_crosshairs/crosshair_circle_64",
-				w = 8,
-				h = 8
-			},
-			{
-				texture = "guis/textures/advanced_crosshairs/dmr_crosshair_2",
-				w = 16,
-				h = 16
-			}
-		}
-	},
---[[	m319 = { --halo reach grenade launcher; circle with distance markers
-		name_id = "menu_crosshair_m319",
-		special_crosshair = "altimeter", --used for special altitude display for grenade launcher specifically
-		parts = {
-			{
-				texture = "guis/textures/advanced_crosshairs/grenadelauncher_crosshair_1"
---				w = 20,
---				h = 40
-			},
-			{
-				texture = "guis/textures/advanced_crosshairs/grenadelauncher_crosshair_2"
---				w = 20,
---				h = 80
-			}
-		}
-	},
---]]
-	spnkr = { --halo reach m41 rocket launcher; circle with distance markers
-		name_id = "menu_crosshair_spnkr",
-		parts = {
-			{
-				texture = "guis/textures/advanced_crosshairs/rocket_crosshair",
-				w = 48,
-				h = 48
-			}
-		}
-	},
-	m247h = { --halo reach unsc turret
-		name_id = "menu_crosshair_m247h",
-		parts = {
-			{
-				texture = "guis/textures/advanced_crosshairs/trt_crosshair",
-				w = 48,
-				h = 48
-			}
-		}
-	},
-	m7057 = { --halo flamethrower; starburst ring of oblongs
-		name_id = "menu_crosshair_m7057",
-		parts = {
-			{
-				texture = "guis/textures/advanced_crosshairs/ar_crosshair_2",
-				rotation = 0,
-				distance = 20,
-				w = 2,
-				h = 8
-			},
-			{
-				texture = "guis/textures/advanced_crosshairs/ar_crosshair_2",
-				rotation = 360/25,
-				distance = 20,
-				w = 2,
-				h = 8
-			},
-			{
-				texture = "guis/textures/advanced_crosshairs/ar_crosshair_2",
-				rotation = 2 * 360/25,
-				distance = 20,
-				w = 2,
-				h = 8
-			},
-			{
-				texture = "guis/textures/advanced_crosshairs/ar_crosshair_2",
-				rotation = 3 * 360/25,
-				distance = 20,
-				w = 2,
-				h = 8
-			},
-			{
-				texture = "guis/textures/advanced_crosshairs/ar_crosshair_2",
-				rotation = 4 * 360/25,
-				distance = 20,
-				w = 2,
-				h = 8
-			},
-			{
-				texture = "guis/textures/advanced_crosshairs/ar_crosshair_2",
-				rotation = 5 * 360/25,
-				distance = 20,
-				w = 2,
-				h = 8
-			},
-			{
-				texture = "guis/textures/advanced_crosshairs/ar_crosshair_2",
-				rotation = 6 * 360/25,
-				distance = 20,
-				w = 2,
-				h = 8
-			},
-			{
-				texture = "guis/textures/advanced_crosshairs/ar_crosshair_2",
-				rotation = 7 * 360/25,
-				distance = 20,
-				w = 2,
-				h = 8
-			},
-			{
-				texture = "guis/textures/advanced_crosshairs/ar_crosshair_2",
-				rotation = 8 * 360/25,
-				distance = 20,
-				w = 2,
-				h = 8
-			},
-			{
-				texture = "guis/textures/advanced_crosshairs/ar_crosshair_2",
-				rotation = 9 * 360/25,
-				distance = 20,
-				w = 2,
-				h = 8
-			},
-			{
-				texture = "guis/textures/advanced_crosshairs/ar_crosshair_2",
-				rotation = 10 * 360/25,
-				distance = 20,
-				w = 2,
-				h = 8
-			},
-			{
-				texture = "guis/textures/advanced_crosshairs/ar_crosshair_2",
-				rotation = 11 * 360/25,
-				distance = 20,
-				w = 2,
-				h = 8
-			},
-			{
-				texture = "guis/textures/advanced_crosshairs/ar_crosshair_2",
-				rotation = 12 * 360/25,
-				distance = 20,
-				w = 2,
-				h = 8
-			},
-			{
-				texture = "guis/textures/advanced_crosshairs/ar_crosshair_2",
-				rotation = 13 * 360/25,
-				distance = 20,
-				w = 2,
-				h = 8
-			},
-			{
-				texture = "guis/textures/advanced_crosshairs/ar_crosshair_2",
-				rotation = 14 * 360/25,
-				distance = 20,
-				w = 2,
-				h = 8
-			},
-			{
-				texture = "guis/textures/advanced_crosshairs/ar_crosshair_2",
-				rotation = 15 * 360/25,
-				distance = 20,
-				w = 2,
-				h = 8
-			},
-			{
-				texture = "guis/textures/advanced_crosshairs/ar_crosshair_2",
-				rotation = 16 * 360/25,
-				distance = 20,
-				w = 2,
-				h = 8
-			},
-			{
-				texture = "guis/textures/advanced_crosshairs/ar_crosshair_2",
-				rotation = 17 * 360/25,
-				distance = 20,
-				w = 2,
-				h = 8
-			},
-			{
-				texture = "guis/textures/advanced_crosshairs/ar_crosshair_2",
-				rotation = 18 * 360/25,
-				distance = 20,
-				w = 2,
-				h = 8
-			},
-			{
-				texture = "guis/textures/advanced_crosshairs/ar_crosshair_2",
-				rotation = 19 * 360/25,
-				distance = 20,
-				w = 2,
-				h = 8
-			},
-			{
-				texture = "guis/textures/advanced_crosshairs/ar_crosshair_2",
-				rotation = 20 * 360/25,
-				distance = 20,
-				w = 2,
-				h = 8
-			},
-			{
-				texture = "guis/textures/advanced_crosshairs/ar_crosshair_2",
-				rotation = 21 * 360/25,
-				distance = 20,
-				w = 2,
-				h = 8
-			},
-			{
-				texture = "guis/textures/advanced_crosshairs/ar_crosshair_2",
-				rotation = 22 * 360/25,
-				distance = 20,
-				w = 2,
-				h = 8
-			},
-			{
-				texture = "guis/textures/advanced_crosshairs/ar_crosshair_2",
-				rotation = 23 * 360/25,
-				distance = 20,
-				w = 2,
-				h = 8
-			},
-			{
-				texture = "guis/textures/advanced_crosshairs/ar_crosshair_2",
-				rotation = 24 * 360/25,
-				distance = 20,
-				w = 2,
-				h = 8
-			}
-		}
-	},
-	h165 = { --halo reach target designator; four chevrons, offset by 45*, with pointy bit pointing outward, forming a diamond
-		name_id = "menu_crosshair_h165",
-		bloom_func = function(index,bitmap,data)
-			local bloom = data.bloom
 			local crosshair_data = data.crosshair_data and data.crosshair_data.parts[index] or {}
-			local distance = (crosshair_data.distance or 10) * (1 + bloom)
-			local angle = crosshair_data.rotation or 60
+			local angle = crosshair_data.angle or 60
 			local c_x = data.panel_w/2
 			local c_y = data.panel_h/2
+			local distance = crosshair_data.distance * ((1.5 * bloom) + 1)
 			bitmap:set_center(c_x + (math.sin(angle) * distance),c_y - (math.cos(angle) * distance))
 		end,
 		parts = {
 			{
-				texture = "guis/textures/advanced_crosshairs/targeting_crosshair",
-				w = 16,
-				h = 12,
-				distance = 12,
-				rotation = 0
-			},
-			{
-				texture = "guis/textures/advanced_crosshairs/targeting_crosshair",
-				w = 16,
-				h = 12,
-				distance = 12,
-				rotation = 90
-			},
-			{
-				texture = "guis/textures/advanced_crosshairs/targeting_crosshair",
-				w = 16,
-				h = 12,
-				distance = 12,
-				rotation = 180
-			},
-			{
-				texture = "guis/textures/advanced_crosshairs/targeting_crosshair",
-				w = 16,
-				h = 12,
-				distance = 12,
-				rotation = 270
-			}
-		}
-	},
-	halo_chevron = { --vehicle chevron
-		name_id = "menu_crosshair_halo_chevron",
-		parts = {
-			{
-				texture = "guis/textures/advanced_crosshairs/car_crosshair",
-				w = 24,
-				h = 8
-			}
-		}
-	},
-	type25_pistol = { --halo plasma pistol; tri arrow
-		name_id = "menu_crosshair_type25_pistol",
-		parts = {
-			{
-				texture = "guis/textures/advanced_crosshairs/plasma_crosshair_1",
-				w = 6,
-				h = 12,
-				distance = 16,
-				rotation = 0
-			},
-			{
-				texture = "guis/textures/advanced_crosshairs/plasma_crosshair_1",
-				w = 6,
-				h = 12,
-				distance = 16,
-				rotation = 125 --120 for perfect third
-			},
-			{
-				texture = "guis/textures/advanced_crosshairs/plasma_crosshair_1",
-				w = 6,
-				h = 12,
-				distance = 16,
-				rotation = 235 --240 for perfect third
-			}
-		}
-	},
-	type25_rifle = { --halo reach plasma rifle; quad arrow
-		name_id = "menu_crosshair_type25_rifle",
-		parts = {
-			{
-				texture = "guis/textures/advanced_crosshairs/plasma_crosshair_1",
-				w = 6,
-				h = 16,
-				distance = 16,
-				rotation = 45 + 180 --180 is to offset the angle of the source texture cause i made it upside-down
-			},
-			{
-				texture = "guis/textures/advanced_crosshairs/plasma_crosshair_1",
-				w = 6,
-				h = 16,
-				distance = 16,
-				rotation = 135 + 180
-			},
-			{
-				texture = "guis/textures/advanced_crosshairs/plasma_crosshair_1",
-				w = 6,
-				h = 16,
-				distance = 16,
-				rotation = 225 + 180
-			},
-			{
-				texture = "guis/textures/advanced_crosshairs/plasma_crosshair_1",
-				w = 6,
-				h = 16,
-				distance = 16,
-				rotation = 315 + 180
-			}
-		}
-	},
-	type51_rifle = { --halo reach plasma repeater
-		name_id = "menu_crosshair_type51_rifle",
-		bloom_func = function(index,bitmap,data)
-			local bloom = data.bloom
-			local crosshair_data = data.crosshair_data and data.crosshair_data.parts[index] or {}
-			local distance = (crosshair_data.distance or 10) * (1 + bloom)
-			local angle = crosshair_data.rotation or 60
-			local c_x = data.panel_w/2
-			local c_y = data.panel_h/2
-			if index == 1 then 
-				--main
-			else
-				bitmap:set_center(c_x + (math.sin(angle) * distance),c_y - (math.cos(angle) * distance))
-			end
-		end,
-		parts = {
-			{
-				alpha = 0.6,
-				texture = "guis/textures/advanced_crosshairs/plasma_crosshair_2",
-				w = 36,
-				h = 36
-			},
-			{
-				texture = "guis/textures/advanced_crosshairs/plasma_crosshair_1",
-				w = 4,
-				h = 12,
-				distance = 12,
-				rotation = 45
-			},
-			{
-				texture = "guis/textures/advanced_crosshairs/plasma_crosshair_1",
-				w = 4,
-				h = 12,
-				distance = 12,
-				rotation = 135
-			},
-			{
-				texture = "guis/textures/advanced_crosshairs/plasma_crosshair_1",
-				w = 4,
-				h = 12,
-				distance = 12,
-				rotation = 225
-			},
-			{
-				texture = "guis/textures/advanced_crosshairs/plasma_crosshair_1",
-				w = 4,
-				h = 12,
-				distance = 12,
-				rotation = 315
-			}
-		}
-	},
-	type33_needler = { --halo needler
-		name_id = "menu_crosshair_type33_needler",
-		parts = {
-			{
-				texture = "guis/textures/advanced_crosshairs/needler_crosshair_1",
-				x = -12,
-				rotation = 0,
-				w = 8,
-				h = 16
-			},
-			{
-				texture = "guis/textures/advanced_crosshairs/needler_crosshair_2",
-				distance = 8,
-				rotation = 90,
-				w = 8,
-				h = 4
-			},
-			{
-				texture = "guis/textures/advanced_crosshairs/needler_crosshair_1",
-				x = 12,
-				rotation = 180,
-				w = 8,
-				h = 16
-			},
-			{
-				texture = "guis/textures/advanced_crosshairs/needler_crosshair_2",
-				distance = 8,
 				rotation = 270,
-				w = 8,
-				h = 4
-			}
-		}
-	},
-	type31 = { --halo reach needle rifle
-		name_id = "menu_crosshair_type31",
-		bloom_func = function(index,bitmap,data)
-			local crosshair_data = data.crosshair_data and data.crosshair_data.parts[index] or {}
-			local angle = crosshair_data.rotation or 45
-			local c_x = data.panel_w/2
-			local c_y = data.panel_h/2
-			if index <= 4 then 
-				local bloom = data.bloom * 2
-				--bitmap:set_center(data.panel_w/2,data.panel_h/2)
-				local distance = (crosshair_data.distance or 10) * (1 + bloom)
-				bitmap:set_size((crosshair_data.w or 6) * (1 + bloom),(crosshair_data.h or 3) * (1 + bloom))
-				bitmap:set_center(c_x + (math.sin(angle) * distance),c_y - (math.cos(angle) * distance))
-			else
-			end
-		end,
-		parts = {
-			{ --center
-				texture = "guis/textures/advanced_crosshairs/nrif_crosshair_2",
-				w = 2,
-				h = 1,
-				distance = 4,
-				rotation = 45
-			},
-			{ --center
-				texture = "guis/textures/advanced_crosshairs/nrif_crosshair_2",
-				w = 2,
-				h = 1,
-				distance = 4,
-				rotation = 135
-			},
-			{ --center
-				texture = "guis/textures/advanced_crosshairs/nrif_crosshair_2",
-				w = 2,
-				h = 1,
-				distance = 4,
-				rotation = 225
-			},
-			{ --center
-				texture = "guis/textures/advanced_crosshairs/nrif_crosshair_2",
-				w = 2,
-				h = 1,
-				distance = 4,
-				rotation = 315
+				angle = 0,
+				distance = 24,
+				texture = "guis/textures/hud_icons",
+				texture_rect = {
+					481,
+					33,
+					23,
+					4
+				}
 			},
 			{
-				texture = "guis/textures/advanced_crosshairs/nrif_crosshair_2",
-				w = 12,
-				h = 6,
-				distance = 8,
-				rotation = 0
-			},
-			{
-				texture = "guis/textures/advanced_crosshairs/nrif_crosshair_2",
-				w = 12,
-				h = 6,
-				distance = 8,
-				rotation = 90
-			},
-			{
-				texture = "guis/textures/advanced_crosshairs/nrif_crosshair_2",
-				w = 12,
-				h = 6,
-				distance = 8,
-				rotation = 180
-			},
-			{
-				texture = "guis/textures/advanced_crosshairs/nrif_crosshair_2",
-				w = 12,
-				h = 6,
-				distance = 8,
-				rotation = 270
-			}
-		}
-	},
-	type50 = { --halo reach concussion rifle
-		name_id = "menu_crosshair_type50",
-		parts = {
-			{
-				texture = "guis/textures/advanced_crosshairs/concussion_crosshair",
-				w = 32,
-				h = 16,
-				x = -18,
-				y = -8
-			},
-			{
-				texture = "guis/textures/advanced_crosshairs/concussion_crosshair",
-				w = -32,
-				h = 16,
-				x = 18,
-				y = -8
-			},
-			{
-				texture = "guis/textures/advanced_crosshairs/concussion_crosshair",
-				w = -32,
-				h = -16,
-				x = 18,
-				y = 8
-			},
-			{
-				texture = "guis/textures/advanced_crosshairs/concussion_crosshair",
-				w = 32,
-				h = -16,
-				x = -18,
-				y = 8
-			},
-			{
-				texture = "guis/textures/advanced_crosshairs/ar_crosshair_2",
-				y = 24,
-				w = 4,
-				h = 16,
-				rotation = 90,
-				alpha = 0.6
-			},
-			{
-				texture = "guis/textures/advanced_crosshairs/ar_crosshair_2",
-				y = 32,
-				w = 4,
-				h = 12,
-				rotation = 90,
-				alpha = 0.4
-			},
-			{
-				texture = "guis/textures/advanced_crosshairs/ar_crosshair_2",
-				y = 40,
-				w = 4,
-				h = 8,
-				rotation = 90,
-				alpha = 0.2
-			}
-		}
-	},
-	type1_sword = { --halo sword; crescent with arrow, used for melee
-		name_id = "menu_crosshair_type1_sword",
-		parts = {
-			{
-				texture = "guis/textures/advanced_crosshairs/sword_crosshair",
-				w = 48,
-				h = 48
-			}
-		}
-	},
-	type2_hammer = { --halo reach gravity hammer
-		name_id = "menu_crosshair_type2_hammer",
-		parts = {
-			{
-				texture = "guis/textures/advanced_crosshairs/hammer_crosshair",
-				w = 64,
-				h = 64
-			}
-		}
-	},
-	type52_launcher = { --halo reach plasma launcher; four arrows
-		name_id = "menu_crosshair_type52_launcher",
-		bloom_func = function(index,bitmap,data)
-			local bloom = data.bloom
-			local crosshair_data = data.crosshair_data and data.crosshair_data.parts[index] or {}
-			local distance = (crosshair_data.distance or 12) * (1 + bloom)
-			local angle = crosshair_data.rotation or 0
-			local c_x = data.panel_w/2
-			local c_y = data.panel_h/2
-			if index >= 5 then 
-				bitmap:set_center(c_x + (math.sin(angle) * distance),c_y - (math.cos(angle) * distance))
-			end
-		end,
-		parts = {
-			{
-				texture = "guis/textures/advanced_crosshairs/plasma_crosshair_1",
-				w = 4,
-				h = 8,
-				distance = 16,
-				rotation = 0
-			},
-			{
-				texture = "guis/textures/advanced_crosshairs/plasma_crosshair_1",
-				w = 4,
-				h = 8,
-				distance = 16,
-				rotation = 180
-			},
-			{
-				texture = "guis/textures/advanced_crosshairs/plasma_crosshair_1",
-				w = 4,
-				h = 8,
-				distance = 16,
-				rotation = 270
-			},
-			{
-				texture = "guis/textures/advanced_crosshairs/plasma_crosshair_1",
-				w = 4,
-				h = 8,
-				distance = 16,
-				rotation = 90
-			},
-			{
-				texture = "guis/textures/advanced_crosshairs/plasma_crosshair_1",
-				w = 2,
-				h = 4,
-				alpha = 0.33,
-				distance = 12,
-				rotation = 45
-			},
-			{
-				texture = "guis/textures/advanced_crosshairs/plasma_crosshair_1",
-				w = 2,
-				h = 4,
-				alpha = 0.33,
-				distance = 12,
-				rotation = 135
-			},
-			{
-				texture = "guis/textures/advanced_crosshairs/plasma_crosshair_1",
-				w = 2,
-				h = 4,
-				alpha = 0.33,
-				distance = 12,
-				rotation = 225
-			},
-			{
-				texture = "guis/textures/advanced_crosshairs/plasma_crosshair_1",
-				w = 2,
-				h = 4,
-				alpha = 0.33,
-				distance = 12,
-				rotation = 315
-			}
-		}
-	},
-	type52_rifle = { --halo reach focus rifle
-		name_id = "menu_crosshair_type52_rifle",
-		bloom_func = function(index,bitmap,data)
-			local bloom = data.bloom * 2
-			local crosshair_data = data.crosshair_data and data.crosshair_data.parts[index] or {}
-			local distance = (crosshair_data.distance or 8) * (1 + bloom)
-			local angle = crosshair_data.rotation or 0
-			local c_x = data.panel_w/2
-			local c_y = data.panel_h/2
-			bitmap:set_center(c_x + (math.sin(angle) * distance),c_y - (math.cos(angle) * distance))
-		end,
-		parts = {
-			{
-				texture = "guis/textures/advanced_crosshairs/nrif_crosshair_2",
-				w = 12,
-				h = 6,
-				distance = 6,
-				rotation = 180
-			},
-			{
-				texture = "guis/textures/advanced_crosshairs/nrif_crosshair_2",
-				w = 12,
-				h = 6,
-				distance = 6,
-				rotation = 60
-			},
-			{
-				texture = "guis/textures/advanced_crosshairs/nrif_crosshair_2",
-				w = 12,
-				h = 6,
-				distance = 6,
-				rotation = 300
-			}
-		}
-	},
-	type25_carbine = { --halo spiker
-		name_id = "menu_crosshair_type25_carbine",
-		bloom_func = function(index,bitmap,data)
-			local bloom = data.bloom
-			local crosshair_data = data.crosshair_data and data.crosshair_data.parts[index] or {}
-			local distance = (crosshair_data.distance or 12) * (1 + bloom)
-			local angle = crosshair_data.rotation or 0
-			local c_x = data.panel_w/2
-			local c_y = data.panel_h/2
-			if index >= 5 then 
-				bitmap:set_center(c_x + (math.sin(angle) * distance),c_y - (math.cos(angle) * distance))
-			end
-		end,
-		parts = {
-			{
-				texture = "guis/textures/advanced_crosshairs/spiker_crosshair_1",
-				x = -14,
-				y = -14,
 				rotation = 0,
-				w = 16,
-				h = 16
+				angle = 90,
+				distance = 24,
+				texture = "guis/textures/hud_icons",
+				texture_rect = {
+					481,
+					33,
+					23,
+					4
+				}
 			},
 			{
-				texture = "guis/textures/advanced_crosshairs/spiker_crosshair_2",
-				x = 14,
-				y = -14,
-				rotation = 0,
-				w = 16,
-				h = 16
-			},
-			{
-				texture = "guis/textures/advanced_crosshairs/spiker_crosshair_1",
-				x = 14,
-				y = 14,
-				rotation = 180,
-				w = 16,
-				h = 16
-			},
-			{
-				texture = "guis/textures/advanced_crosshairs/spiker_crosshair_2",
-				x = -14,
-				y = 14,
-				rotation = 180,
-				w = 16,
-				h = 16
-			},
-			{
-				texture = "guis/textures/advanced_crosshairs/ar_crosshair_2", --top 
-				distance = 20,
-				rotation = 0,
-				h = 10,
-				w = 2
-			},
-			{
-				texture = "guis/textures/advanced_crosshairs/ar_crosshair_2", --right
-				distance = 22,
 				rotation = 90,
-				h = 14,
-				w = 2
+				angle = 180,
+				distance = 24,
+				texture = "guis/textures/hud_icons",
+				texture_rect = {
+					481,
+					33,
+					23,
+					4
+				}
 			},
 			{
-				texture = "guis/textures/advanced_crosshairs/ar_crosshair_2", --bottom
-				distance = 20,
 				rotation = 180,
-				h = 10,
-				w = 2
-			},
-			{
-				texture = "guis/textures/advanced_crosshairs/ar_crosshair_2", --left
-				distance = 22,
-				rotation = 270,
-				h = 14,
-				w = 2
-			}
-		}
-	},
-	type33_aa = { --halo fuel rod
-		name_id = "menu_crosshair_type33_aa",
-		parts = {
-			{ -- 1 big, bottom
-				texture = "guis/textures/advanced_crosshairs/plasma_crosshair_1",
-				w = 6,
-				h = 16,
-				distance = 20,
-				rotation = 180
-			},
-			{ -- 2
-				texture = "guis/textures/advanced_crosshairs/plasma_crosshair_1",
-				w = 3,
-				h = 6,
+				angle = 270,
 				distance = 24,
-				rotation = 170
-			},
-			{ -- 3
-				texture = "guis/textures/advanced_crosshairs/plasma_crosshair_1",
-				w = 3,
-				h = 6,
-				distance = 24,
-				rotation = 160
-			},
-			{ -- 4
-				texture = "guis/textures/advanced_crosshairs/plasma_crosshair_1",
-				w = 3,
-				h = 6,
-				distance = 24,
-				rotation = 150
-			},
-			{ -- 5
-				texture = "guis/textures/advanced_crosshairs/plasma_crosshair_1",
-				w = 3,
-				h = 6,
-				distance = 24,
-				rotation = 140
-			},
-			{ -- 6
-				texture = "guis/textures/advanced_crosshairs/plasma_crosshair_1",
-				w = 3,
-				h = 6,
-				distance = 24,
-				rotation = 130
-			},
-			{ -- 7
-				texture = "guis/textures/advanced_crosshairs/plasma_crosshair_1",
-				w = 3,
-				h = 6,
-				distance = 24,
-				rotation = 120
-			},
-			{ -- 8
-				texture = "guis/textures/advanced_crosshairs/plasma_crosshair_1",
-				w = 3,
-				h = 6,
-				distance = 24,
-				rotation = 110
-			},
-			{ -- 9
-				texture = "guis/textures/advanced_crosshairs/plasma_crosshair_1",
-				w = 3,
-				h = 6,
-				distance = 24,
-				rotation = 100
-			},
-			{ -- 10 big
-				texture = "guis/textures/advanced_crosshairs/plasma_crosshair_1",
-				w = 6,
-				h = 16,
-				distance = 20,
-				rotation = 90
-			},
-			{ -- 11 big; left
-				texture = "guis/textures/advanced_crosshairs/plasma_crosshair_1",
-				w = 6,
-				h = 16,
-				distance = 20,
-				rotation = 270
-			},
-			{ -- 12
-				texture = "guis/textures/advanced_crosshairs/plasma_crosshair_1",
-				w = 3,
-				h = 6,
-				distance = 24,
-				rotation = 280
-			},
-			{ -- 13
-				texture = "guis/textures/advanced_crosshairs/plasma_crosshair_1",
-				w = 3,
-				h = 6,
-				distance = 24,
-				rotation = 290
-			},
-			{ -- 14
-				texture = "guis/textures/advanced_crosshairs/plasma_crosshair_1",
-				w = 3,
-				h = 6,
-				distance = 24,
-				rotation = 300
-			},
-			{ -- 15
-				texture = "guis/textures/advanced_crosshairs/plasma_crosshair_1",
-				w = 3,
-				h = 6,
-				distance = 24,
-				rotation = 310
-			},
-			{ -- 16
-				texture = "guis/textures/advanced_crosshairs/plasma_crosshair_1",
-				w = 3,
-				h = 6,
-				distance = 24,
-				rotation = 320
-			},
-			{ -- 17
-				texture = "guis/textures/advanced_crosshairs/plasma_crosshair_1",
-				w = 3,
-				h = 6,
-				distance = 24,
-				rotation = 330
-			},
-			{ -- 18
-				texture = "guis/textures/advanced_crosshairs/plasma_crosshair_1",
-				w = 3,
-				h = 6,
-				distance = 24,
-				rotation = 340
-			},
-			{ -- 19
-				texture = "guis/textures/advanced_crosshairs/plasma_crosshair_1",
-				w = 3,
-				h = 6,
-				distance = 24,
-				rotation = 350
-			},
-			{ -- 20 big
-				texture = "guis/textures/advanced_crosshairs/plasma_crosshair_1",
-				w = 6,
-				h = 16,
-				distance = 20,
-				rotation = 0
-			}
-		}
-	},
-	type52_turret = { --halo covenant turret
-		name_id = "menu_crosshair_type52_turret",
-		parts = {
-			{ -- 1 top
-				texture = "guis/textures/advanced_crosshairs/plasma_crosshair_1",
-				w = 3,
-				h = 6,
-				distance = 16,
-				rotation = 90,
-				alpha = 0.5
-			},
-			{ -- 2
-				texture = "guis/textures/advanced_crosshairs/plasma_crosshair_1",
-				w = 3,
-				h = 6,
-				distance = 16,
-				rotation = 22.5,
-				alpha = 0.5
-			},
-			{ -- 3 big
-				texture = "guis/textures/advanced_crosshairs/plasma_crosshair_1",
-				w = 6,
-				h = 12,
-				distance = 20,
-				rotation = 45
-			},
-			{ -- 4
-				texture = "guis/textures/advanced_crosshairs/plasma_crosshair_1",
-				w = 3,
-				h = 6,
-				distance = 16,
-				rotation = 67.5,
-				alpha = 0.5
-			},
-			{ -- 5 right
-				texture = "guis/textures/advanced_crosshairs/plasma_crosshair_1",
-				w = 3,
-				h = 6,
-				distance = 16,
-				rotation = 90,
-				alpha = 0.5
-			},
-			{ -- 6
-				texture = "guis/textures/advanced_crosshairs/plasma_crosshair_1",
-				w = 3,
-				h = 6,
-				distance = 16,
-				rotation = 112.5,
-				alpha = 0.5
-			},
-			{ -- 7 big
-				texture = "guis/textures/advanced_crosshairs/plasma_crosshair_1",
-				w = 6,
-				h = 12,
-				distance = 20,
-				rotation = 135
-			},
-			{ -- 8
-				texture = "guis/textures/advanced_crosshairs/plasma_crosshair_1",
-				w = 3,
-				h = 6,
-				distance = 16,
-				rotation = 157.5,
-				alpha = 0.5
-			},
-			{ -- 9 bottom
-				texture = "guis/textures/advanced_crosshairs/plasma_crosshair_1",
-				w = 3,
-				h = 6,
-				distance = 16,
-				rotation = 180,
-				alpha = 0.5
-			},
-			{ -- 10
-				texture = "guis/textures/advanced_crosshairs/plasma_crosshair_1",
-				w = 3,
-				h = 6,
-				distance = 16,
-				rotation = 202.5,
-				alpha = 0.5
-			},
-			{ -- 11 big
-				texture = "guis/textures/advanced_crosshairs/plasma_crosshair_1",
-				w = 6,
-				h = 12,
-				distance = 20,
-				rotation = 225
-			},
-			{ -- 12
-				texture = "guis/textures/advanced_crosshairs/plasma_crosshair_1",
-				w = 3,
-				h = 6,
-				distance = 16,
-				rotation = 247.5,
-				alpha = 0.5
-			},
-			{ -- 13 left
-				texture = "guis/textures/advanced_crosshairs/plasma_crosshair_1",
-				w = 3,
-				h = 6,
-				distance = 16,
-				rotation = 270,
-				alpha = 0.5
-			},
-			{ -- 14
-				texture = "guis/textures/advanced_crosshairs/plasma_crosshair_1",
-				w = 3,
-				h = 6,
-				distance = 16,
-				rotation = 292.5,
-				alpha = 0.5
-			},
-			{ -- 15 big
-				texture = "guis/textures/advanced_crosshairs/plasma_crosshair_1",
-				w = 6,
-				h = 12,
-				distance = 20,
-				rotation = 315
-			},
-			{ -- 16
-				texture = "guis/textures/advanced_crosshairs/plasma_crosshair_1",
-				w = 3,
-				h = 6,
-				distance = 16,
-				rotation = 337.5,
-				alpha = 0.5
+				texture = "guis/textures/hud_icons",
+				texture_rect = {
+					481,
+					33,
+					23,
+					4
+				}
 			}
 		}
 	}
@@ -1542,43 +432,43 @@ AdvancedCrosshair._hitmarker_data = {
 --the rest of the parameters (headshot, crit, result_type, etc) are safe to check/use, since they should be passed to the preview creation in the menu
 	destiny_hit = {
 		name_id = "menu_hitmarker_destiny_hit",
-		hit_anim_distance = 12, --random var i used when creating this hitmarker, to show that you can... do that, since this data table is passed to the animation function
+		hit_anim_distance = 6, --random var i used when creating this hitmarker, to show that you can... do that, since this data table is passed to the animation function
 	--beware: these options generally override user settings,
 	--so don't set color in the part table, or alpha in your main hitmarker table, unless you want it to be unaffected by settings
 	--if you choose not to add a custom animation function, the fadeout alpha animation will automatically be used
 	--if you do specify a custom animation function, you will have to provide the alpha fadeout yourself (unless you want your crosshair to disappear suddenly instead of fading out)
 		parts = {
 			{ --reused from plasma rifle crosshairs
-				texture = "guis/textures/advanced_crosshairs/plasma_crosshair_1",
+				texture = "guis/textures/advanced_crosshairs/destiny_hitmarker",
 				w = 2,
-				h = 12,
+				h = 6,
 				angle = -45,
-				rotation = 180,
-				distance = 12
+				rotation = 0,
+				distance = 6
 			},
 			{
-				texture = "guis/textures/advanced_crosshairs/plasma_crosshair_1",
+				texture = "guis/textures/advanced_crosshairs/destiny_hitmarker",
 				w = 2,
-				h = 12,
+				h = 6,
 				angle = 45,
-				rotation = 180,
-				distance = 12
+				rotation = 0,
+				distance = 6
 			},
 			{
-				texture = "guis/textures/advanced_crosshairs/plasma_crosshair_1",
+				texture = "guis/textures/advanced_crosshairs/destiny_hitmarker",
 				w = 2,
-				h = 12,
+				h = 6,
 				angle = 135,
-				rotation = 180,
-				distance = 12
+				rotation = 0,
+				distance = 6
 			},
 			{
-				texture = "guis/textures/advanced_crosshairs/plasma_crosshair_1",
+				texture = "guis/textures/advanced_crosshairs/destiny_hitmarker",
 				w = 2,
-				h = 12,
+				h = 6,
 				angle = -135,
-				rotation = 180,
-				distance = 12
+				rotation = 0,
+				distance = 6
 			}
 		}
 	},
@@ -1604,39 +494,39 @@ AdvancedCrosshair._hitmarker_data = {
 				bitmap:set_alpha(r_ratio)
 			end
 		end,
-		hit_anim_distance = 12,
+		hit_anim_distance = 6,
 		parts = {
 			{
-				texture = "guis/textures/advanced_crosshairs/plasma_crosshair_1",
+				texture = "guis/textures/advanced_crosshairs/destiny_hitmarker",
 				w = 2,
-				h = 12,
+				h = 6,
 				angle = -45,
-				rotation = 180,
-				distance = 12
+				rotation = 0,
+				distance = 6
 			},
 			{
-				texture = "guis/textures/advanced_crosshairs/plasma_crosshair_1",
+				texture = "guis/textures/advanced_crosshairs/destiny_hitmarker",
 				w = 2,
-				h = 12,
+				h = 6,
 				angle = 45,
-				rotation = 180,
-				distance = 12
+				rotation = 0,
+				distance = 6
 			},
 			{
-				texture = "guis/textures/advanced_crosshairs/plasma_crosshair_1",
+				texture = "guis/textures/advanced_crosshairs/destiny_hitmarker",
 				w = 2,
-				h = 12,
+				h = 6,
 				angle = 135,
-				rotation = 180,
-				distance = 12
+				rotation = 0,
+				distance = 6
 			},
 			{
-				texture = "guis/textures/advanced_crosshairs/plasma_crosshair_1",
+				texture = "guis/textures/advanced_crosshairs/destiny_hitmarker",
 				w = 2,
-				h = 12,
+				h = 6,
 				angle = -135,
-				rotation = 180,
-				distance = 12
+				rotation = 0,
+				distance = 6
 			}
 		}
 	},
@@ -1799,7 +689,8 @@ AdvancedCrosshair._hitmarker_data = {
 				angle = 0,
 				rotation = 0,
 				distance = 0,
-				alpha = 0
+				alpha = 0,
+				UNRECOLORABLE = true
 			}
 		}
 	},
@@ -2139,6 +1030,16 @@ end
 function AdvancedCrosshair:LoadCrosshairAddons()
 	local extension = "texture"
 	local path_util = BeardLib.Utils.Path
+	
+	local function load_addon_textures(addon_path,foldername,parts)
+		for part_index,part in ipairs(parts) do 
+			if part.texture then 
+			elseif part.texture_path then 
+				part.texture_path = path_util:Combine(addon_path,foldername,part.texture_path)
+			end
+		end
+	end
+
 	for _,addon_path in pairs(self.ADDON_PATHS.crosshairs) do 
 		if SystemFS:exists(addon_path) then 
 			for _,foldername in pairs(SystemFS:list(addon_path,true)) do 
@@ -2153,18 +1054,25 @@ function AdvancedCrosshair:LoadCrosshairAddons()
 					elseif addon_lua then 
 						local addon_id,addon_data = addon_lua()
 						if addon_id and type(addon_data) == "table" then 
-							if type(addon_data.parts) == "table" then 
-								for part_index,part in ipairs(addon_data.parts) do 
-									if part.texture then 
-									elseif part.texture_path then 
-										part.texture_path = path_util:Combine(addon_path,foldername,part.texture_path)
+							if addon_id == true then --megapack
+								for crosshair_id,crosshair_data in pairs(addon_data) do 
+									if type(crosshair_data.parts) == "table" then 
+										load_addon_textures(addon_path,foldername,crosshair_data.parts)
+									else
+										self:log("Error: LoadCrosshairAddons() megapack " .. addon_lua_path .. " contains invalid parts data: " .. tostring(addon_data.parts) .. " (table expected, got " .. type(addon_data.parts) .. ").")
+										break
 									end
+									self:AddCustomCrosshair(crosshair_id,crosshair_data)
 								end
 							else
-								self:log("Error: LoadCrosshairAddons() " .. addon_lua_path .. " contains invalid parts data: " .. tostring(addon_data.parts) .. " (table expected, got " .. type(addon_data.parts) .. ").")
+								if type(addon_data.parts) == "table" then 
+									load_addon_textures(addon_path,foldername,addon_data.parts)
+								else
+									self:log("Error: LoadCrosshairAddons() " .. addon_lua_path .. " contains invalid parts data: " .. tostring(addon_data.parts) .. " (table expected, got " .. type(addon_data.parts) .. ").")
+									break
+								end
+								self:AddCustomCrosshair(addon_id,addon_data)
 							end
-							
-							self:AddCustomCrosshair(addon_id,addon_data)
 						else
 							self:log("Error: LoadCrosshairAddons() " .. addon_lua_path .. " returned invalid data. Expected results: [string],[table]. Got: [" .. type(id) .. "] " .. tostring(id) .. ", [" .. type(addon_data) .. "] " .. tostring(addon_data) .. ".")
 						end
@@ -2254,6 +1162,16 @@ end
 function AdvancedCrosshair:LoadHitmarkerAddons()
 	local extension = "texture"
 	local path_util = BeardLib.Utils.Path
+	
+	local function load_addon_textures(addon_path,foldername,parts)
+		for part_index,part in ipairs(parts) do 
+			if part.texture then 
+			elseif part.texture_path then 
+				part.texture_path = path_util:Combine(addon_path,foldername,part.texture_path)
+			end
+		end
+	end
+	
 	for _,addon_path in pairs(self.ADDON_PATHS.hitmarkers) do 
 		if SystemFS:exists(Application:nice_path(addon_path,true)) then 
 			for _,foldername in pairs(SystemFS:list(addon_path,true)) do 
@@ -2268,18 +1186,25 @@ function AdvancedCrosshair:LoadHitmarkerAddons()
 					elseif addon_lua then 
 						local addon_id,addon_data = addon_lua()
 						if addon_id and type(addon_data) == "table" then 
-							if type(addon_data.parts) == "table" then 
-								for part_index,part in ipairs(addon_data.parts) do 
-									if part.texture then 
-									elseif part.texture_path then 
-										part.texture_path = path_util:Combine(addon_path,foldername,part.texture_path)
+							if addon_id == true then --megapack
+								for hitmarker_id,hitmarker_data in pairs(addon_data) do 
+									if type(hitmarker_data.parts) == "table" then 
+										load_addon_textures(addon_path,foldername,hitmarker_data.parts)
+									else
+										self:log("Error: LoadHitmarkerAddons() megapack " .. addon_lua_path .. " returned invalid data. Expected results: [string],[table]. Got: [" .. type(id) .. "] " .. tostring(id) .. ", [" .. type(addon_data) .. "] " .. tostring(addon_data) .. ".")
+										break
 									end
+									self:AddCustomHitmarker(hitmarker_id,hitmarker_data)
 								end
 							else
-								self:log("Error: LoadHitmarkerAddons() " .. addon_lua_path .. " contains invalid parts data: " .. tostring(addon_data.parts) .. " (table expected, got " .. type(addon_data.parts) .. ").")
+								if type(addon_data.parts) == "table" then 
+									load_addon_textures(addon_path,foldername,addon_data.parts)
+								else
+									self:log("Error: LoadHitmarkerAddons() " .. addon_lua_path .. " contains invalid parts data: " .. tostring(addon_data.parts) .. " (table expected, got " .. type(addon_data.parts) .. ").")
+									break
+								end
+								self:AddCustomHitmarker(addon_id,addon_data)
 							end
-						
-							self:AddCustomHitmarker(addon_id,addon_data)
 						else
 							self:log("Error: LoadHitmarkerAddons() " .. addon_lua_path .. " returned invalid data. Expected results: [string],[table]. Got: [" .. type(id) .. "] " .. tostring(id) .. ", [" .. type(addon_data) .. "] " .. tostring(addon_data) .. ".")
 						end
@@ -2357,7 +1282,9 @@ function AdvancedCrosshair:LoadHitsoundAddons()
 							self:log("FATAL ERROR: LoadHitsoundAddons(): " .. tostring(s_error),{color=Color.red})
 						elseif addon_lua then 
 							local addon_id,addon_data = addon_lua()
-							if addon_id and type(addon_data) == "table" then 
+							if addon_id == true then 
+								--assume loading is handled by the addon
+							elseif addon_id and type(addon_data) == "table" then 
 								if type(addon_data.variations_paths) == "table" then 
 									addon_data.variations = addon_data.variations or {}
 									for i,variation in pairs(addon_data.variations_paths) do
@@ -2683,53 +1610,8 @@ end
 --************************************************--
 		--stuff that happens during gameplay
 --************************************************--
---[[
-
---		local fire_mode = (weaponbase.fire_mode and weaponbase:fire_mode()) or weaponbase.FIRE_MODE
 
 
-cache.weapon = {
-	Unit12345 = { --underbarrels are created as their own unit entry
-		name_id = "wa2000",
-		panel = Panel,
-		firemodes = {
-			single = {
-				crosshair_id = "ma37",
-				panel = Panel,
-				parts = {
-					Bitmap1,
-					Bitmap2,
-					Bitmap3,
-					Bitmap4,
-					Bitmap5
-				}
-			},
-			auto = {
-				crosshair_id = "ma37",
-				panel = Panel,
-				parts = {
-					Bitmap1,
-					Bitmap2,
-					Bitmap3,
-					Bitmap4,
-					Bitmap5
-				},
-			}
-			burst = {
-				crosshair_id = "ma37",
-				panel = Panel,
-				parts = {
-					Bitmap1,
-					Bitmap2,
-					Bitmap3,
-					Bitmap4,
-					Bitmap5
-				}
-			}
-		}
-	}
-}
---]]
 	--**********************--
 		--init hud items
 	--**********************--
@@ -2875,7 +1757,7 @@ function AdvancedCrosshair:CreateCrosshairByWeapon(unit,weapon_index)
 					alpha = crosshair_setting.alpha
 				})
 local _crosshair_data = self._crosshair_data[underbarrel_crosshair_id]
-_crosshair_data = _crosshair_data or self._crosshair_data.ma37
+_crosshair_data = _crosshair_data or self._crosshair_data.pdth_classic
 
 				underbarrels_data[tostring(underbarrel)].firemodes[firemode] = { --using a tostring(table) as an index is gross but i gotta
 					underbarrel_index = underbarrel_index,
@@ -3690,10 +2572,9 @@ Hooks:Add("MenuManagerSetupCustomMenus", "ach_MenuManagerSetupCustomMenus", func
 end)
 
 Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus", function(menu_manager, nodes)
-	Hooks:Call("ACH_LoadAllAddons")
-	
 	AdvancedCrosshair:LoadAllAddons() --load custom crosshairs, hitmarkers, and hitsounds
 
+	Hooks:Call("ACH_LoadAllAddons")
 --crosshair/hitmarker selections are saved as string keys to the data in question instead of indices, since the order is not guaranteed
 --so generate a number index/string key lookup table for the menu to reference,
 --since multiplechoice menus can only use number indices (afaik)
@@ -4923,7 +3804,7 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 		end	
 	end
 	MenuCallbackHandler.callback_ach_crosshairs_categories_global_ads_hides_crosshair = function(self,item)
-		AdvancedCrosshair.settings.crosshair_global.hide_crosshair_on_ads = item:value() == "on"
+		AdvancedCrosshair.settings.crosshair_global.hide_on_ads = item:value() == "on"
 		AdvancedCrosshair:Save()
 	end
 	
@@ -5381,7 +4262,7 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 		end
 		AdvancedCrosshair:Save()
 	end
-		MenuCallbackHandler.callback_ach_hitsounds_set_hit_headshot_crit_volume = function(self,item)
+	MenuCallbackHandler.callback_ach_hitsounds_set_hit_headshot_crit_volume = function(self,item)
 		AdvancedCrosshair.settings.hitsound_hit_headshot_crit_volume = tonumber(item:value())
 	end
 	MenuCallbackHandler.callback_ach_hitsounds_set_kill_bodyshot_type = function(self,item)
@@ -5397,7 +4278,7 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 		end
 		AdvancedCrosshair:Save()
 	end
-		MenuCallbackHandler.callback_ach_hitsounds_set_kill_bodyshot_volume = function(self,item)
+	MenuCallbackHandler.callback_ach_hitsounds_set_kill_bodyshot_volume = function(self,item)
 		AdvancedCrosshair.settings.hitsound_kill_bodyshot_volume = tonumber(item:value())
 	end
 	MenuCallbackHandler.callback_ach_hitsounds_set_kill_headshot_type = function(self,item)
@@ -5413,7 +4294,7 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 		end
 		AdvancedCrosshair:Save()
 	end
-		MenuCallbackHandler.callback_ach_hitsounds_set_kill_headshot_volume = function(self,item)
+	MenuCallbackHandler.callback_ach_hitsounds_set_kill_headshot_volume = function(self,item)
 		AdvancedCrosshair.settings.hitsound_kill_headshot_volume = tonumber(item:value())
 	end
 	MenuCallbackHandler.callback_ach_hitsounds_set_kill_bodyshot_crit_type = function(self,item)
@@ -5429,7 +4310,7 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 		end
 		AdvancedCrosshair:Save()
 	end
-		MenuCallbackHandler.callback_ach_hitsounds_set_kill_bodyshot_crit_volume = function(self,item)
+	MenuCallbackHandler.callback_ach_hitsounds_set_kill_bodyshot_crit_volume = function(self,item)
 		AdvancedCrosshair.settings.hitsound_kill_bodyshot_crit_volume = tonumber(item:value())
 	end
 	MenuCallbackHandler.callback_ach_hitsounds_set_kill_headshot_crit_type = function(self,item)
@@ -5445,8 +4326,167 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 		end
 		AdvancedCrosshair:Save()
 	end
-		MenuCallbackHandler.callback_ach_hitsounds_set_kill_headshot_crit_volume = function(self,item)
+	MenuCallbackHandler.callback_ach_hitsounds_set_kill_headshot_crit_volume = function(self,item)
 		AdvancedCrosshair.settings.hitsound_kill_headshot_crit_volume = tonumber(item:value())
+	end
+	
+	
+	
+	MenuCallbackHandler.callback_ach_reset_crosshair_settings = function(self)
+		local function confirm_reset()
+			for _,key in pairs(AdvancedCrosshair.setting_categories.crosshair) do 
+				AdvancedCrosshair.settings[key] = AdvancedCrosshair.default_settings[key]
+			end
+			QuickMenu:new({
+				managers.localization:text("menu_ach_reset_crosshair_settings_prompt_success_title"),managers.localization:text("menu_ach_reset_crosshair_settings_prompt_success_desc"),{
+					{
+						text = managers.localization:text("menu_ach_prompt_ok"),
+						is_cancel_button = true,
+						is_focused_button = true
+					}
+				}
+			},true)
+			AdvancedCrosshair:Save()
+		end
+		QuickMenu:new({
+			managers.localization:text("menu_ach_reset_crosshair_settings_title"),managers.localization:text("menu_ach_reset_crosshair_settings_desc"),{
+				{
+					text = managers.localization:text("menu_ach_prompt_confirm"),
+					callback = confirm_reset
+				},
+				{
+					text = managers.localization:text("menu_ach_prompt_cancel"),
+					is_focused_button = true,
+					is_cancel_button = true
+				}
+			}
+		},true)
+	end
+	MenuCallbackHandler.callback_ach_reset_hitmarker_settings = function(self)
+		local function confirm_reset()
+			for _,key in pairs(AdvancedCrosshair.setting_categories.hitmarker) do 
+				AdvancedCrosshair.settings[key] = AdvancedCrosshair.default_settings[key]
+			end
+			QuickMenu:new({
+				managers.localization:text("menu_ach_reset_hitmarker_settings_prompt_success_title"),managers.localization:text("menu_ach_reset_hitmarker_settings_prompt_success_desc"),{
+					{
+						text = managers.localization:text("menu_ach_prompt_ok"),
+						is_cancel_button = true,
+						is_focused_button = true
+					}
+				}
+			},true)
+		end
+		AdvancedCrosshair:Save()
+		QuickMenu:new({
+			managers.localization:text("menu_ach_reset_hitmarker_settings_prompt_confirm_title"),managers.localization:text("menu_ach_reset_hitmarker_settings_prompt_confirm_desc"),{
+				{
+					text = managers.localization:text("menu_ach_prompt_confirm"),
+					callback = confirm_reset
+				},
+				{
+					text = managers.localization:text("menu_ach_prompt_cancel"),
+					is_focused_button = true,
+					is_cancel_button = true
+				}
+			}
+		},true)
+	end
+	MenuCallbackHandler.callback_ach_reset_hitsound_settings = function(self)
+		local function confirm_reset()
+			for _,key in pairs(AdvancedCrosshair.setting_categories.hitsound) do 
+				AdvancedCrosshair.settings[key] = AdvancedCrosshair.default_settings[key]
+			end
+			QuickMenu:new({
+				managers.localization:text("menu_ach_reset_hitsound_settings_prompt_success_title"),managers.localization:text("menu_ach_reset_hitsound_settings_prompt_success_desc"),{
+					{
+						text = managers.localization:text("menu_ach_prompt_ok"),
+						is_cancel_button = true,
+						is_focused_button = true
+					}
+				}
+			},true)
+		end
+		AdvancedCrosshair:Save()
+		QuickMenu:new({
+			managers.localization:text("menu_ach_reset_hitsound_settings_prompt_confirm_title"),managers.localization:text("menu_ach_reset_hitsound_settings_prompt_confirm_desc"),{
+				{
+					text = managers.localization:text("menu_ach_prompt_confirm"),
+					callback = confirm_reset
+				},
+				{
+					text = managers.localization:text("menu_ach_prompt_cancel"),
+					is_focused_button = true,
+					is_cancel_button = true
+				}
+			}
+		},true)
+	end
+	MenuCallbackHandler.callback_ach_reset_palettes = function(self)
+		local function confirm_reset()
+			for _,key in pairs(AdvancedCrosshair.setting_categories.palettes) do 
+				AdvancedCrosshair.settings[key] = AdvancedCrosshair.default_settings[key]
+			end
+			QuickMenu:new({
+				managers.localization:text("menu_ach_reset_palettes_prompt_success_title"),managers.localization:text("menu_ach_reset_palettes_prompt_success_desc"),{
+					{
+						text = managers.localization:text("menu_ach_prompt_ok"),
+						is_cancel_button = true,
+						is_focused_button = true
+					}
+				}
+			},true)
+		end
+		AdvancedCrosshair:Save()
+		QuickMenu:new({
+			managers.localization:text("menu_ach_reset_palettes_prompt_confirm_title"),managers.localization:text("menu_ach_reset_palettes_prompt_confirm_desc"),{
+				{
+					text = managers.localization:text("menu_ach_prompt_confirm"),
+					callback = confirm_reset
+				},
+				{
+					text = managers.localization:text("menu_ach_prompt_cancel"),
+					is_focused_button = true,
+					is_cancel_button = true
+				}
+			}
+		},true)
+	end
+	
+	MenuCallbackHandler.callback_ach_reset_all_settings = function(self)
+		--open confirm dialogue
+		local function confirm_reset()
+			AdvancedCrosshair.settings = table.deep_map_copy(AdvancedCrosshair.default_settings)
+			AdvancedCrosshair:Save()
+			QuickMenu:new({
+				managers.localization:text("menu_ach_reset_all_settings_prompt_success_title"),managers.localization:text("menu_ach_reset_all_settings_prompt_success_desc"),{
+					{
+						text = managers.localization:text("menu_ach_prompt_ok"),
+						is_cancel_button = true,
+						is_focused_button = true
+					}
+				}
+			},true)
+		end
+		QuickMenu:new({
+			managers.localization:text("menu_ach_reset_all_settings_prompt_confirm_title"),managers.localization:text("menu_ach_reset_all_settings_prompt_confirm_desc"),{
+				{
+					text = managers.localization:text("menu_ach_prompt_confirm"),
+					callback = confirm_reset
+				},
+				{
+					text = managers.localization:text("menu_ach_prompt_cancel"),
+					is_focused_button = true,
+					is_cancel_button = true
+				}
+			}
+		},true)
+	end
+	MenuCallbackHandler.callback_ach_reset_close = function(self)
+		--
+	end
+	MenuCallbackHandler.callback_ach_reset_focus = function(self,focused)
+		--
 	end
 	
 	--creates colorpicker menu for AdvancedCrosshair mod; this menu is reused for all color-related callbacks in this mod,
@@ -5458,6 +4498,7 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 	MenuHelper:LoadFromJsonFile(AdvancedCrosshair.path .. "menu/menu_crosshairs.json", AdvancedCrosshair, AdvancedCrosshair.settings)
 	MenuHelper:LoadFromJsonFile(AdvancedCrosshair.path .. "menu/menu_hitmarkers.json", AdvancedCrosshair, AdvancedCrosshair.settings)
 	MenuHelper:LoadFromJsonFile(AdvancedCrosshair.path .. "menu/menu_hitsounds.json", AdvancedCrosshair, AdvancedCrosshair.settings)
+	MenuHelper:LoadFromJsonFile(AdvancedCrosshair.path .. "menu/menu_reset.json", AdvancedCrosshair, AdvancedCrosshair.settings)
 end)
 
 
@@ -5477,6 +4518,15 @@ function AdvancedCrosshair.clbk_hitmarker_preview(preview_data)
 	if alive(fullscreen_ws) then 
 		local headshot = preview_data.headshot
 		local crit = preview_data.crit
+	
+
+		local hitmarker_setting = AdvancedCrosshair:GetHitmarkerSettings(preview_data.result_type)
+		local hitmarker_id = hitmarker_setting.hitmarker_id
+		if not (hitmarker_id and AdvancedCrosshair._hitmarker_data[hitmarker_id]) then
+			AdvancedCrosshair:log("ERROR: clbk_hitmarker_preview(): Bad hitmarker_id (" .. tostring(hitmarker_id) .. "); Aborting!",{color=Color.red})
+			return
+		end
+		local hitmarker_data = AdvancedCrosshair._hitmarker_data[hitmarker_id]
 	
 		local menupanel = fullscreen_ws:panel()
 		local preview_panel = menupanel:child("ach_preview")
@@ -5517,16 +4567,10 @@ function AdvancedCrosshair.clbk_hitmarker_preview(preview_data)
 				color = Color.white,
 				alpha = 0.5
 			})
-			
 		end
-
-		local hitmarker_setting = AdvancedCrosshair:GetHitmarkerSettings(preview_data.result_type)
-		local hitmarker_id = hitmarker_setting.hitmarker_id
-		if not (hitmarker_id and AdvancedCrosshair._hitmarker_data[hitmarker_id]) then
-			AdvancedCrosshair:log("ERROR: clbk_hitmarker_preview(): Bad hitmarker_id (" .. tostring(hitmarker_id) .. "); Aborting!",{color=Color.red})
-			return
+		if hitmarker_data.name_id and preview_panel:child("preview_label") then 
+			preview_panel:child("preview_label"):set_text(managers.localization:text(hitmarker_data.name_id))
 		end
-		local hitmarker_data = AdvancedCrosshair._hitmarker_data[hitmarker_id]
 		
 		local color = hitmarker_setting.bodyshot_color
 		if preview_data.preview_color_override then 
@@ -5619,7 +4663,7 @@ function AdvancedCrosshair.clbk_create_crosshair_preview(crosshair_setting)
 		blur_bg:set_center(preview_panel:center())
 		local preview_label = preview_panel:text({
 			name = "preview_label",
-			text = managers.localization:text("menu_ach_preview_label_title"),
+			text = crosshair_data.name_id and managers.localization:text(crosshair_data.name_id) or managers.localization:text("menu_ach_preview_label_title"),
 			layer = 2,
 			align = "center",
 			y = blur_bg:top() + 4,

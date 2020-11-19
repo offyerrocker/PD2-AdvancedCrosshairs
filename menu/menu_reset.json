@@ -1,0 +1,50 @@
+{
+	"menu_id" : "ach_menu_reset",
+	"parent_menu_id" : "ach_menu_main",
+	"title" : "menu_ach_menu_reset_title",
+	"back_callback" : "callback_ach_reset_close",
+	"focus_changed_callback" : "callback_ach_reset_focus",
+	"items" : [
+		
+		{
+			"type" : "button",
+			"id" : "ach_reset_crosshair_settings",
+			"title" : "menu_ach_reset_crosshair_settings_title",
+			"description" : "menu_ach_reset_crosshair_settings_desc",
+			"callback" : "callback_ach_reset_crosshair_settings"
+		},
+		{
+			"type" : "button",
+			"id" : "ach_reset_hitmarker_settings",
+			"title" : "menu_ach_reset_hitmarker_settings_title",
+			"description" : "menu_ach_reset_hitmarker_settings_desc",
+			"callback" : "callback_ach_reset_hitmarker_settings"
+		},
+		{
+			"type" : "button",
+			"id" : "ach_reset_hitsound_settings",
+			"title" : "menu_ach_reset_hitsound_settings_title",
+			"description" : "menu_ach_reset_hitsound_settings_desc",
+			"callback" : "callback_ach_reset_hitsound_settings"
+		},
+		{
+			"type" : "button",
+			"id" : "ach_reset_palettes",
+			"title" : "menu_ach_reset_palettes_title",
+			"description" : "menu_ach_reset_palettes_desc",
+			"callback" : "callback_ach_reset_palettes"
+		},
+		{
+			"type" : "divider",
+			"id" : "ach_menu_reset_div_1",
+			"size" : 32
+		},
+		{
+			"type" : "button",
+			"id" : "ach_reset_all_settings",
+			"title" : "menu_ach_reset_all_settings_title",
+			"description" : "menu_ach_reset_all_settings_desc",
+			"callback" : "callback_ach_reset_all_settings"
+		},
+	]
+}
