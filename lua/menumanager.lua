@@ -137,15 +137,16 @@ AdvancedCrosshair.DEFAULT_CROSSHAIR_OPTIONS = {
 	overrides_global = false,
 	hide_on_ads = false --since this was added post-1.0, be aware that this value can be nil in some users' settings
 }
-AdvancedCrosshair.DEFAULT_HITMARKER_OPTIONS = { --not used
-	hitmarker_id = "destiny",
+AdvancedCrosshair.DEFAULT_HITMARKER_OPTIONS = {
+	hitmarker_id = "generic_hit",
+	hitmarker_kill_id = "destiny_kill",
+	hitmarker_hit_id = "vanilla",
 	use_animate = true,
 	default_color = "eeeeee",
 	headshot_color = "ff0000",
 	crit_color = "0000ff",
 	headcrit_color = "ff00ff"
 }
-
 --init default settings values
 --these are later overwritten by values read from save data, if present
 AdvancedCrosshair.default_settings = {
@@ -278,6 +279,20 @@ AdvancedCrosshair.setting_categories = {
 		"hitmarker_kill_bodyshot_color",
 		"hitmarker_kill_bodyshot_crit_color",
 		"hitmarker_kill_headshot_color"
+	},
+	hitmarker_ids = {
+		"hitmarker_hit_id",
+		"hitmarker_kill_id"
+	},
+	hitsound_ids = {
+		"hitsound_hit_bodyshot_id",
+		"hitsound_hit_headshot_id",
+		"hitsound_hit_bodyshot_crit_id",
+		"hitsound_hit_headshot_crit_id",
+		"hitsound_kill_headshot_id",
+		"hitsound_kill_bodyshot_id",
+		"hitsound_kill_bodyshot_crit_id",
+		"hitsound_kill_headshot_crit_id"
 	},
 	hitsound = {
 		"use_hitsound_pos",
@@ -2571,9 +2586,42 @@ Hooks:Add("MenuManagerSetupCustomMenus", "ach_MenuManagerSetupCustomMenus", func
 end)
 
 Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus", function(menu_manager, nodes)
+	AdvancedCrosshair:log("Loading addons...")
 	AdvancedCrosshair:LoadAllAddons() --load custom crosshairs, hitmarkers, and hitsounds
 
 	Hooks:Call("ACH_LoadAllAddons")
+	AdvancedCrosshair:log("Addon loading complete.")
+	for category,category_data in pairs(AdvancedCrosshair.settings.crosshairs) do 
+		for firemode,firemode_data in pairs(category_data) do 
+			if not (firemode_data.crosshair_id and AdvancedCrosshair._crosshair_data[firemode_data.crosshair_id]) then 
+				AdvancedCrosshair:log("Replacing invalid crosshair setting " .. category .. "/" .. firemode .. " from " .. tostring(firemode_data.crosshair_id) .. " to " .. AdvancedCrosshair.DEFAULT_CROSSHAIR_OPTIONS.crosshair_id)
+				firemode_data.crosshair_id = AdvancedCrosshair.DEFAULT_CROSSHAIR_OPTIONS.crosshair_id
+			end
+		end
+	end
+	if not AdvancedCrosshair._crosshair_data[AdvancedCrosshair.settings.crosshair_global.crosshair_id] then 
+		AdvancedCrosshair.settings.crosshair_global.crosshair_id = AdvancedCrosshair.DEFAULT_CROSSHAIR_OPTIONS.crosshair_id
+		AdvancedCrosshair:log("Replacing invalid global crosshair setting from " .. tostring(AdvancedCrosshair.settings.crosshair_global.crosshair_id) .. " to " .. AdvancedCrosshair.DEFAULT_CROSSHAIR_OPTIONS.crosshair_id)
+	end
+	
+	
+	for _,key in pairs(AdvancedCrosshair.setting_categories.hitmarker_ids) do 
+		if not (AdvancedCrosshair.settings[key] and AdvancedCrosshair._hitmarker_data[AdvancedCrosshair.settings[key]]) then 
+			AdvancedCrosshair:log("Replacing invalid hitmarker setting from " .. key .. " = " .. tostring(AdvancedCrosshair.settings[key]) .. " to " ..  AdvancedCrosshair.default_settings[key])
+			AdvancedCrosshair.settings[key] = AdvancedCrosshair.default_settings[key]
+		end
+	end
+	
+	for _,key in pairs(AdvancedCrosshair.setting_categories.hitsound_ids) do 
+		if not (AdvancedCrosshair.settings[key] and AdvancedCrosshair._hitsound_data[AdvancedCrosshair.settings[key]]) then 
+			AdvancedCrosshair:log("Replacing invalid hitmarker setting from " .. key .. " = " .. tostring(AdvancedCrosshair.settings[key]) .. " to " ..  AdvancedCrosshair.default_settings[key])
+			AdvancedCrosshair.settings[key] = AdvancedCrosshair.default_settings[key]
+		end
+	end
+	
+	
+	
+	
 --crosshair/hitmarker selections are saved as string keys to the data in question instead of indices, since the order is not guaranteed
 --so generate a number index/string key lookup table for the menu to reference,
 --since multiplechoice menus can only use number indices (afaik)
@@ -2921,6 +2969,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		menu_id = AdvancedCrosshair.hitmarkers_menu_id,
 		priority = 1
 	})
+	--[[
 	MenuHelper:AddToggle({
 		id = "ach_hitmarkers_preview_toggle_loop",
 		title = "menu_ach_hitmarkers_preview_toggle_loop_title",
@@ -2930,7 +2979,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		menu_id = AdvancedCrosshair.hitmarkers_menu_id,
 		priority = 1
 	})
-	
+	--]]
 	
 	
 	
