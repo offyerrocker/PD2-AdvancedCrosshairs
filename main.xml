@@ -1,11 +1,10 @@
 <mod name="Advanced Crosshairs and Hitmarkers" author="Offyerrocker" color="Color(0.4,0.7,1)" >
-	<AssetUpdates id="28082" version="3" provider="modworkshop" install_directory="mods/" version_is_number="true" />
+	<AssetUpdates id="28082" version="4" provider="modworkshop" install_directory="mods/" version_is_number="true" />
 	<Localization directory="localization" default="english.txt">
 		<loc file="english.txt" language="english" />
 	</Localization>
 	<AddFiles directory="assets">
 		<texture path="guis/textures/advanced_crosshairs/destiny_hitmarker"/>
-		<texture path="guis/textures/advanced_crosshairs/crosshair_circle_64"/>
 		<texture path="guis/textures/advanced_crosshairs/crosshair_circle_128"/>
 		<texture path="guis/textures/advanced_crosshairs/tf2_crit_text"/>
 		<texture path="guis/textures/advanced_crosshairs/ar_crosshair_2"/>
