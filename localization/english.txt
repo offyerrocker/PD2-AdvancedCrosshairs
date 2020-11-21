@@ -62,6 +62,9 @@
 	"menu_ach_set_bloom_enabled_desc" : "Does not reflect actual weapon accuracy/stability.",
 	"menu_ach_preview_label_title" : "PREVIEW",
 	
+	"menu_ach_menu_main_compatibility_playermanager_checkskill_title" : "Compatibility: PlayerManager:CheckSkill()",
+	"menu_ach_menu_main_compatibility_playermanager_checkskill_desc" : "Allows Hitmarkers and Hitsounds to function with mods such as Restoration Mod.",
+	
 	"menu_ach_crosshairs_global_menu_title" : "Global Crosshair",
 	"menu_ach_crosshairs_global_menu_desc" : "Applies to any weapons not overridden.",
 	"menu_ach_crosshairs_general_menu_title" : "General",

@@ -1,5 +1,7 @@
 		--todo list, loosely sorted by descending priority:
 
+--general setting for resmod compatibility
+
 --rework hitmarker preview to loop hitmarker preview (toggle-able)
 --sort options in each given category (crosshairs,hitmarkers,hitsounds) alphabetically
 
@@ -153,6 +155,7 @@ AdvancedCrosshair.default_settings = {
 	crosshair_enabled = true,
 	hitmarker_enabled = true,
 	hitsound_enabled = false,
+	compatibility_hook_playermanager_checkskill = false,
 	use_shake = true,
 	use_color = true,
 	use_hitpos = true,
@@ -870,7 +873,7 @@ AdvancedCrosshair._hitsound_data = {
 	}
 }
 
-AdvancedCrosshair.hitmarker_menu_preview_loops = true
+AdvancedCrosshair.hitmarker_menu_preview_loops = true --not yet implemented
 
 --************************************************--
 --					Utils
@@ -1400,6 +1403,10 @@ function AdvancedCrosshair:SetPaletteCodes(tbl)
 	end
 end
 
+function AdvancedCrosshair:UseCompatibility_PlayerManagerCheckSkill()
+	return self.settings.compatibility_hook_playermanager_checkskill
+end
+
 	--Crosshairs
 function AdvancedCrosshair:GetCrosshairStability()
 	return self.settings.crosshair_stability
@@ -1644,10 +1651,36 @@ function AdvancedCrosshair:Init()
 	end
 end
 
+function AdvancedCrosshair:OnPlayerManagerCheckSkills(pm)
+
+	pm._message_system:unregister(Message.OnWeaponFired,"advancedcrosshair_OnWeaponFired")
+	pm._message_system:unregister(Message.OnEnemyShot,"advancedcrosshair_OnEnemyShot")
+	
+	pm._message_system:register(Message.OnWeaponFired,"advancedcrosshair_OnWeaponFired",
+		function(weapon_unit,result)
+			local weapon_base = weapon_unit:base()
+			if weapon_base and weapon_base._setup and weapon_base._setup.user_unit and weapon_base._setup.user_unit == managers.player:local_player() then 
+				self:AddBloom()
+			end
+		end
+	)
+	pm._message_system:register(Message.OnEnemyShot,"ach_OnEnemyShot",function(unit,attack_data,...) 
+		if attack_data and attack_data.attacker_unit and (attack_data.attacker_unit == pm:local_player()) then 
+			self:OnEnemyHit(unit,attack_data,...)
+		end
+	end)
+	
+end
+
 function AdvancedCrosshair:CreateHUD(t,dt) --try to create hud each run until both required elements are initiated.
+	
+
 --...it's not ideal.
 	local hud = managers.hud and managers.hud:script(PlayerBase.PLAYER_INFO_HUD_FULLSCREEN_PD2) --managers.hud._hud_hit_confirm and managers.hud._hud_hit_confirm._hud_panel
-	if alive(managers.player:local_player()) and hud and hud.panel then 
+	if managers.player and alive(managers.player:local_player()) and hud and hud.panel then 
+		if AdvancedCrosshair:UseCompatibility_PlayerManagerCheckSkill() then
+			self:OnPlayerManagerCheckSkills(managers.player)
+		end
 		BeardLib:RemoveUpdater("advc_create_hud_delayed")
 --		managers.hud:add_updator("advancedcrosshairs_update",callback(AdvancedCrosshair,AdvancedCrosshair,"Update"))
 		self:CreateCrosshairPanel(hud.panel)
@@ -2586,6 +2619,18 @@ Hooks:Add("MenuManagerSetupCustomMenus", "ach_MenuManagerSetupCustomMenus", func
 end)
 
 Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus", function(menu_manager, nodes)
+
+--for general options: 
+	MenuHelper:AddToggle({
+		id = "ach_menu_main_compatibility_playermanager_checkskill",
+		title = "menu_ach_menu_main_compatibility_playermanager_checkskill_title",
+		desc = "menu_ach_menu_main_compatibility_playermanager_checkskill_desc",
+		callback = "callback_ach_menu_main_compatibility_playermanager_checkskill",
+		value = AdvancedCrosshair.settings.compatibility_hook_playermanager_checkskill,
+		menu_id = AdvancedCrosshair.main_menu_id,
+		priority = 1
+	})
+
 	AdvancedCrosshair:log("Loading addons...")
 	AdvancedCrosshair:LoadAllAddons() --load custom crosshairs, hitmarkers, and hitsounds
 
@@ -4367,7 +4412,9 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 		AdvancedCrosshair.settings.hitsound_kill_headshot_crit_volume = tonumber(item:value())
 	end
 	
-	
+	MenuCallbackHandler.callback_ach_menu_main_compatibility_playermanager_checkskill = function(self,item)
+		AdvancedCrosshair.settings.compatibility_hook_playermanager_checkskill = item:value() == "on"
+	end
 	
 	MenuCallbackHandler.callback_ach_reset_crosshair_settings = function(self)
 		local function confirm_reset()
