@@ -156,6 +156,7 @@ AdvancedCrosshair.default_settings = {
 	hitmarker_enabled = true,
 	hitsound_enabled = false,
 	compatibility_hook_playermanager_checkskill = false,
+	allow_messages = 1, --1: yes; 2: yes but no compatibility messages; 3: do not. none. never. get out of my house. die.
 	use_shake = true,
 	use_color = true,
 	use_hitpos = true,
@@ -355,8 +356,6 @@ AdvancedCrosshair.ADDON_PATHS = {
 		AdvancedCrosshair.save_path .. "ACH Addons/Hitsounds/"
 	}
 }
-
-
 
 
 --holds some instance-specific stuff to save time + cycles
@@ -1405,6 +1404,138 @@ end
 
 function AdvancedCrosshair:UseCompatibility_PlayerManagerCheckSkill()
 	return self.settings.compatibility_hook_playermanager_checkskill
+end
+
+
+
+
+
+AdvancedCrosshair.mod_update_alerts = {
+	{
+		version = 3,
+		text_id = "menu_ach_update_message_v3",
+		message_type = "content_removed"
+	}
+}
+
+AdvancedCrosshair.compatibility_checks = {
+	{
+		disabled = true,
+		check_func = function()
+			if managers.player then 
+				local debuginfo = debug and debug.getinfo and debug.getinfo(managers.player.check_skills)
+					--you're not supposed to use this for anything but debugging your own software locally, since lua environments/installations are not guaranteed to have the debug library shipped with release version software. i gotta tho
+				if type(debuginfo) == "table" then 
+					return debuginfo.source == "lib/managers/playermanager"
+				end
+			end
+		end,
+		text_id = "menu_ach_compatibility_warning_playermanager_checkskills"
+	},
+	{
+		check_func = function()
+			if _G.SC then 
+				return true
+			end
+		end,
+		text_id = "menu_ach_compatibility_warning_restorationmod"
+	}
+}
+
+function AdvancedCrosshair:GetVersion() --nonfunctional; pseudocode
+--	local this_mod_right_here = BeardLib:FindMod("Advanced Crosshairs, Hitmarkers, and Hitsounds")
+--	if this_mod_right_here then 
+--		return this_mod_right_here._update_module.modules.version
+--	end
+--	return 1
+end
+
+function AdvancedCrosshair:ShouldShowStartupMessage()
+	local setting = self.settings.allow_messages
+	if setting == 3 then 
+		return false
+	elseif setting == 1 then 
+		return true
+	end
+	return false
+end
+
+function AdvancedCrosshair:CheckCompatibility()
+	local results_table = {}
+	for _,compatibility_data in pairs(self.compatibility_checks) do 
+		if compatibility_data.check_func and compatibility_data.check_func() then 
+			table.insert(results_table,#results_table + 1,compatibility_data.text_id)
+		end
+	end
+	if #results_table > 0 then 
+		local result_text = managers.localization:text("menu_ach_prompt_compatibility_warning_text_1") .. "\n"
+		for _,text in ipairs(results_table) do 
+			results_text = "- " .. managers.localization:text(text) .. "\n"
+		end
+		results_text = results_text .. "\n" .. managers.localization:text("menu_ach_prompt_compatibility_warning_text_2")
+		
+		QuickMenu:new(managers.localization:text("menu_ach_prompt_compatibility_warning_title"),result_text,{
+			{
+				text = managers.localization:text("menu_ach_prompt_ok")
+			},
+			{
+				text = managers.localization:text("menu_ach_update_message_prompt_stop_compatibility_warnings"),
+				callback = function()
+					self.settings.allow_messages = 2
+					set_recent_version()
+				end
+			}
+		},true)
+		
+	end
+end
+
+function AdvancedCrosshair:CheckStartupMessages()
+
+	local current_version = self:GetVersion()
+	local function set_recent_version()
+		AdvancedCrosshair.settings.installation_version = current_version
+		AdvancedCrosshair:Save()
+	end
+	local installation_version = tonumber(self.settings.installation_version) or 1
+	local results_table = {}
+	if installation_version < current_version then 
+		for index,message_data in ipairs(self.mod_update_alerts) do 
+			if message_data.version and installation_version < message_data.version then 
+				table.insert(results_table,message,#results_table + 1)
+			end
+		end
+	end
+	
+	if self:ShouldShowStartupMessage() and #results_table > 0 then 
+		local result_text = ""
+		for i,text in ipairs(results_table) do 
+			result_text = "- " .. managers.localization:text(text) .. "\n"
+		end
+		
+		QuickMenu:new(managers.localization:text("menu_ach_update_message_title"),result_text,{
+			{
+				text = managers.localization:text("menu_ach_prompt_ok"),
+				callback = set_recent_version()
+			},
+			{
+				text = managers.localization:text("menu_ach_update_message_prompt_yamete"),
+				callback = function()
+					self.settings.allow_messages = 3
+					set_recent_version()
+				end
+			},
+			{
+				text = managers.localization:text("menu_ach_update_message_prompt_remindmelater"),
+				is_focused_button = true,
+				is_cancel_button = true
+			}
+		},true)
+		
+		
+	else
+		set_recent_version()
+	end
 end
 
 	--Crosshairs
@@ -2619,17 +2750,6 @@ Hooks:Add("MenuManagerSetupCustomMenus", "ach_MenuManagerSetupCustomMenus", func
 end)
 
 Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus", function(menu_manager, nodes)
-
---for general options: 
-	MenuHelper:AddToggle({
-		id = "ach_menu_main_compatibility_playermanager_checkskill",
-		title = "menu_ach_menu_main_compatibility_playermanager_checkskill_title",
-		desc = "menu_ach_menu_main_compatibility_playermanager_checkskill_desc",
-		callback = "callback_ach_menu_main_compatibility_playermanager_checkskill",
-		value = AdvancedCrosshair.settings.compatibility_hook_playermanager_checkskill,
-		menu_id = AdvancedCrosshair.main_menu_id,
-		priority = 1
-	})
 
 	AdvancedCrosshair:log("Loading addons...")
 	AdvancedCrosshair:LoadAllAddons() --load custom crosshairs, hitmarkers, and hitsounds
@@ -4297,6 +4417,7 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 	end
 	MenuCallbackHandler.callback_ach_hitsounds_set_hit_bodyshot_volume = function(self,item)
 		AdvancedCrosshair.settings.hitsound_hit_bodyshot_volume = tonumber(item:value())
+		AdvancedCrosshair:Save()
 	end
 	MenuCallbackHandler.callback_ach_hitsounds_set_hit_headshot_type = function(self,item)
 		AdvancedCrosshair.settings.hitsound_hit_headshot_id = AdvancedCrosshair.hitsound_id_by_index[tonumber(item:value())]	
@@ -4314,6 +4435,7 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 	end
 	MenuCallbackHandler.callback_ach_hitsounds_set_hit_headshot_volume = function(self,item)
 		AdvancedCrosshair.settings.hitsound_hit_headshot_volume = tonumber(item:value())
+		AdvancedCrosshair:Save()
 	end
 	MenuCallbackHandler.callback_ach_hitsounds_set_hit_bodyshot_crit_type = function(self,item)
 		AdvancedCrosshair.settings.hitsound_hit_bodyshot_crit_id = AdvancedCrosshair.hitsound_id_by_index[tonumber(item:value())]	
@@ -4330,6 +4452,7 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 	end
 	MenuCallbackHandler.callback_ach_hitsounds_set_hit_bodyshot_crit_volume = function(self,item)
 		AdvancedCrosshair.settings.hitsound_hit_bodyshot_crit_volume = tonumber(item:value())
+		AdvancedCrosshair:Save()
 	end
 	MenuCallbackHandler.callback_ach_hitsounds_set_hit_headshot_crit_type = function(self,item)
 		AdvancedCrosshair.settings.hitsound_hit_headshot_crit_id = AdvancedCrosshair.hitsound_id_by_index[tonumber(item:value())]
@@ -4346,6 +4469,7 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 	end
 	MenuCallbackHandler.callback_ach_hitsounds_set_hit_headshot_crit_volume = function(self,item)
 		AdvancedCrosshair.settings.hitsound_hit_headshot_crit_volume = tonumber(item:value())
+		AdvancedCrosshair:Save()
 	end
 	MenuCallbackHandler.callback_ach_hitsounds_set_kill_bodyshot_type = function(self,item)
 		AdvancedCrosshair.settings.hitsound_kill_bodyshot_id = AdvancedCrosshair.hitsound_id_by_index[tonumber(item:value())]
@@ -4362,6 +4486,7 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 	end
 	MenuCallbackHandler.callback_ach_hitsounds_set_kill_bodyshot_volume = function(self,item)
 		AdvancedCrosshair.settings.hitsound_kill_bodyshot_volume = tonumber(item:value())
+		AdvancedCrosshair:Save()
 	end
 	MenuCallbackHandler.callback_ach_hitsounds_set_kill_headshot_type = function(self,item)
 		AdvancedCrosshair.settings.hitsound_kill_headshot_id = AdvancedCrosshair.hitsound_id_by_index[tonumber(item:value())]
@@ -4378,6 +4503,7 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 	end
 	MenuCallbackHandler.callback_ach_hitsounds_set_kill_headshot_volume = function(self,item)
 		AdvancedCrosshair.settings.hitsound_kill_headshot_volume = tonumber(item:value())
+		AdvancedCrosshair:Save()
 	end
 	MenuCallbackHandler.callback_ach_hitsounds_set_kill_bodyshot_crit_type = function(self,item)
 		AdvancedCrosshair.settings.hitsound_kill_bodyshot_crit_id = AdvancedCrosshair.hitsound_id_by_index[tonumber(item:value())]
@@ -4394,6 +4520,7 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 	end
 	MenuCallbackHandler.callback_ach_hitsounds_set_kill_bodyshot_crit_volume = function(self,item)
 		AdvancedCrosshair.settings.hitsound_kill_bodyshot_crit_volume = tonumber(item:value())
+		AdvancedCrosshair:Save()
 	end
 	MenuCallbackHandler.callback_ach_hitsounds_set_kill_headshot_crit_type = function(self,item)
 		AdvancedCrosshair.settings.hitsound_kill_headshot_crit_id = AdvancedCrosshair.hitsound_id_by_index[tonumber(item:value())]
@@ -4410,10 +4537,12 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 	end
 	MenuCallbackHandler.callback_ach_hitsounds_set_kill_headshot_crit_volume = function(self,item)
 		AdvancedCrosshair.settings.hitsound_kill_headshot_crit_volume = tonumber(item:value())
+		AdvancedCrosshair:Save()
 	end
 	
 	MenuCallbackHandler.callback_ach_menu_main_compatibility_playermanager_checkskill = function(self,item)
 		AdvancedCrosshair.settings.compatibility_hook_playermanager_checkskill = item:value() == "on"
+		AdvancedCrosshair:Save()
 	end
 	
 	MenuCallbackHandler.callback_ach_reset_crosshair_settings = function(self)
@@ -4830,6 +4959,7 @@ function AdvancedCrosshair.clbk_missing_colorpicker_prompt()
 		text = managers.localization:text("menu_ach_prompt_ok")
 	},true)
 end
+
 
 AdvancedCrosshair:Init()
 AdvancedCrosshair:Load()
