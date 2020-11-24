@@ -2,6 +2,7 @@
 	<AssetUpdates id="28082" version="4" provider="modworkshop" install_directory="mods/" version_is_number="true" />
 	<Localization directory="localization" default="english.txt">
 		<loc file="english.txt" language="english" />
+		<loc file="chinese.txt" language="chinese" />
 	</Localization>
 	<AddFiles directory="assets">
 		<texture path="guis/textures/advanced_crosshairs/destiny_hitmarker"/>

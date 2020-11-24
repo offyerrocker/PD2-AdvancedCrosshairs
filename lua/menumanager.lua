@@ -2425,35 +2425,42 @@ function AdvancedCrosshair:CheckCrosshair()
 		local inventory = player:inventory()
 		local equipped_index = inventory:equipped_selection()
 		local equipped_unit = inventory:equipped_unit()
-		local current_firemode = equipped_unit:base():fire_mode()
-		local weapon_base = equipped_unit:base()
-		if weapon_base.in_burst_mode and weapon_base:in_burst_mode() then
-			current_firemode = "burst"
-		end
 		
-		local new_current_data
-		
-		local weapon_data = self._cache.weapons[tostring(equipped_unit:key())]
-		if not weapon_data then 
---			self:log("ERROR! Weapon data for weapon " .. tostring(weapon_base:get_name_id()) .. " in slot " .. tostring(equipped_index) .. " not found!",{color=Color.red}) --this can happen at the start of the heist when the playerstate is changed for the first time, before AdvancedCrosshair is initialized
-			return
-		end
-		local underbarrel_base = weapon_base:gadget_overrides_weapon_functions()
-		if underbarrel_base then 
-			local underbarrel = weapon_data.underbarrels[tostring(underbarrel_base)]
-			if underbarrel and underbarrel_base and underbarrel_base._tweak_data then
-				current_firemode = underbarrel_base._tweak_data.FIRE_MODE
-				--currently no other way to get the firemode of an underbarrel, since i don't believe switching firemodes independently of parent weapon is possible?
-				
-				new_current_data = underbarrel.firemodes[current_firemode]
-			end
-		end
-		new_current_data = new_current_data or weapon_data.firemodes[current_firemode]
-		
-		if new_current_data and (new_current_data ~= self._cache.current_crosshair_data) then 
-			self._cache.current_crosshair_data.panel:hide()
-			self._cache.current_crosshair_data = new_current_data
+		if equipped_unit then 
+			local current_firemode = equipped_unit:base():fire_mode()
+			local weapon_base = equipped_unit:base()
 			
+			if weapon_base.in_burst_mode and weapon_base:in_burst_mode() then
+				current_firemode = "burst"
+			end
+			
+			local new_current_data
+			
+			local weapon_data = self._cache.weapons[tostring(equipped_unit:key())]
+			if not weapon_data then 
+	--			self:log("ERROR! Weapon data for weapon " .. tostring(weapon_base:get_name_id()) .. " in slot " .. tostring(equipped_index) .. " not found!",{color=Color.red}) --this can happen at the start of the heist when the playerstate is changed for the first time, before AdvancedCrosshair is initialized
+				return
+			end
+			
+			local underbarrel_base = weapon_base:gadget_overrides_weapon_functions()
+			if underbarrel_base then 
+				local underbarrel = weapon_data.underbarrels[tostring(underbarrel_base)]
+				if underbarrel and underbarrel_base and underbarrel_base._tweak_data then
+					current_firemode = underbarrel_base._tweak_data.FIRE_MODE
+					--currently no other way to get the firemode of an underbarrel, since i don't believe switching firemodes independently of parent weapon is possible?
+					
+					new_current_data = underbarrel.firemodes[current_firemode]
+				end
+			end
+			
+			
+			new_current_data = new_current_data or weapon_data.firemodes[current_firemode]
+			
+			if new_current_data and (new_current_data ~= self._cache.current_crosshair_data) then 
+				self._cache.current_crosshair_data.panel:hide()
+				self._cache.current_crosshair_data = new_current_data
+				
+			end
 		end
 		if self._cache.current_crosshair_data.settings.hide_on_ads and player:movement():current_state():in_steelsight() then 
 			hidden = true
