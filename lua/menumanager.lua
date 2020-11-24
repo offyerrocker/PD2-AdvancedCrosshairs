@@ -2,10 +2,10 @@
 
 --general setting for resmod compatibility
 
---rework hitmarker preview to loop hitmarker preview (toggle-able)
 --sort options in each given category (crosshairs,hitmarkers,hitsounds) alphabetically
 
 --migrate the more obscure options to "Advanced Settings" menus
+--fadeout for tf2 crit
 
 -- slider option for scaling crosshairs
 -- slider option for scaling hitmarker size?
@@ -1696,6 +1696,10 @@ function AdvancedCrosshair:animate_stop(object)
 	AdvancedCrosshair._animate_targets[tostring(object)] = nil
 end
 
+function AdvancedCrosshair:is_animating(object)
+	return AdvancedCrosshair._animate_targets[tostring(object)]
+end
+
 	--hud animations
 function AdvancedCrosshair:animate_fadeout(o,t,dt,start_t,duration,from_alpha,exit_x,exit_y)
 	duration = duration or 1
@@ -3170,7 +3174,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		menu_id = AdvancedCrosshair.hitmarkers_menu_id,
 		priority = 1
 	})
-	--[[
+
 	MenuHelper:AddToggle({
 		id = "ach_hitmarkers_preview_toggle_loop",
 		title = "menu_ach_hitmarkers_preview_toggle_loop_title",
@@ -3180,8 +3184,6 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		menu_id = AdvancedCrosshair.hitmarkers_menu_id,
 		priority = 1
 	})
-	--]]
-	
 	
 	
 	
@@ -4847,6 +4849,8 @@ AdvancedCrosshair.hitmarker_preview_data = {
 function AdvancedCrosshair.clbk_hitmarker_preview(preview_data)
 	local fullscreen_ws = managers.menu_component and managers.menu_component._fullscreen_ws
 	if alive(fullscreen_ws) then 
+		preview_data = preview_data or AdvancedCrosshair.hitmarker_preview_data
+		if not preview_data then return end
 		local headshot = preview_data.headshot
 		local crit = preview_data.crit
 	
@@ -4917,10 +4921,14 @@ function AdvancedCrosshair.clbk_hitmarker_preview(preview_data)
 		local hitmarker_duration = hitmarker_setting.duration
 		local hitmarker_alpha = hitmarker_setting.alpha
 
-		local panel = preview_panel:panel({
-			alpha = (hitmarker_data.alpha or 1) * hitmarker_setting.alpha,
-			name = "hitmarker_preview"
-		})
+		local panel_name = "hitmarker_preview_" .. tostring(preview_data.result_type)
+		local panel = preview_panel:child(panel_name)
+		if not (panel and alive(panel)) then
+			panel = preview_panel:panel({
+				alpha = (hitmarker_data.alpha or 1) * hitmarker_setting.alpha,
+				name = panel_name
+			})
+		end
 		
 		if alive(panel) then 
 			local parts = AdvancedCrosshair:CreateHitmarker(panel,{
@@ -4930,10 +4938,16 @@ function AdvancedCrosshair.clbk_hitmarker_preview(preview_data)
 			})
 			
 			local function remove_panel(o)
-				o:parent():remove(o)
+				local can_animate = not (o and alive(o) and AdvancedCrosshair:is_animating(o))
+				if alive(o) then 
+					o:parent():remove(o)
+				end
+				if AdvancedCrosshair.hitmarker_menu_preview_loops and can_animate then
+					AdvancedCrosshair.clbk_hitmarker_preview() --use previous setting
+				end
 			end
 			
-			if hitmarker_data and type(hitmarker_data.hit_func) == "function" then 
+			if hitmarker_data and type(hitmarker_data.hit_func) == "function" then
 				AdvancedCrosshair:animate(panel,"animate_hitmarker_parts",remove_panel,hitmarker_duration,parts,hitmarker_data.hit_func,
 					{
 						panel = panel,
