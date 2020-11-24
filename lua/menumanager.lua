@@ -1,5 +1,8 @@
 		--todo list, loosely sorted by descending priority:
 
+--fix lethal melee not showing hitmarker
+--fix crosshair not hiding/recreating when entering/leaving custody
+
 --general setting for resmod compatibility
 
 --sort options in each given category (crosshairs,hitmarkers,hitsounds) alphabetically
@@ -1896,6 +1899,7 @@ function AdvancedCrosshair:RemoveCrosshairByWeapon(unit)
 	local data = self._cache.weapons[unit_key] 
 	if data then 
 		if alive(data.panel) then 
+			self:animate_stop(data.panel)
 			data.panel:parent():remove(data.panel)
 			data.panel = nil
 		end
@@ -2224,6 +2228,7 @@ function AdvancedCrosshair:ActivateHitmarker(attack_data)
 			}
 		)
 		local function remove_panel(o)
+--			self:animate_stop(o)
 			o:parent():remove(o)
 			self:RemoveHitmarker(num_id)
 		end
@@ -2429,6 +2434,7 @@ function AdvancedCrosshair:ClearCache(skip_destroy)
 			for i=1,num_active_hitmarkers,1 do 
 				local panel = cache.hitmarkers[i].panel
 				if alive(panel) then 
+					self:animate_stop(panel)
 					panel:parent():remove(panel)
 				end
 				table.remove(cache.hitmarkers,i)
@@ -2449,11 +2455,10 @@ function AdvancedCrosshair:CheckCrosshair()
 	end
 	local player = managers.player:local_player()
 	if player then 
-	
 		local hidden = false
 		
+		local current_state = player:movement():current_state()
 		local state_name = player:movement():current_state_name()
-		
 		
 		local inventory = player:inventory()
 		local equipped_index = inventory:equipped_selection()
@@ -2471,7 +2476,8 @@ function AdvancedCrosshair:CheckCrosshair()
 			
 			local weapon_data = self._cache.weapons[tostring(equipped_unit:key())]
 			if not weapon_data then 
-	--			self:log("ERROR! Weapon data for weapon " .. tostring(weapon_base:get_name_id()) .. " in slot " .. tostring(equipped_index) .. " not found!",{color=Color.red}) --this can happen at the start of the heist when the playerstate is changed for the first time, before AdvancedCrosshair is initialized
+	--			self:log("ERROR! Weapon data for weapon " .. tostring(weapon_base:get_name_id()) .. " in slot " .. tostring(equipped_index) .. " not found!",{color=Color.red})
+--this can happen at the start of the heist when the playerstate is changed for the first time, before AdvancedCrosshair is initialized
 				return
 			end
 			
@@ -2486,7 +2492,6 @@ function AdvancedCrosshair:CheckCrosshair()
 				end
 			end
 			
-			
 			new_current_data = new_current_data or weapon_data.firemodes[current_firemode]
 			
 			if new_current_data and (new_current_data ~= self._cache.current_crosshair_data) then 
@@ -2494,16 +2499,31 @@ function AdvancedCrosshair:CheckCrosshair()
 				self._cache.current_crosshair_data = new_current_data
 				
 			end
+			
+			if self._cache.current_crosshair_data.settings.hide_on_ads and current_state:in_steelsight() then 
+				hidden = true
+			end
+--			hidden = hidden or current_state:_is_reloading() or current_state:_changing_weapon() or current_state:_is_meleeing() or current_state._use_item_expire_t or current_state:_interacting() or current_state:_is_throwing_projectile() or current_state:_is_deploying_bipod() or current_state._menu_closed_fire_cooldown > 0 or current_state:is_switching_stances()
+--hides the crosshair when the weapon is not ready to fire
+--requires either too many separate hooks, or running every frame inside of update(), which i do not want to do 
+			local state_allowed = self:CrosshairAllowedInState(state_name)
+			if state_allowed ~= nil then 
+				hidden = hidden or not state_allowed
+			end
 		end
-		if self._cache.current_crosshair_data.settings.hide_on_ads and player:movement():current_state():in_steelsight() then 
-			hidden = true
-		end
-		self._cache.current_crosshair_data.panel:set_visible(not hidden)
 		
-		local state_allowed = self:CrosshairAllowedInState(state_name) 
+		
+		
+		self._cache.current_crosshair_data.panel:set_visible(not hidden)
+
+		
+--[[		
+		local state_allowed = self:CrosshairAllowedInState(state_name)
 		if state_allowed ~= nil then 
 			self._crosshair_panel:set_visible(state_allowed)
 		end
+--]]		
+		
 	end
 end
 
@@ -3858,12 +3878,19 @@ Hooks:Add("MenuManagerBuildCustomMenus", "ach_MenuManagerBuildCustomMenus", func
 			local desc_id = cat_name_id
 			local callback_category_firemode_focus_name = "callback_ach_menu_crosshairs_category_" .. category .. "_firemode_" .. firemode .. "_focus"
 			MenuCallbackHandler[callback_category_firemode_focus_name] = function(self,item)
-				local crosshair_setting = AdvancedCrosshair.settings.crosshairs[category] and AdvancedCrosshair.settings.crosshairs[category][firemode]
-				if not crosshair_setting then 
-					AdvancedCrosshair:log("FATAL ERROR: Hook MenuManagerBuildCustomMenus: Invalid crosshair settings for [category " .. tostring(category) .. " | firemode " .. tostring(firemode) .. "], aborting menu generation",{color=Color.red})
-					return 
+				if item == false then 
+					if game_state_machine:verify_game_state(GameStateFilters.any_ingame) and managers.player and alive(managers.player:local_player()) then
+						AdvancedCrosshair:CreateCrosshairs()
+			--			AdvancedCrosshair.clbk_create_crosshair_preview()
+					end
+				elseif item == true then
+					local crosshair_setting = AdvancedCrosshair.settings.crosshairs[category] and AdvancedCrosshair.settings.crosshairs[category][firemode]
+					if not crosshair_setting then 
+						AdvancedCrosshair:log("FATAL ERROR: Hook MenuManagerBuildCustomMenus: Invalid crosshair settings for [category " .. tostring(category) .. " | firemode " .. tostring(firemode) .. "], aborting menu generation",{color=Color.red})
+						return 
+					end
+					AdvancedCrosshair.crosshair_preview_data = AdvancedCrosshair.crosshair_preview_data or AdvancedCrosshair.clbk_create_crosshair_preview(crosshair_setting)
 				end
-				AdvancedCrosshair.crosshair_preview_data = AdvancedCrosshair.crosshair_preview_data or AdvancedCrosshair.clbk_create_crosshair_preview(crosshair_setting)
 			end
 			nodes[firemode_menu_name] = MenuHelper:BuildMenu(firemode_menu_name,{area_bg = "none",back_callback = MenuCallbackHandler.callback_ach_crosshairs_close,focus_changed_callback = callback_category_firemode_focus_name})
 			MenuHelper:AddMenuItem(cat_menu,firemode_menu_name,name_id,desc_id,i) --add each firemode menu to its weaponcategory parent menu
@@ -5046,6 +5073,7 @@ function AdvancedCrosshair.clbk_remove_crosshair_preview()
 	if AdvancedCrosshair.crosshair_preview_data then
 		local panel = AdvancedCrosshair.crosshair_preview_data.panel
 		if alive(panel) then
+			AdvancedCrosshair:animate_stop(panel)
 			panel:parent():remove(panel)
 		end
 	end
