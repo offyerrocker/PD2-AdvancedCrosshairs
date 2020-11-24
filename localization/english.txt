@@ -16,7 +16,8 @@
 	"menu_weapon_firemode_burst" : "Burst",
 	
 	"menu_crosshair_pdth_classic" : "Classic",
-
+	"menu_crosshair_none" : "None",
+	
 	"menu_hitmarker_destiny_hit" : "Destiny (Hit)",
 	"menu_hitmarker_destiny_kill" : "Destiny (Kill)",
 	"menu_hitmarker_gtfo_hit" : "GTFO (Hit)",

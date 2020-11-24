@@ -437,6 +437,16 @@ AdvancedCrosshair._crosshair_data = {
 				}
 			}
 		}
+	},
+	none = {
+		name_id = "menu_crosshair_none",
+		parts = {
+			{
+				texture = "",
+				alpha = 0,
+				UNRECOLORABLE = true
+			}
+		}
 	}
 }
 
