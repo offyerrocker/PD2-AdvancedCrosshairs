@@ -44,7 +44,6 @@
 -- add hook to call wipe crosshair data/refresh crosshair?
 -- fullscreen/halfscreen/none bg menus for all preview-related menus
 
--- hitsound volume sliders
 -- option to add tf2 crit indicators? (must mesh with current settings to avoid menu fatigue)
 -- option for separate melee hitsound? (must mesh with current settings to avoid menu fatigue)
 
@@ -1416,9 +1415,32 @@ function AdvancedCrosshair:UseCompatibility_PlayerManagerCheckSkill()
 	return self.settings.compatibility_hook_playermanager_checkskill
 end
 
+function AdvancedCrosshair:CheckCreateAddonFolder()
+	--make addons folders
+	local addons_path_saves = AdvancedCrosshair.save_path .. "ACH Addons/"
+	if not SystemFS:exists(Application:nice_path(addons_path_saves,true),true) then 
+		SystemFS:make_dir(addons_path_saves)
+		local file = io.open(addons_path_saves .. "README.txt","w+")
+		if file then
+			--this is executed on startup, before localizationmanager is loaded
+			local readme = string.gsub(AdvancedCrosshair.addons_readme_txt,"$LINK",AdvancedCrosshair.url_ach_github)
+			file:write(readme)
+			file:flush()
+			file:close()
+		end
+		for addon_type,paths_tbl in pairs(AdvancedCrosshair.ADDON_PATHS) do 
+			for _,path in pairs(paths_tbl) do 
+				if not SystemFS:exists(path,true) then 
+					SystemFS:make_dir(path)
+				end
+			end
+		end
+	end
+end
 
 
 
+--startup messages
 
 AdvancedCrosshair.mod_update_alerts = {
 	{
@@ -1459,7 +1481,6 @@ function AdvancedCrosshair:GetVersion() --nonfunctional; pseudocode
 --	end
 --	return 1
 end
-
 function AdvancedCrosshair:ShouldShowStartupMessage()
 	local setting = self.settings.allow_messages
 	if setting == 3 then 
@@ -1469,7 +1490,6 @@ function AdvancedCrosshair:ShouldShowStartupMessage()
 	end
 	return false
 end
-
 function AdvancedCrosshair:CheckCompatibility()
 	local results_table = {}
 	for _,compatibility_data in pairs(self.compatibility_checks) do 
@@ -1499,7 +1519,6 @@ function AdvancedCrosshair:CheckCompatibility()
 		
 	end
 end
-
 function AdvancedCrosshair:CheckStartupMessages()
 
 	local current_version = self:GetVersion()
@@ -3827,15 +3846,24 @@ Hooks:Add("MenuManagerBuildCustomMenus", "ach_MenuManagerBuildCustomMenus", func
 	MenuHelper:AddMenuItem(crosshairs_menu,AdvancedCrosshair.crosshairs_categories_submenu_id,"menu_ach_crosshairs_categories_menu_title","menu_ach_crosshairs_categories_menu_desc",1)
 	for cat_menu_name,cat_menu_data in pairs(AdvancedCrosshair.customization_menus) do 
 		local cat_menu = MenuHelper:GetMenu(cat_menu_name)
-		
-		local cat_name_id = "menu_weapon_category_" .. tostring(cat_menu_data.category_name)
+		local category = tostring(cat_menu_data.category_name)
+		local cat_name_id = "menu_weapon_category_" .. category
 		local cat_name_desc = "menu_ach_change_crosshair_weapon_category_desc"
 		local i = 1
 		for firemode_menu_name,firemode_menu in pairs(cat_menu_data.child_menus) do
 			local firemode = tostring(firemode_menu.firemode)
 			local name_id = "menu_weapon_firemode_" .. firemode
 			local desc_id = cat_name_id
-			nodes[firemode_menu_name] = MenuHelper:BuildMenu(firemode_menu_name,{area_bg = "none",back_callback = MenuCallbackHandler.callback_ach_crosshairs_close,focus_changed_callback = "callback_ach_crosshairs_focus"})
+			local callback_category_firemode_focus_name = "callback_ach_menu_crosshairs_category_" .. category .. "_firemode_" .. firemode .. "_focus"
+			MenuCallbackHandler[callback_category_firemode_focus_name] = function(self,item)
+				local crosshair_setting = AdvancedCrosshair.settings.crosshairs[category] and AdvancedCrosshair.settings.crosshairs[category][firemode]
+				if not crosshair_setting then 
+					AdvancedCrosshair:log("FATAL ERROR: Hook MenuManagerBuildCustomMenus: Invalid crosshair settings for [category " .. tostring(category) .. " | firemode " .. tostring(firemode) .. "], aborting menu generation",{color=Color.red})
+					return 
+				end
+				AdvancedCrosshair.crosshair_preview_data = AdvancedCrosshair.crosshair_preview_data or AdvancedCrosshair.clbk_create_crosshair_preview(crosshair_setting)
+			end
+			nodes[firemode_menu_name] = MenuHelper:BuildMenu(firemode_menu_name,{area_bg = "none",back_callback = MenuCallbackHandler.callback_ach_crosshairs_close,focus_changed_callback = callback_category_firemode_focus_name})
 			MenuHelper:AddMenuItem(cat_menu,firemode_menu_name,name_id,desc_id,i) --add each firemode menu to its weaponcategory parent menu
 			i = i + 1
 		end
@@ -3862,6 +3890,7 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 	MenuCallbackHandler.callback_ach_crosshairs_categories_close = function(self)
 	end
 	MenuCallbackHandler.callback_ach_crosshairs_categories_focus = function(self)
+		
 	end
 	MenuCallbackHandler.callback_ach_crosshairs_focus = function(self,item)
 		--todo check for if any options were actually changed before recreating?
@@ -4435,6 +4464,15 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 	MenuCallbackHandler.callback_ach_hitsounds_set_hit_bodyshot_volume = function(self,item)
 		AdvancedCrosshair.settings.hitsound_hit_bodyshot_volume = tonumber(item:value())
 		AdvancedCrosshair:Save()
+		if not Application:paused() then 
+			AdvancedCrosshair:ActivateHitsound({
+				result = {
+					type = "hurt"
+				},
+				headshot = false,
+				crit = false
+			})
+		end
 	end
 	MenuCallbackHandler.callback_ach_hitsounds_set_hit_headshot_type = function(self,item)
 		AdvancedCrosshair.settings.hitsound_hit_headshot_id = AdvancedCrosshair.hitsound_id_by_index[tonumber(item:value())]	
@@ -4453,9 +4491,18 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 	MenuCallbackHandler.callback_ach_hitsounds_set_hit_headshot_volume = function(self,item)
 		AdvancedCrosshair.settings.hitsound_hit_headshot_volume = tonumber(item:value())
 		AdvancedCrosshair:Save()
+		if not Application:paused() then 
+			AdvancedCrosshair:ActivateHitsound({
+				result = {
+					type = "hurt"
+				},
+				headshot = true,
+				crit = false
+			})
+		end
 	end
 	MenuCallbackHandler.callback_ach_hitsounds_set_hit_bodyshot_crit_type = function(self,item)
-		AdvancedCrosshair.settings.hitsound_hit_bodyshot_crit_id = AdvancedCrosshair.hitsound_id_by_index[tonumber(item:value())]	
+		AdvancedCrosshair.settings.hitsound_hit_bodyshot_crit_id = AdvancedCrosshair.hitsound_id_by_index[tonumber(item:value())]
 		if not Application:paused() then 
 			AdvancedCrosshair:ActivateHitsound({
 				result = {
@@ -4470,6 +4517,15 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 	MenuCallbackHandler.callback_ach_hitsounds_set_hit_bodyshot_crit_volume = function(self,item)
 		AdvancedCrosshair.settings.hitsound_hit_bodyshot_crit_volume = tonumber(item:value())
 		AdvancedCrosshair:Save()
+		if not Application:paused() then 
+			AdvancedCrosshair:ActivateHitsound({
+				result = {
+					type = "hurt"
+				},
+				headshot = false,
+				crit = true
+			})
+		end
 	end
 	MenuCallbackHandler.callback_ach_hitsounds_set_hit_headshot_crit_type = function(self,item)
 		AdvancedCrosshair.settings.hitsound_hit_headshot_crit_id = AdvancedCrosshair.hitsound_id_by_index[tonumber(item:value())]
@@ -4487,6 +4543,15 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 	MenuCallbackHandler.callback_ach_hitsounds_set_hit_headshot_crit_volume = function(self,item)
 		AdvancedCrosshair.settings.hitsound_hit_headshot_crit_volume = tonumber(item:value())
 		AdvancedCrosshair:Save()
+		if not Application:paused() then 
+			AdvancedCrosshair:ActivateHitsound({
+				result = {
+					type = "hurt"
+				},
+				headshot = true,
+				crit = true
+			})
+		end
 	end
 	MenuCallbackHandler.callback_ach_hitsounds_set_kill_bodyshot_type = function(self,item)
 		AdvancedCrosshair.settings.hitsound_kill_bodyshot_id = AdvancedCrosshair.hitsound_id_by_index[tonumber(item:value())]
@@ -4504,6 +4569,15 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 	MenuCallbackHandler.callback_ach_hitsounds_set_kill_bodyshot_volume = function(self,item)
 		AdvancedCrosshair.settings.hitsound_kill_bodyshot_volume = tonumber(item:value())
 		AdvancedCrosshair:Save()
+		if not Application:paused() then 
+			AdvancedCrosshair:ActivateHitsound({
+				result = {
+					type = "death"
+				},
+				headshot = false,
+				crit = false
+			})
+		end
 	end
 	MenuCallbackHandler.callback_ach_hitsounds_set_kill_headshot_type = function(self,item)
 		AdvancedCrosshair.settings.hitsound_kill_headshot_id = AdvancedCrosshair.hitsound_id_by_index[tonumber(item:value())]
@@ -4521,6 +4595,15 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 	MenuCallbackHandler.callback_ach_hitsounds_set_kill_headshot_volume = function(self,item)
 		AdvancedCrosshair.settings.hitsound_kill_headshot_volume = tonumber(item:value())
 		AdvancedCrosshair:Save()
+		if not Application:paused() then 
+			AdvancedCrosshair:ActivateHitsound({
+				result = {
+					type = "death"
+				},
+				headshot = true,
+				crit = false
+			})
+		end
 	end
 	MenuCallbackHandler.callback_ach_hitsounds_set_kill_bodyshot_crit_type = function(self,item)
 		AdvancedCrosshair.settings.hitsound_kill_bodyshot_crit_id = AdvancedCrosshair.hitsound_id_by_index[tonumber(item:value())]
@@ -4538,6 +4621,15 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 	MenuCallbackHandler.callback_ach_hitsounds_set_kill_bodyshot_crit_volume = function(self,item)
 		AdvancedCrosshair.settings.hitsound_kill_bodyshot_crit_volume = tonumber(item:value())
 		AdvancedCrosshair:Save()
+		if not Application:paused() then 
+			AdvancedCrosshair:ActivateHitsound({
+				result = {
+					type = "death"
+				},
+				headshot = false,
+				crit = true
+			})
+		end
 	end
 	MenuCallbackHandler.callback_ach_hitsounds_set_kill_headshot_crit_type = function(self,item)
 		AdvancedCrosshair.settings.hitsound_kill_headshot_crit_id = AdvancedCrosshair.hitsound_id_by_index[tonumber(item:value())]
@@ -4555,6 +4647,15 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 	MenuCallbackHandler.callback_ach_hitsounds_set_kill_headshot_crit_volume = function(self,item)
 		AdvancedCrosshair.settings.hitsound_kill_headshot_crit_volume = tonumber(item:value())
 		AdvancedCrosshair:Save()
+		if not Application:paused() then 
+			AdvancedCrosshair:ActivateHitsound({
+				result = {
+					type = "death"
+				},
+				headshot = true,
+				crit = true
+			})
+		end
 	end
 	
 	MenuCallbackHandler.callback_ach_menu_main_compatibility_playermanager_checkskill = function(self,item)
@@ -4981,23 +5082,4 @@ end
 AdvancedCrosshair:Init()
 AdvancedCrosshair:Load()
 
---make addons folders
-local addons_path_saves = AdvancedCrosshair.save_path .. "ACH Addons/"
-if not SystemFS:exists(Application:nice_path(addons_path_saves,true),true) then 
-	SystemFS:make_dir(addons_path_saves)
-	local file = io.open(addons_path_saves .. "README.txt","w+")
-	if file then
-		--this is executed on startup, before localizationmanager is loaded
-		local readme = string.gsub(AdvancedCrosshair.addons_readme_txt,"$LINK",AdvancedCrosshair.url_ach_github)
-		file:write(readme)
-		file:flush()
-		file:close()
-	end
-	for addon_type,paths_tbl in pairs(AdvancedCrosshair.ADDON_PATHS) do 
-		for _,path in pairs(paths_tbl) do 
-			if not SystemFS:exists(path,true) then 
-				SystemFS:make_dir(path)
-			end
-		end
-	end
-end
+AdvancedCrosshair:CheckCreateAddonFolder()
