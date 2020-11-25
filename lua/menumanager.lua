@@ -1,7 +1,5 @@
 		--todo list, loosely sorted by descending priority:
 
---fix lethal melee not showing hitmarker
-
 --general setting for resmod compatibility
 
 --sort options in each given category (crosshairs,hitmarkers,hitsounds) alphabetically
@@ -9,8 +7,6 @@
 --migrate the more obscure options to "Advanced Settings" menus
 --fadeout for tf2 crit
 
--- slider option for scaling hitmarker size?
-	--toggle scaling with world distance at world position?
 
 --hide crosshair when interacting/when weapon is not available (chk action forbidden in playerstandard)
 
@@ -34,15 +30,15 @@
 	--and up or down
 
 --screen blend mode 
---	convert blend mode number indices in settings to strings?
 --save hitsound preview and stop others when new hitsound is selected
 --sanity check hitsounds on load addons
 --get mod_overrides path to support addons in mod_overrides?
 
 -- add more example crosshairs
 
--- hitmarker data overrides for some settings such as force worldposition hitmarkers?
--- add hook to call wipe crosshair data/refresh crosshair?
+-- better workaround for copmelee + integrate suppressdoublesound to cop melee damage
+
+-- hitmarker data overrides for some settings such as force worldposition hitmarkers
 -- fullscreen/halfscreen/none bg menus for all preview-related menus
 
 -- option to add tf2 crit indicators? (must mesh with current settings to avoid menu fatigue)
@@ -52,6 +48,9 @@
 -- import special halo reach crosshair + add option to pass relevant data to all crosshairs
 -- bloom delay/add values per crosshair
 
+--toggle hitmarker scaling with world distance at world position?
+	--would require updating size at every frame and updating during animate function
+	
 -- test burstfire support
 -- hide character + bg menu like how blt mods menu does (and fails to restore after hitting back lol)
 --vehicle crosshair
@@ -1827,11 +1826,12 @@ function AdvancedCrosshair:OnPlayerManagerCheckSkills(pm)
 
 	pm._message_system:unregister(Message.OnWeaponFired,"advancedcrosshair_OnWeaponFired")
 	pm._message_system:unregister(Message.OnEnemyShot,"advancedcrosshair_OnEnemyShot")
-	
+	pm._message_system:unregister(Message.OnEnemyKilled,"advancedcrosshair_OnEnemyKilled")
+
 	pm._message_system:register(Message.OnWeaponFired,"advancedcrosshair_OnWeaponFired",
 		function(weapon_unit,result)
 			local weapon_base = weapon_unit:base()
-			if weapon_base and weapon_base._setup and weapon_base._setup.user_unit and weapon_base._setup.user_unit == managers.player:local_player() then 
+			if weapon_base and weapon_base._setup and weapon_base._setup.user_unit and weapon_base._setup.user_unit == pm:local_player() then 
 				self:AddBloom()
 			end
 		end
@@ -1841,7 +1841,20 @@ function AdvancedCrosshair:OnPlayerManagerCheckSkills(pm)
 			self:OnEnemyHit(unit,attack_data,...)
 		end
 	end)
-	
+	pm._message_system:register(Message.OnEnemyKilled,"advancedcrosshair_OnEnemyKilled",
+		function(equipped_unit,variant,killed_unit)
+			if (variant == "melee" or variant == "poison") then 
+				self:OnEnemyHit(killed_unit,{
+					result = {
+						type = "death"
+					},
+					headshot = false, --melee can't headshot anyway
+					crit = false, --but i can't detect crits this way
+					attacker_unit = alive(equipped_unit) and equipped_unit:base()._setup.user_unit
+				})
+			end
+		end
+	)
 end
 
 function AdvancedCrosshair:CreateHUD(t,dt) --try to create hud each run until both required elements are initiated.
