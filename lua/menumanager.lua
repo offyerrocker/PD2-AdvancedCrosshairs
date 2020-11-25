@@ -2873,6 +2873,8 @@ AdvancedCrosshair.main_menu_id = "ach_menu_main"
 AdvancedCrosshair.crosshairs_menu_id = "ach_menu_crosshairs"
 AdvancedCrosshair.hitmarkers_menu_id = "ach_menu_hitmarkers"
 AdvancedCrosshair.hitsounds_menu_id = "ach_menu_hitsounds"
+AdvancedCrosshair.misc_menu_id = "ach_menu_misc" --made with json, this is just for reference
+AdvancedCrosshair.reset_menu_id = "ach_menu_reset" --made with json, this is just for reference
 AdvancedCrosshair.crosshairs_categories_submenu_id = "ach_menu_crosshairs_categories"
 AdvancedCrosshair.crosshairs_categories_global_id = "ach_menu_crosshairs_global"
 AdvancedCrosshair.customization_menus = {}
@@ -2882,10 +2884,11 @@ AdvancedCrosshair.crosshair_id_by_index = {}
 AdvancedCrosshair.hitmarker_id_by_index = {}
 AdvancedCrosshair.hitsound_id_by_index = {}
 Hooks:Add("MenuManagerSetupCustomMenus", "ach_MenuManagerSetupCustomMenus", function(menu_manager, nodes)
-
+	
 	MenuHelper:NewMenu(AdvancedCrosshair.main_menu_id)
 	MenuHelper:NewMenu(AdvancedCrosshair.crosshairs_menu_id)
 	MenuHelper:NewMenu(AdvancedCrosshair.hitmarkers_menu_id)
+	MenuHelper:NewMenu(AdvancedCrosshair.misc_menu_id)
 	MenuHelper:NewMenu(AdvancedCrosshair.crosshairs_categories_submenu_id)
 	MenuHelper:NewMenu(AdvancedCrosshair.crosshairs_categories_global_id)
 	for _,cat in ipairs(AdvancedCrosshair.VALID_WEAPON_CATEGORIES) do 
@@ -3316,7 +3319,6 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		menu_id = AdvancedCrosshair.hitmarkers_menu_id,
 		priority = 1
 	})
-
 	MenuHelper:AddToggle({
 		id = "ach_hitmarkers_preview_toggle_loop",
 		title = "menu_ach_hitmarkers_preview_toggle_loop_title",
@@ -5020,6 +5022,12 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 	MenuCallbackHandler.callback_ach_reset_focus = function(self,focused)
 		--
 	end
+	MenuCallbackHandler.callback_ach_misc_close = function(self)
+	
+	end
+	MenuCallbackHandler.callback_ach_misc_focus = function(self,item)
+		
+	end
 	
 	--creates colorpicker menu for AdvancedCrosshair mod; this menu is reused for all color-related callbacks in this mod,
 	--so it's also necessary to also update the callback whenever calling the menu
@@ -5030,6 +5038,7 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 	MenuHelper:LoadFromJsonFile(AdvancedCrosshair.path .. "menu/menu_crosshairs.json", AdvancedCrosshair, AdvancedCrosshair.settings)
 	MenuHelper:LoadFromJsonFile(AdvancedCrosshair.path .. "menu/menu_hitmarkers.json", AdvancedCrosshair, AdvancedCrosshair.settings)
 	MenuHelper:LoadFromJsonFile(AdvancedCrosshair.path .. "menu/menu_hitsounds.json", AdvancedCrosshair, AdvancedCrosshair.settings)
+	MenuHelper:LoadFromJsonFile(AdvancedCrosshair.path .. "menu/menu_misc.json", AdvancedCrosshair, AdvancedCrosshair.settings)
 	MenuHelper:LoadFromJsonFile(AdvancedCrosshair.path .. "menu/menu_reset.json", AdvancedCrosshair, AdvancedCrosshair.settings)
 end)
 

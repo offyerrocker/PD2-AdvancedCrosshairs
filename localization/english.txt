@@ -39,8 +39,8 @@
 	"menu_ach_crosshairs_menu_title" : "Crosshair Customization...",
 	"menu_ach_crosshairs_categories_menu_title" : "Customize by weapon type...",
 	"menu_ach_crosshairs_categories_menu_desc" : "Change how crosshairs appear based on weapon type and firemode",
-	"menu_ach_set_override_title" : "Override global settings",
-	"menu_ach_set_override_desc" : "If enabled, this will override your \"Global Crosshair\" setting for this type/mode",
+	"menu_ach_set_override_title" : "Use this crosshair",
+	"menu_ach_set_override_desc" : "If enabled, use these settings instead of your \"Global Crosshair\"",
 	"menu_ach_set_color_title" : "Set Color",
 	"menu_ach_set_color_desc" : "Change the color of your crosshair",
 	"menu_ach_set_alpha_title" : "Set Alpha",
@@ -65,7 +65,7 @@
 	"menu_ach_set_bloom_enabled_desc" : "Does not reflect actual weapon accuracy/stability.",
 	"menu_ach_preview_label_title" : "PREVIEW",
 	
-	"menu_ach_crosshairs_global_menu_title" : "Global Crosshair",
+	"menu_ach_crosshairs_global_menu_title" : "Global Crosshair...",
 	"menu_ach_crosshairs_global_menu_desc" : "Applies to any weapons not overridden.",
 	"menu_ach_crosshairs_general_menu_title" : "General",
 	"menu_ach_crosshairs_general_menu_desc" : "General crosshair settings",
@@ -223,6 +223,8 @@
 	"menu_ach_reset_all_settings_prompt_confirm_desc" : "Are you sure you want to reset your settings?\nAll settings will be set back to the defaults.",
 	"menu_ach_reset_all_settings_prompt_success_title" : "Successfully reset all settings",
 	"menu_ach_reset_all_settings_prompt_success_desc" : "All settings have been reset to their default values.\nPlease restart the game or heist day for menu changes to take effect.\nThank you for flying Air Offyerrocker, and have a nice day.",
+	
+	"menu_ach_menu_misc_title" : "Misc...",
 	
 	"menu_ach_update_message_fyi_title" : "ACH Update Notifications",
 	"menu_ach_update_message_fyi_desc" : "This is your heads-up that ACH has a notification system for urgent updates.\nYou can disable these at any time but before you do, you should know that I will ONLY use this where the severity of the update actually warrant a popup. (I know how annoying these are.)\nSituations where I might use this system include:\n-Crosshairs, Hitmarkers, or Hitsound content being removed from the base ACH installation (which I currently have plans to do).\n-ACH feature incompatibility with one of your installed/enabled mods detected\n-A feature of ACH being deprecated, significantly changed, or separated into a standalone such that it would no longer function in this mod (Again, I have no plans to do this)\nIn other words, I won't misuse this if choose to allow it. You can disable it at any time anyhow- this is only intended to save people the trouble of having to check the mod description page for updates, or simply wondering why a certain feature stopped working. If all goes well, I will not have to use these notifications at all.\n\n-Offyerrocker, author of ACH",

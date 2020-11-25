@@ -1,18 +1,10 @@
 {
 	"menu_id" : "ach_menu_reset",
-	"parent_menu_id" : "ach_menu_main",
+	"parent_menu_id" : "ach_menu_misc",
 	"title" : "menu_ach_menu_reset_title",
 	"back_callback" : "callback_ach_reset_close",
 	"focus_changed_callback" : "callback_ach_reset_focus",
 	"items" : [
-		{
-			"type" : "toggle",
-			"id" : "ach_menu_main_compatibility_playermanager_checkskill",
-			"title" : "menu_ach_menu_main_compatibility_playermanager_checkskill_title",
-			"description" : "menu_ach_menu_main_compatibility_playermanager_checkskill_desc",
-			"callback" : "callback_ach_menu_main_compatibility_playermanager_checkskill",
-			"value" : "compatibility_hook_playermanager_checkskill"
-		},
 		{
 			"type" : "button",
 			"id" : "ach_reset_crosshair_settings",
@@ -52,6 +44,6 @@
 			"title" : "menu_ach_reset_all_settings_title",
 			"description" : "menu_ach_reset_all_settings_desc",
 			"callback" : "callback_ach_reset_all_settings"
-		},
+		}
 	]
 }
