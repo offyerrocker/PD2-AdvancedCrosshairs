@@ -34,7 +34,7 @@
 	"menu_hitsound_overwatch_kill" : "Overwatch Kill",
 	"menu_hitsound_quake3" : "Quake 3",
 	
-	"menu_ach_hitmarkers_menu_main_title" : "Advanced Crosshairs and Hitmarkers",
+	"menu_ach_hitmarkers_menu_main_title" : "Advanced Crosshairs, Hitmarkers, and Hitsounds",
 	"menu_ach_hitmarkers_menu_title" : "Hitmarker Customization...",
 	"menu_ach_crosshairs_menu_title" : "Crosshair Customization...",
 	"menu_ach_crosshairs_categories_menu_title" : "Customize by weapon type...",
@@ -239,7 +239,7 @@
 	"menu_ach_prompt_compatibility_warning_text_1" : "The follow potential compatibility issues have been flagged:",
 	"menu_ach_prompt_compatibility_warning_text_2" : "(This message will appear each time on startup when compatibility issues are detected, unless you either enable the appropriate compatibility options or turn off compatibility warnings.)",
 	"menu_ach_prompt_compatibility_warning_title" : "WARNING: Compatibility issues found!",
-	"menu_ach_menu_main_compatibility_playermanager_checkskill_title" : "Compatibility: PlayerManager:CheckSkill()",
+	"menu_ach_menu_main_compatibility_playermanager_checkskill_title" : "Compatibility: PlayerManager:check_skills()",
 	"menu_ach_menu_main_compatibility_playermanager_checkskill_desc" : "Allows Hitmarkers and Hitsounds to function with mods such as Restoration Mod."
 	
 }
