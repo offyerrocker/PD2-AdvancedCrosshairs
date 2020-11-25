@@ -1,5 +1,7 @@
 		--todo list, loosely sorted by descending priority:
 
+--hitmarker preview visible when switching to crosshair menu
+
 --general setting for resmod compatibility
 
 --sort options in each given category (crosshairs,hitmarkers,hitsounds) alphabetically
@@ -2074,15 +2076,15 @@ function AdvancedCrosshair:CreateCrosshair(panel,data,scale_setting)
 			h = h,
 			alpha = part_data.alpha or data.alpha,
 			blend_mode = part_data.blend_mode or data.blend_mode,
-			color = part_data.color or data.alpha,
+			color = part_data.color or data.color,
 			render_template = part_data.render_template or data.render_template,
 			layer = (part_data.layer or data.layer or 0)
 		})
 		if not w then 
-			bitmap:set_w(bitmap:texture_width() * scale)
+			bitmap:set_w((part_data.texture_rect and part_data.texture_rect[3] or bitmap:texture_width()) * scale)
 		end
 		if not h then 
-			bitmap:set_h(bitmap:texture_height() * scale)
+			bitmap:set_h((part_data.texture_rect and part_data.texture_rect[4] or bitmap:texture_height()) * scale)
 		end
 		table.insert(results,i,bitmap)
 		bitmap:set_center(x + (panel:w()/2),y + (panel:h()/2))
@@ -2224,10 +2226,10 @@ function AdvancedCrosshair:CreateHitmarker(panel,data)
 			layer = 5 + (part_data.layer or 0)
 		})
 		if not w then 
-			bitmap:set_w(bitmap:texture_width() * scale)
+			bitmap:set_w((part_data.texture_rect and part_data.texture_rect[3] or bitmap:texture_width()) * scale)
 		end
 		if not h then 
-			bitmap:set_h(bitmap:texture_height() * scale)
+			bitmap:set_h((part_data.texture_rect and part_data.texture_rect[4] or bitmap:texture_height()) * scale)
 		end
 		if not part_data.skip_center then 
 			bitmap:set_center(x + (panel:w()/2),y + (panel:h()/2))
