@@ -10,7 +10,6 @@
 --migrate the more obscure options to "Advanced Settings" menus
 --fadeout for tf2 crit
 
--- slider option for scaling crosshairs
 -- slider option for scaling hitmarker size?
 	--toggle scaling with world distance at world position?
 
@@ -139,7 +138,8 @@ AdvancedCrosshair.DEFAULT_CROSSHAIR_OPTIONS = {
 	color = "ffffff",
 	alpha = 1,
 	overrides_global = false,
-	hide_on_ads = false --since this was added post-1.0, be aware that this value can be nil in some users' settings
+	hide_on_ads = false, --since this was added post-1.0, be aware that this value can be nil in some users' settings
+	scale = 1
 }
 AdvancedCrosshair.DEFAULT_HITMARKER_OPTIONS = {
 	hitmarker_id = "generic_hit",
@@ -159,53 +159,6 @@ AdvancedCrosshair.default_settings = {
 	hitsound_enabled = false,
 	compatibility_hook_playermanager_checkskill = false,
 	allow_messages = 1, --1: yes; 2: yes but no compatibility messages; 3: do not. none. never. get out of my house. die.
-	use_shake = true,
-	use_color = true,
-	use_hitpos = true,
-	use_hitsound_pos = false,
-	hitsound_limit_behavior = 1,
-	hitsound_max_count = 1,
-	hitsound_hit_bodyshot_id = "tf2_hit",
-	hitsound_hit_headshot_id = "tf2_hit",
-	hitsound_hit_bodyshot_crit_id = "tf2_crit",
-	hitsound_hit_headshot_crit_id = "tf2_crit",
-	hitsound_kill_headshot_id = "tf2_hit",
-	hitsound_kill_bodyshot_id = "tf2_hit",
-	hitsound_kill_bodyshot_crit_id = "tf2_crit",
-	hitsound_kill_headshot_crit_id = "tf2_crit",
-	hitsound_hit_bodyshot_volume = 0.5,
-	hitsound_hit_headshot_volume = 0.5,
-	hitsound_hit_bodyshot_crit_volume = 0.5,
-	hitsound_hit_headshot_crit_volume = 0.5,
-	hitsound_kill_headshot_volume = 0.5,
-	hitsound_kill_bodyshot_volume = 0.5,
-	hitsound_kill_bodyshot_crit_volume = 0.5,
-	hitsound_kill_headshot_crit_volume = 0.5,
-	hitsound_suppress_doublesound = true,
-	crosshair_all_override = false,
-	crosshair_stability = 1,
-	crosshair_enemy_color = "e11a1a",
-	crosshair_civilian_color = "7ff77f",
-	crosshair_teammate_color = "0171ff",
-	crosshair_misc_color = "f51b83",
-	hitmarker_max_count = 5,
-	hitmarker_limit_behavior = 1,
-	hitmarker_hit_id = "destiny_hit",
-	hitmarker_hit_duration = 0.75,
-	hitmarker_hit_alpha = 0.5,
-	hitmarker_hit_blend_mode = "normal",
-	hitmarker_hit_bodyshot_color = "ffffff",
-	hitmarker_hit_bodyshot_crit_color = "00ffff",
-	hitmarker_hit_headshot_color = "ff0000",
-	hitmarker_hit_headshot_crit_color = "ff00ff",
-	hitmarker_kill_id = "destiny_kill",
-	hitmarker_kill_duration = 0.25,
-	hitmarker_kill_alpha = 1,
-	hitmarker_kill_blend_mode = "normal",
-	hitmarker_kill_bodyshot_color = "ffffff",
-	hitmarker_kill_bodyshot_crit_color = "00ffff",
-	hitmarker_kill_headshot_color = "ff0000",
-	hitmarker_kill_headshot_crit_color = "ff00ff",
 	palettes = { --for colorpicker
 		"ff0000",
 		"ffff00",
@@ -233,9 +186,19 @@ AdvancedCrosshair.default_settings = {
 		"444444",
 		"000000"
 	},
+	use_shake = true,
+	use_color = true,
+	use_hitpos = true,
+	use_hitsound_pos = false,
+	crosshair_all_override = false,
+	crosshair_stability = 1,
+	crosshair_enemy_color = "e11a1a",
+	crosshair_civilian_color = "7ff77f",
+	crosshair_teammate_color = "0171ff",
+	crosshair_misc_color = "f51b83",
 	crosshair_global = table.deep_map_copy(AdvancedCrosshair.DEFAULT_CROSSHAIR_OPTIONS),
 	crosshairs = {},
-	crosshair_weapon_id_overrides = {
+	crosshair_weapon_id_overrides = { --no menu yet
 	--EG:
 --		deagle = {
 --			crosshair_id = "pdth_classic",
@@ -245,7 +208,7 @@ AdvancedCrosshair.default_settings = {
 --			overrides_global = true
 --		}
 	},
-	crosshair_slot_overrides = {
+	crosshair_slot_overrides = { --no menu yet/not implemented
 	--EG:
 --		1 = { --overrides all primary slots
 --			crosshair_id = "pdth_classic",
@@ -254,7 +217,46 @@ AdvancedCrosshair.default_settings = {
 --			alpha = 0.5,
 --			overrides_global = true
 --		}
-	}
+	},
+	hitmarker_max_count = 5,
+	hitmarker_limit_behavior = 1,
+	hitmarker_hit_id = "destiny_hit",
+	hitmarker_hit_duration = 0.4,
+	hitmarker_hit_alpha = 1,
+	hitmarker_hit_scale = 1,
+	hitmarker_hit_blend_mode = "normal",
+	hitmarker_hit_bodyshot_color = "ffffff",
+	hitmarker_hit_bodyshot_crit_color = "00ffff",
+	hitmarker_hit_headshot_color = "ff0000",
+	hitmarker_hit_headshot_crit_color = "ff00ff",
+	hitmarker_kill_id = "destiny_kill",
+	hitmarker_kill_duration = 0.4,
+	hitmarker_kill_alpha = 1,
+	hitmarker_kill_scale = 1,
+	hitmarker_kill_blend_mode = "normal",
+	hitmarker_kill_bodyshot_color = "ffffff",
+	hitmarker_kill_bodyshot_crit_color = "00ffff",
+	hitmarker_kill_headshot_color = "ff0000",
+	hitmarker_kill_headshot_crit_color = "ff00ff",
+	hitsound_limit_behavior = 1,
+	hitsound_max_count = 1,
+	hitsound_hit_bodyshot_id = "tf2_hit",
+	hitsound_hit_headshot_id = "tf2_hit",
+	hitsound_hit_bodyshot_crit_id = "tf2_crit",
+	hitsound_hit_headshot_crit_id = "tf2_crit",
+	hitsound_kill_headshot_id = "tf2_hit",
+	hitsound_kill_bodyshot_id = "tf2_hit",
+	hitsound_kill_bodyshot_crit_id = "tf2_crit",
+	hitsound_kill_headshot_crit_id = "tf2_crit",
+	hitsound_hit_bodyshot_volume = 0.5,
+	hitsound_hit_headshot_volume = 0.5,
+	hitsound_hit_bodyshot_crit_volume = 0.5,
+	hitsound_hit_headshot_crit_volume = 0.5,
+	hitsound_kill_headshot_volume = 0.5,
+	hitsound_kill_bodyshot_volume = 0.5,
+	hitsound_kill_bodyshot_crit_volume = 0.5,
+	hitsound_kill_headshot_crit_volume = 0.5,
+	hitsound_suppress_doublesound = true
 }
 
 AdvancedCrosshair.setting_categories = {
@@ -375,20 +377,22 @@ AdvancedCrosshair._cache = {
 
 _G.queued_delay_advanced_crosshair_data = {}
 
---do not change this. refer to the guide if you want to add custom crosshairs to this mod
+--do not change this. refer to the github wiki if you want to add custom crosshairs to this mod (see: AdvancedCrosshair.url_ach_github)
 AdvancedCrosshair._crosshair_data = {
 	pdth_classic = {
 		name_id = "menu_crosshair_pdth_classic",
 		bloom_func = function(index,bitmap,data)
-			local bloom = data.bloom
-			
-			local crosshair_data = data.crosshair_data and data.crosshair_data.parts[index] or {}
-			local angle = crosshair_data.angle or 60
+			local crosshair_data = data.crosshair_data
+			local bloom = data.bloom * (crosshair_data.bloom_mul or 1)
+			local part_data = crosshair_data.parts[index] or {}
+			local angle = part_data.angle or 60
 			local c_x = data.panel_w/2
 			local c_y = data.panel_h/2
-			local distance = crosshair_data.distance * ((1.5 * bloom) + 1)
+			local scale = (data.scale or 1) * (part_data.scale or 1)
+			local distance = scale * part_data.distance * (bloom + 1)
 			bitmap:set_center(c_x + (math.sin(angle) * distance),c_y - (math.cos(angle) * distance))
 		end,
+		bloom_mul = 1.5,
 		parts = {
 			{
 				rotation = 270,
@@ -1625,6 +1629,7 @@ function AdvancedCrosshair:GetHitmarkerSettings(hitmarker_type)
 			hitmarker_id = self.settings.hitmarker_kill_id,
 			duration = self.settings.hitmarker_kill_duration,
 			alpha = self.settings.hitmarker_kill_alpha,
+			scale = self.settings.hitmarker_kill_scale,
 			blend_mode = self.settings.hitmarker_kill_blend_mode,
 			bodyshot_color = Color(self.settings.hitmarker_kill_bodyshot_color),
 			bodyshot_crit_color = Color(self.settings.hitmarker_kill_bodyshot_crit_color),
@@ -1636,6 +1641,7 @@ function AdvancedCrosshair:GetHitmarkerSettings(hitmarker_type)
 		hitmarker_id = self.settings.hitmarker_hit_id,
 		duration = self.settings.hitmarker_hit_duration,
 		alpha = self.settings.hitmarker_hit_alpha,
+		scale = self.settings.hitmarker_hit_scale,
 		blend_mode = self.settings.hitmarker_hit_blend_mode,
 		bodyshot_color = Color(self.settings.hitmarker_hit_bodyshot_color),
 		bodyshot_crit_color = Color(self.settings.hitmarker_hit_bodyshot_crit_color),
@@ -1932,7 +1938,7 @@ function AdvancedCrosshair:CreateCrosshairByWeapon(unit,weapon_index)
 			visible = false,
 			alpha = crosshair_setting.alpha
 		})
-		local parts = self:CreateCrosshair(firemode_panel,crosshair_tweakdata)
+		local parts = self:CreateCrosshair(firemode_panel,crosshair_tweakdata,crosshair_setting.scale)
 		firemodes_data[firemode] = {
 			base = weapon_base,
 			crosshair_id = crosshair_id,
@@ -1979,7 +1985,7 @@ _crosshair_data = _crosshair_data or self._crosshair_data.pdth_classic
 					crosshair_id = underbarrel_crosshair_id,
 					base = underbarrel,
 					panel = underbarrel_firemode_panel,
-					parts = self:CreateCrosshair(underbarrel_firemode_panel,_crosshair_data),
+					parts = self:CreateCrosshair(underbarrel_firemode_panel,_crosshair_data,crosshair_setting.scale),
 --					settings = self.DEFAULT_CROSSHAIR_OPTIONS
 					color = Color(crosshair_setting.color),
 					settings = crosshair_setting,
@@ -1997,18 +2003,27 @@ _crosshair_data = _crosshair_data or self._crosshair_data.pdth_classic
 	}
 end
 
-function AdvancedCrosshair:CreateCrosshair(panel,data)
+function AdvancedCrosshair:CreateCrosshair(panel,data,scale_setting)
 	--if data.special_crosshair then 
 	--	do stuff here
 	--end
 	local results = {}
+	local scale_setting = (scale_setting or 1)
 	for i,part_data in ipairs(data.parts) do 
-		local x = (part_data.x or 0)
-		local y = (part_data.y or 0)
+		local scale = scale_setting * (data.scale or 1)
+		local x = (part_data.x or 0) * scale
+		local y = (part_data.y or 0) * scale
+		local w,h
 		local angle = part_data.angle or part_data.rotation
 		if part_data.distance and angle then 
-			x = x + (math.sin(angle) * part_data.distance)
-			y = y + (-math.cos(angle) * part_data.distance)
+			x = x + (math.sin(angle) * part_data.distance * scale)
+			y = y + (-math.cos(angle) * part_data.distance * scale)
+		end
+		if part_data.w then 
+			w = part_data.w * scale
+		end
+		if part_data.h then 
+			h = part_data.h * scale
 		end
 		local bitmap = panel:bitmap({
 			name = tostring(i),
@@ -2017,18 +2032,42 @@ function AdvancedCrosshair:CreateCrosshair(panel,data)
 			x = x,
 			y = y,
 			rotation = part_data.rotation,
-			w = part_data.w,
-			h = part_data.h,
+			w = w,
+			h = h,
 			alpha = part_data.alpha or data.alpha,
 			blend_mode = part_data.blend_mode or data.blend_mode,
 			color = part_data.color or data.alpha,
 			render_template = part_data.render_template or data.render_template,
 			layer = (part_data.layer or data.layer or 0)
 		})
+		if not w then 
+			bitmap:set_w(bitmap:w() * scale)
+		end
+		if not h then 
+			bitmap:set_h(bitmap:h() * scale)
+		end
 		table.insert(results,i,bitmap)
 		bitmap:set_center(x + (panel:w()/2),y + (panel:h()/2))
 	end
 	return results
+end
+
+function AdvancedCrosshair:SetCrosshairScale(scale) --nobody
+	local current_crosshair_data = self:GetCurrentCrosshair()
+	local crosshair_data = self._crosshair_data[tostring(current_crosshair_data.crosshair_id)]
+	if crosshair_data then 
+		if not crosshair_data.special_crosshair then 
+			for i=1,#current_crosshair_data.parts,1 do 
+				local part = current_crosshair_data.parts[i]
+				if part then 
+					local part_data = crosshair_data.parts[i]
+					local w = part_data.w or part:w()
+					local h = part_data.h or part:h()
+					local distance = part_data.distance or 0
+				end
+			end
+		end
+	end
 end
 
 function AdvancedCrosshair:SetCrosshairCenter(x,y)
@@ -2061,7 +2100,7 @@ function AdvancedCrosshair:SetCrosshairBloom(bloom)
 		local current_crosshair_data = self:GetCurrentCrosshair()
 		
 		local crosshair_data = self._crosshair_data[current_crosshair_data.crosshair_id] or {}
-		local data = {bloom = bloom,crosshair_data = crosshair_data,panel_w = current_crosshair_data.panel:w(),panel_h = current_crosshair_data.panel:h()}
+		local data = {bloom = bloom,crosshair_data = crosshair_data,scale = current_crosshair_data.settings.scale,panel_w = current_crosshair_data.panel:w(),panel_h = current_crosshair_data.panel:h()}
 		local a = crosshair_data.bloom_func
 		
 		self:GetCurrentCrosshairParts(a,data)
@@ -2114,14 +2153,22 @@ end
 
 function AdvancedCrosshair:CreateHitmarker(panel,data)
 	local results = {}
+	local scale_setting = data.scale or 1
 	for i,part_data in ipairs(data.parts) do 
-		local x = (part_data.x or 0)
-		local y = (part_data.y or 0)
+		local scale = scale_setting * (part_data.scale or 1)
+		local x = (part_data.x or 0) * scale
+		local y = (part_data.y or 0) * scale
 		local angle = part_data.angle
 		local rotation = (part_data.rotation or 0) + (angle or 0)
 		if part_data.distance and angle then 
-			x = x + math.sin(angle) * part_data.distance
-			y = y + -math.cos(angle) * part_data.distance
+			x = x + (math.sin(angle) * part_data.distance * scale)
+			y = y + (-math.cos(angle) * part_data.distance * scale)
+		end
+		if part_data.w then 
+			w = part_data.w * scale
+		end
+		if part_data.h then 
+			h = part_data.h * scale
 		end
 		local bitmap = panel:bitmap({
 			name = tostring(i),
@@ -2130,14 +2177,20 @@ function AdvancedCrosshair:CreateHitmarker(panel,data)
 			x = x,
 			y = y,
 			rotation = rotation,
-			w = part_data.w,
-			h = part_data.h,
+			w = w,
+			h = h,
 			alpha = part_data.alpha,
 			blend_mode = part_data.blend_mode or data.blend_mode,
 			color = part_data.color or data.color,
 			render_template = part_data.render_template,
 			layer = 5 + (part_data.layer or 0)
 		})
+		if not w then 
+			bitmap:set_w(bitmap:w() * scale)
+		end
+		if not h then 
+			bitmap:set_h(bitmap:h() * scale)
+		end
 		if not part_data.skip_center then 
 			bitmap:set_center(x + (panel:w()/2),y + (panel:h()/2))
 		end
@@ -2217,7 +2270,8 @@ function AdvancedCrosshair:ActivateHitmarker(attack_data)
 		local parts = self:CreateHitmarker(panel,{
 			parts = hitmarker_data.parts,
 			color = color,
-			blend_mode = self.BLEND_MODES[hitmarker_setting.blend_mode]
+			blend_mode = self.BLEND_MODES[hitmarker_setting.blend_mode],
+			scale = (hitmarker_data.scale or 1) * (hitmarker_setting.scale or 1)
 		})
 		table.insert(self._cache.hitmarkers,#self._cache.hitmarkers + 1,
 			{ --this is only used for the "3D hitmarkers" feature
@@ -2556,23 +2610,25 @@ function AdvancedCrosshair:Update(t,dt)
 	--animate update
 	for object_id,data in pairs(self._animate_targets) do 
 		local result
-		if type(data and data.func) == "string" then 
-			if self[data.func] then 					
-				result = self[data.func](self,data.object,t,dt,data.start_t,unpack(data.args))
+		if data.object and alive(data.object) then 
+			if type(data and data.func) == "string" then 
+				if self[data.func] then 					
+					result = self[data.func](self,data.object,t,dt,data.start_t,unpack(data.args))
+				else
+					self:log("ERROR: Unknown animate function:" .. tostring(data.func) .. "()")
+					self._animate_targets[object_id] = nil
+				end
+			elseif type(data.func) == "function" then
+				result = data.func(data.object,t,dt,data.start_t,unpack(data.args))
 			else
-				self:log("ERROR: Unknown animate function:" .. tostring(data.func) .. "()")
-				self._animate_targets[object_id] = nil
+				self._animate_targets[object_id] = nil --remove from animate targets table
+				result = nil --don't do done_cb, that's illegal
 			end
-		elseif type(data.func) == "function" then
-			result = data.func(data.object,t,dt,data.start_t,unpack(data.args))
-		else
-			self._animate_targets[object_id] = nil --remove from animate targets table
-			result = nil --don't do done_cb, that's illegal
-		end
-		if result then
-			self._animate_targets[object_id] = nil
-			if data.done_cb and type(data.done_cb) == "function" then 
-				data.done_cb(data.object,result,unpack(data.args))
+			if result then
+				self._animate_targets[object_id] = nil
+				if data.done_cb and type(data.done_cb) == "function" then 
+					data.done_cb(data.object,result,unpack(data.args))
+				end
 			end
 		end
 	end				
@@ -2926,7 +2982,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		callback = "callback_ach_hitmarkers_master_enable",
 		value = AdvancedCrosshair.settings.hitmarker_enabled,
 		menu_id = AdvancedCrosshair.hitmarkers_menu_id,
-		priority = 27
+		priority = 29
 	})
 	MenuHelper:AddToggle({
 		id = "ach_hitmarkers_set_3d_enabled",
@@ -2935,7 +2991,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		callback = "callback_ach_hitmarkers_set_3d_enabled",
 		value = AdvancedCrosshair.settings.use_hitpos,
 		menu_id = AdvancedCrosshair.hitmarkers_menu_id,
-		priority = 26
+		priority = 28
 	})
 	
 	MenuHelper:AddMultipleChoice({
@@ -2950,7 +3006,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		},
 		value = AdvancedCrosshair.settings.hitmarker_limit_behavior,
 		menu_id = AdvancedCrosshair.hitmarkers_menu_id,
-		priority = 25
+		priority = 27
 	})
 	
 	MenuHelper:AddSlider({
@@ -2959,13 +3015,13 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		desc = "menu_ach_hitmarkers_set_max_count_desc",
 		callback = "callback_ach_hitmarkers_set_max_count",
 		value = AdvancedCrosshair.settings.hitmarker_max_count,
-		default_value = 3,
+		default_value = AdvancedCrosshair.default_settings.hitmarker_max_count,
 		min = 1,
 		max = 10,
 		step = 1,
 		show_value = true,
 		menu_id = AdvancedCrosshair.hitmarkers_menu_id,
-		priority = 24
+		priority = 26
 	})
 	
 	
@@ -2973,7 +3029,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		id = "ach_hitmarkers_div_1",
 		size = 16,
 		menu_id = AdvancedCrosshair.hitmarkers_menu_id,
-		priority = 23
+		priority = 25
 	})
 	MenuHelper:AddMultipleChoice({
 		id = "ach_hitmarkers_hit_set_bitmap",
@@ -2983,7 +3039,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		items = table.deep_map_copy(hitmarker_items),
 		value = hitmarker_hit_bitmap_index,
 		menu_id = AdvancedCrosshair.hitmarkers_menu_id,
-		priority = 22
+		priority = 24
 	})
 	MenuHelper:AddSlider({
 		id = "ach_hitmarkers_hit_set_alpha",
@@ -2991,13 +3047,27 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		desc = "menu_ach_hitmarkers_hit_set_alpha_desc",
 		callback = "callback_ach_hitmarkers_hit_set_alpha",
 		value = AdvancedCrosshair.settings.hitmarker_hit_alpha,
-		default_value = 1,
+		default_value = AdvancedCrosshair.default_settings.hitmarker_hit_alpha,
 		min = 0,
 		max = 1,
 		step = 0.01,
 		show_value = true,
 		menu_id = AdvancedCrosshair.hitmarkers_menu_id,
-		priority = 21
+		priority = 23
+	})
+	MenuHelper:AddSlider({
+		id = "ach_hitmarkers_hit_set_scale",
+		title = "menu_ach_hitmarkers_hit_set_scale_title",
+		desc = "menu_ach_hitmarkers_hit_set_scale_desc",
+		callback = "callback_ach_hitmarkers_hit_set_scale",
+		value = AdvancedCrosshair.settings.hitmarker_hit_scale,
+		default_value = AdvancedCrosshair.default_settings.hitmarker_hit_scale,
+		min = 0,
+		max = 3,
+		step = 0.1,
+		show_value = true,
+		menu_id = AdvancedCrosshair.hitmarkers_menu_id,
+		priority = 22
 	})
 	MenuHelper:AddSlider({
 		id = "ach_hitmarkers_hit_set_duration",
@@ -3005,13 +3075,13 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		desc = "menu_ach_hitmarkers_hit_set_duration_desc",
 		callback = "callback_ach_hitmarkers_hit_set_duration",
 		value = AdvancedCrosshair.settings.hitmarker_hit_duration,
-		default_value = 1,
+		default_value = AdvancedCrosshair.default_settings.hitmarker_hit_duration,
 		min = 0,
 		max = 3,
 		step = 0.25,
 		show_value = true,
 		menu_id = AdvancedCrosshair.hitmarkers_menu_id,
-		priority = 20
+		priority = 21
 	})
 	MenuHelper:AddMultipleChoice({
 		id = "ach_hitmarkers_hit_set_blend_mode",
@@ -3027,7 +3097,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		},
 		value = AdvancedCrosshair.settings.hitmarker_hit_blend_mode,
 		menu_id = AdvancedCrosshair.hitmarkers_menu_id,
-		priority = 19
+		priority = 20
 	})
 	MenuHelper:AddButton({
 		id = "ach_hitmarkers_hit_set_bodyshot_color",
@@ -3035,7 +3105,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		desc = "menu_ach_hitmarkers_hit_set_bodyshot_color_desc",
 		callback = "callback_ach_hitmarkers_hit_set_bodyshot_color",
 		menu_id = AdvancedCrosshair.hitmarkers_menu_id,
-		priority = 18
+		priority = 19
 	})
 	MenuHelper:AddButton({
 		id = "ach_hitmarkers_hit_set_bodyshot_crit_color",
@@ -3043,7 +3113,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		desc = "menu_ach_hitmarkers_hit_set_bodyshot_crit_color_desc",
 		callback = "callback_ach_hitmarkers_hit_set_bodyshot_crit_color",
 		menu_id = AdvancedCrosshair.hitmarkers_menu_id,
-		priority = 17
+		priority = 18
 	})
 	MenuHelper:AddButton({
 		id = "ach_hitmarkers_hit_set_headshot_color",
@@ -3051,7 +3121,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		desc = "menu_ach_hitmarkers_hit_set_headshot_color_desc",
 		callback = "callback_ach_hitmarkers_hit_set_headshot_color",
 		menu_id = AdvancedCrosshair.hitmarkers_menu_id,
-		priority = 16
+		priority = 17
 	})
 	MenuHelper:AddButton({
 		id = "ach_hitmarkers_hit_set_headshot_crit_color",
@@ -3059,13 +3129,13 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		desc = "menu_ach_hitmarkers_hit_set_headshot_crit_color_desc",
 		callback = "callback_ach_hitmarkers_hit_set_headshot_crit_color",
 		menu_id = AdvancedCrosshair.hitmarkers_menu_id,
-		priority = 15
+		priority = 16
 	})
 	MenuHelper:AddDivider({
 		id = "ach_hitmarkers_div_2",
 		size = 8,
 		menu_id = AdvancedCrosshair.hitmarkers_menu_id,
-		priority = 14
+		priority = 15
 	})
 	MenuHelper:AddMultipleChoice({
 		id = "ach_hitmarkers_kill_set_bitmap",
@@ -3075,7 +3145,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		items = table.deep_map_copy(hitmarker_items),
 		menu_id = AdvancedCrosshair.hitmarkers_menu_id,
 		value = hitmarker_kill_bitmap_index,
-		priority = 13
+		priority = 14
 	})
 	MenuHelper:AddSlider({
 		id = "ach_hitmarkers_kill_set_alpha",
@@ -3083,10 +3153,24 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		desc = "menu_ach_hitmarkers_kill_set_alpha_desc",
 		callback = "callback_ach_hitmarkers_kill_set_alpha",
 		value = AdvancedCrosshair.settings.hitmarker_kill_alpha,
-		default_value = 1,
+		default_value = AdvancedCrosshair.default_settings.hitmarker_kill_alpha,
 		min = 0,
 		max = 1,
 		step = 0.01,
+		show_value = true,
+		menu_id = AdvancedCrosshair.hitmarkers_menu_id,
+		priority = 13
+	})
+	MenuHelper:AddSlider({
+		id = "ach_hitmarkers_kill_set_scale",
+		title = "menu_ach_hitmarkers_kill_set_scale_title",
+		desc = "menu_ach_hitmarkers_kill_set_scale_desc",
+		callback = "callback_ach_hitmarkers_kill_set_scale",
+		value = AdvancedCrosshair.settings.hitmarker_kill_scale,
+		default_value = AdvancedCrosshair.default_settings.hitmarker_kill_scale,
+		min = 0,
+		max = 3,
+		step = 0.1,
 		show_value = true,
 		menu_id = AdvancedCrosshair.hitmarkers_menu_id,
 		priority = 12
@@ -3097,7 +3181,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		desc = "menu_ach_hitmarkers_kill_set_duration_desc",
 		callback = "callback_ach_hitmarkers_kill_set_duration",
 		value = AdvancedCrosshair.settings.hitmarker_kill_duration,
-		default_value = 1,
+		default_value = AdvancedCrosshair.default_settings.hitmarker_kill_duration,
 		min = 0,
 		max = 5,
 		step = 0.25,
@@ -3300,6 +3384,15 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 				AdvancedCrosshair:Save()
 			end
 			
+			--set size scale
+			local set_crosshair_scale_callback_name = firemode_menu_name .. "_set_crosshair_scale"
+			MenuCallbackHandler[set_crosshair_scale_callback_name] = function(self,item)
+				local scale = tonumber(item:value())
+				AdvancedCrosshair.crosshair_preview_data = AdvancedCrosshair.clbk_create_crosshair_preview(crosshair_setting)
+				crosshair_setting.scale = scale
+				AdvancedCrosshair:Save()
+			end
+			
 			--enable/disable bloom
 			local enable_crosshair_bloom_callback_name = firemode_menu_name .. "_set_bloom_enabled"
 			MenuCallbackHandler[enable_crosshair_bloom_callback_name] = function(self,item)
@@ -3337,7 +3430,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 				callback = set_crosshair_override_global_callback_name,
 				value = crosshair_setting.overrides_global,
 				menu_id = firemode_menu_name,
-				priority = 9
+				priority = 10
 			})
 			
 			MenuHelper:AddMultipleChoice({
@@ -3348,7 +3441,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 				items = table.deep_map_copy(crosshair_items),
 				value = crosshair_index,
 				menu_id = firemode_menu_name,
-				priority = 8
+				priority = 9
 			})
 			
 			MenuHelper:AddButton({
@@ -3357,7 +3450,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 				desc = "menu_ach_set_color_desc",
 				callback = set_crosshair_color_callback_name,
 				menu_id = firemode_menu_name,
-				priority = 7
+				priority = 8
 			})
 			
 			MenuHelper:AddSlider({
@@ -3369,6 +3462,20 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 				min = 0,
 				max = 1,
 				step = 0.05,
+				show_value = true,
+				menu_id = firemode_menu_name,
+				priority = 7
+			})
+			
+			MenuHelper:AddSlider({
+				id = "id_" .. set_crosshair_scale_callback_name,
+				title = "menu_ach_set_scale_title",
+				desc = "menu_ach_set_scale_desc",
+				callback = set_crosshair_scale_callback_name,
+				value = crosshair_setting.scale or 1,
+				min = 0,
+				max = 3,
+				step = 0.1,
 				show_value = true,
 				menu_id = firemode_menu_name,
 				priority = 6
@@ -3428,7 +3535,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		items = table.deep_map_copy(crosshair_items),
 		value = global_crosshair_index,
 		menu_id = AdvancedCrosshair.crosshairs_categories_global_id,
-		priority = 7
+		priority = 8
 	})
 	MenuHelper:AddButton({
 		id = "id_ach_menu_crosshairs_categories_global_color",
@@ -3436,7 +3543,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		desc = "menu_ach_set_color_desc",
 		callback = "callback_ach_crosshairs_categories_global_color",
 		menu_id = AdvancedCrosshair.crosshairs_categories_global_id,
-		priority = 6
+		priority = 7
 	})
 	
 	MenuHelper:AddSlider({
@@ -3448,6 +3555,20 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		min = 0,
 		max = 1,
 		step = 0.05,
+		show_value = true,
+		menu_id = AdvancedCrosshair.crosshairs_categories_global_id,
+		priority = 6
+	})
+	
+	MenuHelper:AddSlider({
+		id = "id_ach_menu_crosshairs_categories_global_scale",
+		title = "menu_ach_set_scale_title",
+		desc = "menu_ach_set_scale_desc",
+		callback = "callback_ach_crosshairs_categories_global_scale",
+		value = AdvancedCrosshair.settings.crosshair_global.scale or 1,
+		min = 0,
+		max = 1,
+		step = 0.1,
 		show_value = true,
 		menu_id = AdvancedCrosshair.crosshairs_categories_global_id,
 		priority = 5
@@ -4161,6 +4282,11 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 		AdvancedCrosshair.settings.crosshair_global.alpha = tonumber(item:value())
 		AdvancedCrosshair:Save()
 	end
+	MenuCallbackHandler.callback_ach_crosshairs_categories_global_scale = function(self,item)
+		AdvancedCrosshair.crosshair_preview_data = AdvancedCrosshair.crosshair_preview_data or AdvancedCrosshair.clbk_create_crosshair_preview(AdvancedCrosshair.settings.crosshair_global)
+		AdvancedCrosshair.settings.crosshair_global.scale = tonumber(item:value())
+		AdvancedCrosshair:Save()
+	end
 	MenuCallbackHandler.callback_ach_crosshairs_categories_global_bloom_enabled = function(self,item)
 		AdvancedCrosshair.crosshair_preview_data = AdvancedCrosshair.crosshair_preview_data or AdvancedCrosshair.clbk_create_crosshair_preview(AdvancedCrosshair.settings.crosshair_global)
 		AdvancedCrosshair.settings.crosshair_global.use_bloom = item:value() == "on"
@@ -4234,6 +4360,10 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 	end
 	MenuCallbackHandler.callback_ach_hitmarkers_hit_set_alpha = function(self,item)
 		AdvancedCrosshair.settings.hitmarker_hit_alpha = tonumber(item:value())
+		AdvancedCrosshair:Save()
+	end
+	MenuCallbackHandler.callback_ach_hitmarkers_hit_set_scale = function(self,item)
+		AdvancedCrosshair.settings.hitmarker_hit_scale = tonumber(item:value())
 		AdvancedCrosshair:Save()
 	end
 	MenuCallbackHandler.callback_ach_hitmarkers_hit_set_blend_mode = function(self,item)
@@ -4342,6 +4472,10 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 	end
 	MenuCallbackHandler.callback_ach_hitmarkers_kill_set_alpha = function(self,item)
 		AdvancedCrosshair.settings.hitmarker_kill_alpha = tonumber(item:value())
+		AdvancedCrosshair:Save()
+	end	
+	MenuCallbackHandler.callback_ach_hitmarkers_kill_set_scale = function(self,item)
+		AdvancedCrosshair.settings.hitmarker_kill_scale = tonumber(item:value())
 		AdvancedCrosshair:Save()
 	end
 	MenuCallbackHandler.callback_ach_hitmarkers_kill_set_blend_mode = function(self,item)
@@ -4961,7 +5095,8 @@ function AdvancedCrosshair.clbk_hitmarker_preview(preview_data)
 			local parts = AdvancedCrosshair:CreateHitmarker(panel,{
 				parts = hitmarker_data.parts,
 				color = color,
-				blend_mode = AdvancedCrosshair.BLEND_MODES[hitmarker_setting.blend_mode]
+				blend_mode = AdvancedCrosshair.BLEND_MODES[hitmarker_setting.blend_mode],
+				scale = (hitmarker_data.scale or 1) * (hitmarker_setting.scale or 1)
 			})
 			
 			local function remove_panel(o)
@@ -5052,7 +5187,7 @@ function AdvancedCrosshair.clbk_create_crosshair_preview(crosshair_setting)
 		})
 		AdvancedCrosshair.crosshair_preview_data = {
 			panel = preview_panel,
-			parts = AdvancedCrosshair:CreateCrosshair(crosshair_preview_panel,crosshair_data),
+			parts = AdvancedCrosshair:CreateCrosshair(crosshair_preview_panel,crosshair_data,crosshair_setting.scale),
 			crosshair_id = crosshair_id,
 			bloom = 0
 		}
@@ -5099,6 +5234,7 @@ function AdvancedCrosshair.clbk_bloom_preview(crosshair_setting)
 							{
 								crosshair_data = crosshair_data,
 								bloom = preview_data.bloom,
+								scale = crosshair_setting.scale,
 								panel_w = parent_panel:w(),
 								panel_h = parent_panel:h()
 							}
