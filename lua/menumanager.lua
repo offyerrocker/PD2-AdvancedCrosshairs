@@ -1,7 +1,6 @@
 		--todo list, loosely sorted by descending priority:
 
 --fix lethal melee not showing hitmarker
---fix crosshair not hiding/recreating when entering/leaving custody
 
 --general setting for resmod compatibility
 
@@ -1911,6 +1910,32 @@ function AdvancedCrosshair:RemoveCrosshairByWeapon(unit)
 		end
 	end
 	self._cache.weapons[unit_key] = nil
+end
+
+function AdvancedCrosshair:RemoveAllCrosshairs(queue_recreation)
+	for unit_key,data in pairs(self._cache.weapons) do 
+		self:animate_stop(data.panel)
+		for firemode_name,firemode_data in pairs(data.firemodes) do 
+			self:animate_stop(firemode_data.panel)
+		end
+		for underbarrel_name,underbarrel_data in pairs(data.underbarrels) do 
+			for firemode_name,firemode_data in pairs(underbarrel_data) do 
+				self:animate_stop(firemode_data.panel)
+			end
+		end
+		data.panel:parent():remove(data.panel)
+		data.panel = nil
+		self._cache.weapons[unit_key] = nil
+	end
+	if queue_recreation then
+		BeardLib:RemoveUpdater("ach_queue_crosshair_creation")
+		BeardLib:AddUpdater("ach_queue_crosshair_creation",function(t,dt)
+			if alive(managers.player:local_player()) and alive(self._crosshair_panel) then 
+				self:CreateCrosshairs()
+				BeardLib:RemoveUpdater("ach_queue_crosshair_creation")
+			end
+		end)
+	end
 end
 
 function AdvancedCrosshair:CreateCrosshairByWeapon(unit,weapon_index)
