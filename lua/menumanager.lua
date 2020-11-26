@@ -1449,6 +1449,49 @@ function AdvancedCrosshair:CheckCreateAddonFolder()
 	end
 end
 
+function AdvancedCrosshair:SortAddons(reference_table,organization)
+	if organization == 1 or organization == "alphabetical" then 
+		local result = {}
+		local result_by_localized = {}
+		for id,addon_data in pairs(reference_table) do 
+			local addon_name = addon_data.name_id and managers.localization:text(addon_data.name_id)
+			if not addon_name then 
+				self:log("ERROR: SortAddons(" .. self.concat(reference_table,organization) .. "): Bad addon data! [" .. tostring(id) .. "] Aborting sort operation...")
+				return {},{}
+			end
+			
+			
+			local s1 = string.sub(addon_name,1,1)
+			local c1 = s1 and string.byte(s1)
+			if not c1 then
+				self:log("ERROR: SortAddons(" .. self.concat(reference_table,organization) .. "): Bad sort input! [" .. tostring(id) .. "]")
+				return {},{}
+			end
+			local done_insert
+			for i,other_id in ipairs(result) do 
+				local other_data = reference_table[other_id]
+				if not other_data then 
+					self:log("ERROR: SortAddons(" .. self.concat(reference_table,organization) .. "): Bad addon data in result table! " .. tostring(id) .. " / " .. tostring(reference_table))
+					return {},{}
+				end
+				local s2 = string.sub(managers.localization:text(other_data.name_id),1,1)
+				local c2 = string.byte(s2)
+				if c1 <= c2 then 
+					done_insert = true
+					table.insert(result,i,id)
+					table.insert(result_by_localized,i,addon_data.name_id)
+					break
+				end
+			end
+			if not done_insert then 
+				done_insert = true
+				table.insert(result,#result + 1,id)
+				table.insert(result_by_localized,#result_by_localized + 1,addon_data.name_id)
+			end
+		end
+		return result,result_by_localized
+	end
+end
 
 
 --startup messages
@@ -2956,33 +2999,39 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 
 
 --for crosshairs:
-	local crosshair_items = {}
-	local i = 1
-	for id,crosshair_data in pairs(AdvancedCrosshair._crosshair_data) do 
-		table.insert(crosshair_items,i,crosshair_data.name_id)
-		table.insert(AdvancedCrosshair.crosshair_id_by_index,i,id)
-		i = i + 1
-	end
+	local crosshair_items
+	AdvancedCrosshair.crosshair_id_by_index,crosshair_items = AdvancedCrosshair:SortAddons(AdvancedCrosshair._crosshair_data,"alphabetical")
+	
+--	local crosshair_items = {}
+--	local i = 1
+--	for id,crosshair_data in pairs(AdvancedCrosshair._crosshair_data) do 
+--		table.insert(crosshair_items,i,crosshair_data.name_id)
+--		table.insert(AdvancedCrosshair.crosshair_id_by_index,i,id)
+--		i = i + 1
+--	end
 	
 --for hitmarkers:
 	local hitmarker_kill_bitmap_index = 1
 	local hitmarker_hit_bitmap_index = 1
-	local hitmarker_items = {}
-	local h_i = 1
-	for id,hitmarker_data in pairs(AdvancedCrosshair._hitmarker_data) do 
+	local hitmarker_items
+	AdvancedCrosshair.hitmarker_id_by_index,hitmarker_items = AdvancedCrosshair:SortAddons(AdvancedCrosshair._hitmarker_data,"alphabetical")
+	
+--	local h_i = 1
+	for h_i,id in ipairs(AdvancedCrosshair.hitmarker_id_by_index) do 
 		if id == AdvancedCrosshair.settings.hitmarker_kill_id then
 			hitmarker_kill_bitmap_index = h_i
 		end
 		if id == AdvancedCrosshair.settings.hitmarker_hit_id then 
 			hitmarker_hit_bitmap_index = h_i
 		end
-		table.insert(hitmarker_items,h_i,hitmarker_data.name_id)
-		table.insert(AdvancedCrosshair.hitmarker_id_by_index,h_i,id)
-		h_i = h_i + 1
+--		table.insert(hitmarker_items,h_i,hitmarker_data.name_id)
+--		table.insert(AdvancedCrosshair.hitmarker_id_by_index,h_i,id)
+--		h_i = h_i + 1
 	end
 	
 	local hs_i = 1
-	local hitsound_items = {}
+	local hitsound_items
+	AdvancedCrosshair.hitsound_id_by_index,hitsound_items = AdvancedCrosshair:SortAddons(AdvancedCrosshair._hitsound_data,"alphabetical")
 	local hitsound_hit_bodyshot_index = 1
 	local hitsound_hit_headshot_index = 1
 	local hitsound_hit_bodyshot_crit_index = 1
@@ -2991,7 +3040,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 	local hitsound_kill_bodyshot_index = 1
 	local hitsound_kill_bodyshot_crit_index = 1
 	local hitsound_kill_headshot_crit_index = 1
-	for id,hitsound_data in pairs(AdvancedCrosshair._hitsound_data) do 
+	for hs_i,id in ipairs(AdvancedCrosshair.hitsound_id_by_index) do 
 		if id == AdvancedCrosshair.settings.hitsound_hit_bodyshot_id then 
 			hitsound_hit_bodyshot_index = hs_i
 		end
@@ -3016,9 +3065,9 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		if id == AdvancedCrosshair.settings.hitsound_kill_headshot_crit_id then 
 			hitsound_kill_headshot_crit_index = hs_i
 		end
-		table.insert(hitsound_items,hs_i,hitsound_data.name_id)
-		table.insert(AdvancedCrosshair.hitsound_id_by_index,hs_i,id)
-		hs_i = hs_i + 1
+--		table.insert(hitsound_items,hs_i,hitsound_data.name_id)
+--		table.insert(AdvancedCrosshair.hitsound_id_by_index,hs_i,id)
+--		hs_i = hs_i + 1
 	end
 	
 --hitmarker menus	
