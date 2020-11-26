@@ -1087,6 +1087,7 @@ function AdvancedCrosshair:LoadCrosshairAddons()
 						local addon_id,addon_data = addon_lua()
 						if addon_id and type(addon_data) == "table" then 
 							if addon_id == true then --megapack
+								self:log("Loading Crosshairs megapack " .. foldername .. "...")
 								for crosshair_id,crosshair_data in pairs(addon_data) do 
 									if type(crosshair_data.parts) == "table" then 
 										load_addon_textures(addon_path,foldername,crosshair_data.parts)
@@ -1096,6 +1097,7 @@ function AdvancedCrosshair:LoadCrosshairAddons()
 									end
 									self:AddCustomCrosshair(crosshair_id,crosshair_data)
 								end
+								self:log("Done loading Crosshairs megapack " .. foldername .. ".")
 							else
 								if type(addon_data.parts) == "table" then 
 									load_addon_textures(addon_path,foldername,addon_data.parts)
@@ -1219,6 +1221,7 @@ function AdvancedCrosshair:LoadHitmarkerAddons()
 						local addon_id,addon_data = addon_lua()
 						if addon_id and type(addon_data) == "table" then 
 							if addon_id == true then --megapack
+								self:log("Loading Hitmarkers megapack " .. foldername .. "...")
 								for hitmarker_id,hitmarker_data in pairs(addon_data) do 
 									if type(hitmarker_data.parts) == "table" then 
 										load_addon_textures(addon_path,foldername,hitmarker_data.parts)
@@ -1228,6 +1231,7 @@ function AdvancedCrosshair:LoadHitmarkerAddons()
 									end
 									self:AddCustomHitmarker(hitmarker_id,hitmarker_data)
 								end
+								self:log("Done loading Hitmarkers megapack " .. foldername .. ".")
 							else
 								if type(addon_data.parts) == "table" then 
 									load_addon_textures(addon_path,foldername,addon_data.parts)
@@ -3415,6 +3419,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 			local set_crosshair_alpha_callback_name = firemode_menu_name .. "_set_crosshair_alpha"
 			MenuCallbackHandler[set_crosshair_alpha_callback_name] = function(self,item)
 				local alpha = tonumber(item:value())
+				crosshair_setting.alpha = alpha
 				AdvancedCrosshair.crosshair_preview_data = AdvancedCrosshair.crosshair_preview_data or AdvancedCrosshair.clbk_create_crosshair_preview(crosshair_setting)
 				local preview_data = AdvancedCrosshair.crosshair_preview_data
 				local parent_panel = preview_data and preview_data.panel
@@ -3422,7 +3427,6 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 				if preview_data and crosshair_data and preview_data.parts and alive(parent_panel) then 
 					parent_panel:child("crosshair_preview_panel"):set_alpha(alpha)
 				end
-				crosshair_setting.alpha = alpha
 				AdvancedCrosshair:Save()
 			end
 			
@@ -3430,8 +3434,8 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 			local set_crosshair_scale_callback_name = firemode_menu_name .. "_set_crosshair_scale"
 			MenuCallbackHandler[set_crosshair_scale_callback_name] = function(self,item)
 				local scale = tonumber(item:value())
-				AdvancedCrosshair.crosshair_preview_data = AdvancedCrosshair.clbk_create_crosshair_preview(crosshair_setting)
 				crosshair_setting.scale = scale
+				AdvancedCrosshair.crosshair_preview_data = AdvancedCrosshair.clbk_create_crosshair_preview(crosshair_setting)
 				AdvancedCrosshair:Save()
 			end
 			
@@ -3439,8 +3443,8 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 			local enable_crosshair_bloom_callback_name = firemode_menu_name .. "_set_bloom_enabled"
 			MenuCallbackHandler[enable_crosshair_bloom_callback_name] = function(self,item)
 				crosshair_setting.use_bloom = item:value() == "on"
-				AdvancedCrosshair:Save()
 				AdvancedCrosshair.crosshair_preview_data = AdvancedCrosshair.crosshair_preview_data or AdvancedCrosshair.clbk_create_crosshair_preview(crosshair_setting)
+				AdvancedCrosshair:Save()
 			end
 			
 			--set hide on ads
@@ -3609,7 +3613,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		callback = "callback_ach_crosshairs_categories_global_scale",
 		value = AdvancedCrosshair.settings.crosshair_global.scale or 1,
 		min = 0,
-		max = 1,
+		max = 3,
 		step = 0.1,
 		show_value = true,
 		menu_id = AdvancedCrosshair.crosshairs_categories_global_id,
@@ -4320,22 +4324,22 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 		end
 	end
 	MenuCallbackHandler.callback_ach_crosshairs_categories_global_alpha = function(self,item)
-		AdvancedCrosshair.crosshair_preview_data = AdvancedCrosshair.crosshair_preview_data or AdvancedCrosshair.clbk_create_crosshair_preview(AdvancedCrosshair.settings.crosshair_global)
 		AdvancedCrosshair.settings.crosshair_global.alpha = tonumber(item:value())
+		AdvancedCrosshair.crosshair_preview_data = AdvancedCrosshair.clbk_create_crosshair_preview(AdvancedCrosshair.settings.crosshair_global)
 		AdvancedCrosshair:Save()
 	end
 	MenuCallbackHandler.callback_ach_crosshairs_categories_global_scale = function(self,item)
-		AdvancedCrosshair.crosshair_preview_data = AdvancedCrosshair.crosshair_preview_data or AdvancedCrosshair.clbk_create_crosshair_preview(AdvancedCrosshair.settings.crosshair_global)
 		AdvancedCrosshair.settings.crosshair_global.scale = tonumber(item:value())
+		AdvancedCrosshair.crosshair_preview_data = AdvancedCrosshair.clbk_create_crosshair_preview(AdvancedCrosshair.settings.crosshair_global)
 		AdvancedCrosshair:Save()
 	end
 	MenuCallbackHandler.callback_ach_crosshairs_categories_global_bloom_enabled = function(self,item)
-		AdvancedCrosshair.crosshair_preview_data = AdvancedCrosshair.crosshair_preview_data or AdvancedCrosshair.clbk_create_crosshair_preview(AdvancedCrosshair.settings.crosshair_global)
 		AdvancedCrosshair.settings.crosshair_global.use_bloom = item:value() == "on"
+		AdvancedCrosshair.crosshair_preview_data = AdvancedCrosshair.crosshair_preview_data or AdvancedCrosshair.clbk_create_crosshair_preview(AdvancedCrosshair.settings.crosshair_global)
 		AdvancedCrosshair:Save()
 	end
 	MenuCallbackHandler.callback_ach_crosshairs_categories_global_preview_bloom = function(self)
-		AdvancedCrosshair.crosshair_preview_data = AdvancedCrosshair.crosshair_preview_data or AdvancedCrosshair.clbk_create_crosshair_preview(AdvancedCrosshair.settings.crosshair_global)
+		AdvancedCrosshair.crosshair_preview_data = AdvancedCrosshair.clbk_create_crosshair_preview(AdvancedCrosshair.settings.crosshair_global)
 		AdvancedCrosshair.clbk_bloom_preview(AdvancedCrosshair.settings.crosshair_global)
 	end
 	MenuCallbackHandler.callback_ach_crosshairs_categories_global_close = function(self)
