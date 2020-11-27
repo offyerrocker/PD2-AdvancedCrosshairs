@@ -1879,27 +1879,27 @@ function AdvancedCrosshair:OnPlayerManagerCheckSkills(pm)
 
 	pm._message_system:register(Message.OnWeaponFired,"advancedcrosshair_OnWeaponFired",
 		function(weapon_unit,result)
-			local weapon_base = weapon_unit:base()
+			local weapon_base = alive(weapon_unit) and weapon_unit:base()
 			if weapon_base and weapon_base._setup and weapon_base._setup.user_unit and weapon_base._setup.user_unit == pm:local_player() then 
 				self:AddBloom()
 			end
 		end
 	)
 	pm._message_system:register(Message.OnEnemyShot,"ach_OnEnemyShot",function(unit,attack_data,...) 
-		if attack_data and attack_data.attacker_unit and (attack_data.attacker_unit == pm:local_player()) then 
+		if alive(unit) and attack_data and attack_data.attacker_unit and (attack_data.attacker_unit == pm:local_player()) then 
 			self:OnEnemyHit(unit,attack_data,...)
 		end
 	end)
 	pm._message_system:register(Message.OnEnemyKilled,"advancedcrosshair_OnEnemyKilled",
 		function(equipped_unit,variant,killed_unit)
-			if (variant == "melee" or variant == "poison") then 
+			if alive(equipped_unit) and alive(killed_unit) and (variant == "melee" or variant == "poison") then 
 				self:OnEnemyHit(killed_unit,{
 					result = {
 						type = "death"
 					},
 					headshot = false, --melee can't headshot anyway
 					crit = false, --but i can't detect crits this way
-					attacker_unit = alive(equipped_unit) and equipped_unit:base()._setup.user_unit
+					attacker_unit = equipped_unit:base()._setup.user_unit
 				})
 			end
 		end
