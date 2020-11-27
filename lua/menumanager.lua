@@ -1,8 +1,6 @@
 		--todo list, loosely sorted by descending priority:
 
---hitmarker preview visible when switching to crosshair menu
-
---general setting for resmod compatibility
+--hitmarker preview sometimes visible when switching to crosshair menu? (attempting to replicate)
 
 --sort options in each given category (crosshairs,hitmarkers,hitsounds) alphabetically
 
