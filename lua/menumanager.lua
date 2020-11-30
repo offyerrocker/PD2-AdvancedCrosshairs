@@ -2,8 +2,6 @@
 
 --hitmarker preview sometimes visible when switching to crosshair menu? (attempting to replicate)
 
---sort options in each given category (crosshairs,hitmarkers,hitsounds) alphabetically
-
 --migrate the more obscure options to "Advanced Settings" menus
 --fadeout for tf2 crit
 
@@ -2243,6 +2241,8 @@ function AdvancedCrosshair:CreateHitmarker(panel,data)
 		local scale = scale_setting * (part_data.scale or 1)
 		local x = (part_data.x or 0) * scale
 		local y = (part_data.y or 0) * scale
+		local w
+		local h
 		local angle = part_data.angle
 		local rotation = (part_data.rotation or 0) + (angle or 0)
 		if part_data.distance and angle then 
@@ -2270,7 +2270,7 @@ function AdvancedCrosshair:CreateHitmarker(panel,data)
 			render_template = part_data.render_template,
 			layer = 5 + (part_data.layer or 0)
 		})
-		if not w then 
+		if not w then
 			bitmap:set_w((part_data.texture_rect and part_data.texture_rect[3] or bitmap:texture_width()) * scale)
 		end
 		if not h then 
@@ -2836,6 +2836,15 @@ function AdvancedCrosshair:Update(t,dt)
 					local c_p = ws:world_to_screen(viewport_cam,state:get_fire_weapon_position() + (state:get_fire_weapon_direction() * crosshair_stability))
 					local c_w = (c_p.x or 0)
 					local c_h = (c_p.y or 0)
+					--[[
+						local screen_center_x,screen_center_y = self._crosshair_panel:center()
+						if math.abs(screen_center_x - c_w) < 1 then 
+							c_w = 0
+						end
+						if math.abs(screen_center_y - c_h) < 1 then 
+							c_h = 0
+						end
+					--]]
 					self:SetCrosshairCenter(c_w,c_h)
 				end
 
