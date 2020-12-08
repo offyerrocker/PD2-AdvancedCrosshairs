@@ -14,6 +14,14 @@
 			"value" : "compatibility_hook_playermanager_checkskill"
 		},
 		{
+			"type" : "toggle",
+			"id" : "ach_menu_main_compatibility_playerstandard_onsteelsight",
+			"title" : "menu_ach_menu_main_compatibility_playerstandard_onsteelsight_title",
+			"description" : "menu_ach_menu_main_compatibility_playerstandard_onsteelsight_desc",
+			"callback" : "callback_ach_menu_main_compatibility_playerstandard_onsteelsight",
+			"value" : "compatibility_hook_playerstandard_onsteelsight"
+		},
+		{
 			"type" : "divider",
 			"id" : "ach_menu_misc_div_1",
 			"size" : 32

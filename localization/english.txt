@@ -240,6 +240,8 @@
 	"menu_ach_prompt_compatibility_warning_text_2" : "(This message will appear each time on startup when compatibility issues are detected, unless you either enable the appropriate compatibility options or turn off compatibility warnings.)",
 	"menu_ach_prompt_compatibility_warning_title" : "WARNING: Compatibility issues found!",
 	"menu_ach_menu_main_compatibility_playermanager_checkskill_title" : "Compatibility: PlayerManager:check_skills()",
-	"menu_ach_menu_main_compatibility_playermanager_checkskill_desc" : "Allows Hitmarkers and Hitsounds to function with mods such as Restoration Mod."
+	"menu_ach_menu_main_compatibility_playermanager_checkskill_desc" : "Allows Hitmarkers and Hitsounds to function with mods such as Restoration Mod.",
+	"menu_ach_menu_main_compatibility_playerstandard_onsteelsight_title" : "Compatibility: PlayerStandard: steelsight",
+	"menu_ach_menu_main_compatibility_playerstandard_onsteelsight_desc" : "Allows \"Hide Crosshairs on ADS\" option to function with mods such as IREnFIST."
 	
 }

@@ -154,6 +154,7 @@ AdvancedCrosshair.default_settings = {
 	hitmarker_enabled = true,
 	hitsound_enabled = false,
 	compatibility_hook_playermanager_checkskill = false,
+	compatibility_hook_playerstandard_onsteelsight = false,
 	allow_messages = 1, --1: yes; 2: yes but no compatibility messages; 3: do not. none. never. get out of my house. die.
 	palettes = { --for colorpicker
 		"ff0000",
@@ -368,7 +369,8 @@ AdvancedCrosshair._cache = {
 	bloom_t = -69,
 	hitmarkers = {},
 	num_hitmarkers = 0,
-	sound_sources = {}
+	sound_sources = {},
+	is_in_steelsight = false --only set/used when compatibility mode for "playerstandard on steelsight" is enabled
 }
 
 _G.queued_delay_advanced_crosshair_data = {}
@@ -1420,6 +1422,10 @@ end
 
 function AdvancedCrosshair:UseCompatibility_PlayerManagerCheckSkill()
 	return self.settings.compatibility_hook_playermanager_checkskill
+end
+
+function AdvancedCrosshair:UseCompatibility_PlayerStandardOnSteelsight()
+	return self.settings.compatibility_hook_playerstandard_onsteelsight
 end
 
 function AdvancedCrosshair:CheckCreateAddonFolder()
@@ -2797,6 +2803,14 @@ function AdvancedCrosshair:Update(t,dt)
 						panel_w = current_crosshair_panel:w(),
 						panel_h = current_crosshair_panel:h()
 					})
+				end
+				
+				if self:UseCompatibility_PlayerStandardOnSteelsight() then 
+					local is_in_steelsight = state:in_steelsight()
+					if self._cache.is_in_steelsight ~= is_in_steelsight then
+						self._cache.is_in_steelsight = is_in_steelsight
+						self:CheckCrosshair()
+					end
 				end
 				
 				if self:UseDynamicColor() then 
@@ -4925,6 +4939,11 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 	
 	MenuCallbackHandler.callback_ach_menu_main_compatibility_playermanager_checkskill = function(self,item)
 		AdvancedCrosshair.settings.compatibility_hook_playermanager_checkskill = item:value() == "on"
+		AdvancedCrosshair:Save()
+	end
+	
+	MenuCallbackHandler.callback_ach_menu_main_compatibility_playerstandard_onsteelsight = function(self,item)
+		AdvancedCrosshair.settings.compatibility_hook_playerstandard_onsteelsight = item:value() == "on"
 		AdvancedCrosshair:Save()
 	end
 	
