@@ -1906,6 +1906,16 @@ function AdvancedCrosshair:OnPlayerManagerCheckSkills(pm)
 			end
 		end
 	)
+	pm._listener_holder:remove("advancedcrosshair_OnEnterCustody")
+	pm._listener_holder:add("advancedcrosshair_OnEnterCustody",{pm._custody_state},callback(self,self,"OnPlayerManagerOnEnterCustody"))
+end
+
+
+function AdvancedCrosshair:OnPlayerManagerOnEnterCustody(player_unit)
+	if (player_unit == nil) or (player_unit == managers.player:local_player()) then 
+		AdvancedCrosshair:ClearCache()
+		AdvancedCrosshair:RemoveAllCrosshairs(true)
+	end
 end
 
 function AdvancedCrosshair:CreateHUD(t,dt) --try to create hud each run until both required elements are initiated.
@@ -2171,7 +2181,7 @@ function AdvancedCrosshair:SetCrosshairColor(primary_color) --todo support secon
 			for i=1,#crosshair_data.parts,1 do 
 				if not crosshair_data.parts[i].UNRECOLORABLE then 
 					local part = current_crosshair_data.parts[i]
-					if part then 
+					if alive(part) then 
 						part:set_color(primary_color)
 					end
 				end
@@ -2187,12 +2197,13 @@ function AdvancedCrosshair:SetCrosshairBloom(bloom)
 
 	if player then 
 		local current_crosshair_data = self:GetCurrentCrosshair()
-		
-		local crosshair_data = self._crosshair_data[current_crosshair_data.crosshair_id] or {}
-		local data = {bloom = bloom,crosshair_data = crosshair_data,scale = current_crosshair_data.settings.scale,panel_w = current_crosshair_data.panel:w(),panel_h = current_crosshair_data.panel:h()}
-		local a = crosshair_data.bloom_func
-		
-		self:GetCurrentCrosshairParts(a,data)
+		if alive(current_crosshair_data.panel) then 
+			local crosshair_data = self._crosshair_data[current_crosshair_data.crosshair_id] or {}
+			local data = {bloom = bloom,crosshair_data = crosshair_data,scale = current_crosshair_data.settings.scale,panel_w = current_crosshair_data.panel:w(),panel_h = current_crosshair_data.panel:h()}
+			local a = crosshair_data.bloom_func
+			
+			self:GetCurrentCrosshairParts(a,data)
+		end
 	end
 end
 
@@ -2586,8 +2597,9 @@ function AdvancedCrosshair:ClearCache(skip_destroy)
 			end
 		end
 	end
+	cache.player_unit = nil
 	cache.underbarrel = {}
-	cache.weapon = {}
+--	cache.weapons = {}
 	cache.bloom = 0
 	cache.num_hitmarkers = 0
 end
@@ -2725,8 +2737,13 @@ function AdvancedCrosshair:Update(t,dt)
 	end				
 	
 
-	local player = managers.player:local_player()
+	local player = self._cache.player_unit --this is checked after execution due to the apparent vanilla code execution order on custody:
+	--1. on entered custody, playermanager listeners for "custody" are called, including ACH's custody listener, which removes all current crosshairs and their associated cached data
+	--2. player unit is prepared and queued for deletion
+	--3. in this update function, the player alive() check still passes for this frame; the premise that the crosshair is present when the player is present is broken, so ACH tries to modify (change color of, move, set visible, other panel/gui functions etc.) an invalid object
+	--4. game crashes :(
 	
+	--this is speculation, mind you, but it's my hypothesis after receiving multiple user reports of crashing on entering custody, which for whatever reason I can't replicate. so. 
 	if alive(player) then 
 		
 		local viewport_cam = managers.viewport:get_current_camera()
@@ -2871,10 +2888,9 @@ function AdvancedCrosshair:Update(t,dt)
 				end
 				
 			end
-			
 		end
-
 	end
+	self._cache.player_unit = managers.player:local_player()
 end
 
 function AdvancedCrosshair:GetCrosshairType(slot,weapon_id,category,firemode,is_revolver,is_akimbo)
