@@ -1,9 +1,9 @@
 {
-	"name" : "Advanced Crosshairs and Hitmarkers",
+	"name" : "Advanced Crosshairs, Hitmarkers, and Hitsounds",
 	"description" : "This isn't your average everyday crosshair!",
 	"author" : "Offyerrocker",
 	"contact" : "Discord: Offyerrocker#3878",
-	"version" : "9",
+	"version" : "10",
 	"blt_version" : 2,
 	"priority" : 7,
 	"color" : "0 128 255",

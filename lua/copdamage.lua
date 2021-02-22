@@ -17,7 +17,7 @@ end
 Hooks:PostHook(CopDamage,"damage_melee","ach_copdamage_melee",function(self,attack_data)
 	--damage is applied even if the enemy is already dead, resulting in hitsounds/hitmarkers on meleeing enemy corpses
 	--therefore, deaths are detected separately in ACH, from Message.OnEnemyKilled, as a workaround
-	if not self._dead then 
+	if attack_data.result then 
 		AdvancedCrosshair:OnEnemyHit(self._unit,attack_data)
 	end
 end)

@@ -5,6 +5,7 @@
 --migrate the more obscure options to "Advanced Settings" menus
 --fadeout for tf2 crit
 
+-- the division crosshairs?
 
 --hide crosshair when interacting/when weapon is not available (chk action forbidden in playerstandard)
 
@@ -215,6 +216,7 @@ AdvancedCrosshair.default_settings = {
 --			overrides_global = true
 --		}
 	},
+	hitmarker_allow_melee = true,
 	hitmarker_max_count = 5,
 	hitmarker_limit_behavior = 1,
 	hitmarker_hit_id = "destiny_hit",
@@ -235,6 +237,7 @@ AdvancedCrosshair.default_settings = {
 	hitmarker_kill_bodyshot_crit_color = "00ffff",
 	hitmarker_kill_headshot_color = "ff0000",
 	hitmarker_kill_headshot_crit_color = "ff00ff",
+	hitsound_allow_melee = true,
 	hitsound_limit_behavior = 1,
 	hitsound_max_count = 1,
 	hitsound_hit_bodyshot_id = "tf2_hit",
@@ -1636,8 +1639,8 @@ end
 function AdvancedCrosshair:IsCrosshairEnabled()
 	return self.settings.crosshair_enabled
 end
-function AdvancedCrosshair:UseGlobalCrosshair()
-	return self.settings.crosshair_all_override
+function AdvancedCrosshair:UseGlobalCrosshair() --deprecated; returns false
+	return false --self.settings.crosshair_all_override
 end
 function AdvancedCrosshair:GetBloomCooldown() --no menu option; returns constant
 	return 0.05
@@ -1704,6 +1707,9 @@ end
 function AdvancedCrosshair:GetHitmarkerLimitBehavior()
 	return self.settings.hitmarker_limit_behavior
 end
+function AdvancedCrosshair:AllowMeleeHitmarkers()
+	return self.settings.hitmarker_allow_melee
+end
 
 	--Hitsounds
 function AdvancedCrosshair:IsHitsoundEnabled()
@@ -1723,7 +1729,9 @@ end
 function AdvancedCrosshair:ShouldSuppressDoubleSound() --determines whether hit+critsounds should both be played, or just one
 	return self.settings.hitsound_suppress_doublesound
 end
-
+function AdvancedCrosshair:AllowMeleeHitsounds()
+	return self.settings.hitsound_allow_melee
+end
 
 --************************************************--
 		--hud animate functions
@@ -1894,7 +1902,7 @@ function AdvancedCrosshair:OnPlayerManagerCheckSkills(pm)
 	end)
 	pm._message_system:register(Message.OnEnemyKilled,"advancedcrosshair_OnEnemyKilled",
 		function(equipped_unit,variant,killed_unit)
-			if alive(equipped_unit) and alive(killed_unit) and (variant == "melee" or variant == "poison") then 
+			if alive(equipped_unit) and alive(killed_unit) and (variant == "fire" or variant == "poison") then 
 				self:OnEnemyHit(killed_unit,{
 					result = {
 						type = "death"
@@ -2031,7 +2039,16 @@ function AdvancedCrosshair:CreateCrosshairByWeapon(unit,weapon_index)
 		local crosshair_id = self:GetCrosshairType(weapon_index,weapon_id,weapon_category,firemode,is_revolver,is_akimbo)
 		local crosshair_tweakdata = self._crosshair_data[crosshair_id]
 		local crosshair_setting = self.settings.crosshairs[weapon_category][firemode]
-		crosshair_setting = (self:UseGlobalCrosshair() or not (crosshair_setting and crosshair_setting.overrides_global)) and self.settings.crosshair_global or crosshair_setting or self.DEFAULT_CROSSHAIR_OPTIONS
+		if crosshair_setting then 
+			if crosshair_setting.overrides_global then 
+				--crosshair_setting = crosshair_setting --boy i sure hope it do
+			else
+				crosshair_setting = self.settings.crosshair_global
+			end
+		else
+			crosshair_setting = self.DEFAULT_CROSSHAIR_OPTIONS
+		end
+		
 		local firemode_panel = weapon_panel:panel({
 			name = firemode,
 			visible = false,
@@ -2070,7 +2087,15 @@ function AdvancedCrosshair:CreateCrosshairByWeapon(unit,weapon_index)
 				local underbarrel_category,underbarrel_is_revolver,underbarrel_is_akimbo = self:GetWeaponCategory(underbarrel_tweakdata.categories)
 				local underbarrel_crosshair_id = self:GetCrosshairType(nil,underbarrel_id,underbarrel_category,firemode,underbarrel_is_revolver,underbarrel_is_akimbo)
 				local crosshair_setting = self.settings.crosshairs[underbarrel_category][firemode]
-				crosshair_setting = (self:UseGlobalCrosshair() or not (crosshair_setting and crosshair_setting.overrides_global)) and self.settings.crosshair_global or crosshair_setting or self.DEFAULT_CROSSHAIR_OPTIONS
+				if crosshair_setting then 
+					if crosshair_setting.overrides_global then 
+						--no nothing, everything is in order
+					else
+						crosshair_setting = self.settings.crosshair_global
+					end
+				else
+					crosshair_setting = self.DEFAULT_CROSSHAIR_OPTIONS
+				end			
 				local underbarrel_firemode_panel = underbarrel_panel:panel({
 					name = firemode,
 					visible = false,
@@ -2424,10 +2449,11 @@ end
 
 function AdvancedCrosshair:OnEnemyHit(unit,attack_data)
 	if attack_data.attacker_unit and (attack_data.attacker_unit == managers.player:local_player()) then 
-		if self:IsHitmarkerEnabled() then 
+		local variant = attack_data.variant
+		if self:IsHitmarkerEnabled() and (self:AllowMeleeHitmarkers() or variant ~= "melee") then
 			self:ActivateHitmarker(attack_data)
 		end
-		if self:IsHitsoundEnabled() then 
+		if self:IsHitsoundEnabled() and (self:AllowMeleeHitsounds() or variant ~= "melee") then 
 			AdvancedCrosshair:ActivateHitsound(attack_data,unit)
 			--screw your existing argument order, i'm a loose cannon who got nothing to lose and don't play by the rules
 		end
@@ -2914,7 +2940,7 @@ function AdvancedCrosshair:GetCrosshairType(slot,weapon_id,category,firemode,is_
 			end
 			
 			local crosshair_setting = self.settings.crosshairs[category][firemode]
-			if not crosshair_setting.overrides_global or self:UseGlobalCrosshair() then 
+			if not crosshair_setting.overrides_global then 
 				result = self.settings.crosshair_global.crosshair_id
 			else
 				result = crosshair_setting.crosshair_id
@@ -3115,7 +3141,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		callback = "callback_ach_hitmarkers_master_enable",
 		value = AdvancedCrosshair.settings.hitmarker_enabled,
 		menu_id = AdvancedCrosshair.hitmarkers_menu_id,
-		priority = 29
+		priority = 30
 	})
 	MenuHelper:AddToggle({
 		id = "ach_hitmarkers_set_3d_enabled",
@@ -3123,6 +3149,16 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		desc = "menu_ach_hitmarkers_set_3d_enabled_desc",
 		callback = "callback_ach_hitmarkers_set_3d_enabled",
 		value = AdvancedCrosshair.settings.use_hitpos,
+		menu_id = AdvancedCrosshair.hitmarkers_menu_id,
+		priority = 29
+	})
+	
+	MenuHelper:AddToggle({
+		id = "ach_hitmarkers_set_melee_enabled",
+		title = "menu_ach_hitmarkers_set_melee_enabled_title",
+		desc = "menu_ach_hitmarkers_set_melee_enabled_desc",
+		callback = "callback_ach_hitmarkers_set_melee_enabled",
+		value = AdvancedCrosshair.settings.hitmarker_allow_melee,
 		menu_id = AdvancedCrosshair.hitmarkers_menu_id,
 		priority = 28
 	})
@@ -3820,6 +3856,16 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		callback = "callback_ach_hitsounds_master_enable",
 		value = AdvancedCrosshair.settings.hitsound_enabled,
 		menu_id = AdvancedCrosshair.hitsounds_menu_id,
+		priority = 28
+	})
+	
+	MenuHelper:AddToggle({
+		id = "ach_hitsounds_set_melee_enabled",
+		title = "menu_ach_hitsounds_set_melee_enabled_title",
+		desc = "menu_ach_hitsounds_set_melee_enabled_desc",
+		callback = "callback_ach_hitsounds_set_melee_enabled",
+		value = AdvancedCrosshair.settings.hitmarker_allow_melee,
+		menu_id = AdvancedCrosshair.hitsounds_menu_id,
 		priority = 27
 	})
 	
@@ -4478,6 +4524,10 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 		AdvancedCrosshair.settings.hitmarker_limit_behavior = tonumber(item:value())
 		AdvancedCrosshair:Save()
 	end
+	MenuCallbackHandler.callback_ach_hitmarkers_set_melee_enabled = function(self,item)
+		AdvancedCrosshair.settings.hitmarker_allow_melee = item:value() == "on"
+		AdvancedCrosshair:Save()
+	end
 	MenuCallbackHandler.callback_ach_hitmarkers_set_max_count = function(self,item)
 		AdvancedCrosshair.settings.hitmarker_max_count = math.round(tonumber(item:value()))
 		AdvancedCrosshair:Save()
@@ -4741,6 +4791,10 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 	end
 	MenuCallbackHandler.callback_ach_hitsounds_max_count = function(self,item)
 		AdvancedCrosshair.settings.hitsound_max_count = math.round(tonumber(item:value()))
+		AdvancedCrosshair:Save()
+	end
+	MenuCallbackHandler.callback_ach_hitsounds_set_melee_enabled = function(self,item)
+		AdvancedCrosshair.settings.hitsound_allow_melee = item:value() == "on"
 		AdvancedCrosshair:Save()
 	end
 	MenuCallbackHandler.callback_ach_hitsounds_set_hit_bodyshot_type = function(self,item)
