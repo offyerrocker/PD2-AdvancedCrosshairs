@@ -1,4 +1,5 @@
 		--todo list, loosely sorted by descending priority:
+--toggling off of an underbarrel attachment that has a different firemode than the main weapon's current firemode does not properly refresh the firemode
 
 --hitmarker preview sometimes visible when switching to crosshair menu? (attempting to replicate)
 
@@ -81,6 +82,29 @@ AdvancedCrosshair.HITMARKER_RAIN_COUNT_MAX = 128
 AdvancedCrosshair.HITMARKER_RAIN_PROC_CHANCE = 0.01 --chance to proc hitmarker rain on any kill
 AdvancedCrosshair.HITMARKER_RAIN_TEXT_FLASH_SPEED = 600
 
+--color and alpha are disabled because they don't work so well with bloom/hitmarker animations etc
+AdvancedCrosshair.OUTOFRANGE_DISPLAY_MODES = {
+	crosshair = {
+		disabled = 1,
+		size = 2,
+		color = 3,
+		alpha = 4
+	},
+	hitmarker = {
+		disabled = 1,
+		size = 2,
+		color = 3,
+		alpha = 4
+	}
+}
+--todo menu options for these
+AdvancedCrosshair.OUTOFRANGE_CROSSHAIR_SCALE = 2/3
+AdvancedCrosshair.OUTOFRANGE_HITMARKER_SCALE = 2/3
+AdvancedCrosshair.OUTOFRANGE_CROSSHAIR_ALPHA = 1/3
+AdvancedCrosshair.OUTOFRANGE_HITMARKER_ALPHA = 1/3
+AdvancedCrosshair.OUTOFRANGE_CROSSHAIR_COLOR = Color(0.3,0.3,0.3)
+AdvancedCrosshair.OUTOFRANGE_HITMARKER_COLOR = Color(0.3,0.3,0.3)
+
 AdvancedCrosshair.STATES_CROSSHAIR_ALLOWED = {
 	empty = false,
 	standard = true,
@@ -151,6 +175,7 @@ AdvancedCrosshair.DEFAULT_HITMARKER_OPTIONS = {
 --init default settings values
 --these are later overwritten by values read from save data, if present
 AdvancedCrosshair.default_settings = {
+	logs_enabled = false,
 	crosshair_enabled = true,
 	hitmarker_enabled = true,
 	hitsound_enabled = false,
@@ -188,6 +213,7 @@ AdvancedCrosshair.default_settings = {
 	use_color = true,
 	use_hitpos = true,
 	use_hitsound_pos = false,
+	crosshair_outofrange_mode = 1,
 	crosshair_all_override = false,
 	crosshair_stability = 1,
 	crosshair_enemy_color = "e11a1a",
@@ -217,6 +243,7 @@ AdvancedCrosshair.default_settings = {
 --		}
 	},
 	hitmarker_allow_melee = true,
+	hitmarker_outofrange_mode = 2,
 	hitmarker_max_count = 5,
 	hitmarker_limit_behavior = 1,
 	hitmarker_hit_id = "destiny_hit",
@@ -895,7 +922,10 @@ AdvancedCrosshair.hitmarker_menu_preview_loops = true --not yet implemented
 --					Utils
 --************************************************--
 function AdvancedCrosshair:log(a,...)
-	if Console then 
+	if not self:LogsEnabled() then 
+		return
+	end
+	if Console then
 		return Console:log(a,...)
 	else
 		return log("[AdvancedCrosshair] " .. tostring(a))
@@ -990,6 +1020,10 @@ function AdvancedCrosshair.interp_colors(one,two,percent) --interpolates colors 
 	local a3 = a2 - a1
 	
 	return Color(r1 + (r3 * percent),g1 + (g3 * percent), b1 + (b3 * percent)):with_alpha(a1 + (a3 * percent))
+end
+
+function AdvancedCrosshair:LogsEnabled()
+	return self.settings.logs_enabled
 end
 
 --************************************************--
@@ -1668,6 +1702,14 @@ function AdvancedCrosshair:CrosshairAllowedInState(state_name)
 	return state_name and self.STATES_CROSSHAIR_ALLOWED[state_name]
 end
 
+function AdvancedCrosshair:GetCrosshairRangeMode()
+	return self.settings.crosshair_outofrange_mode
+end
+
+function AdvancedCrosshair:GetHitmarkerRangeMode()
+	return self.settings.hitmarker_outofrange_mode
+end
+
 	--Hitmarkers
 function AdvancedCrosshair:IsHitmarkerEnabled()
 	return self.settings.hitmarker_enabled
@@ -2176,18 +2218,47 @@ function AdvancedCrosshair:CreateCrosshair(panel,data,scale_setting)
 	return results
 end
 
-function AdvancedCrosshair:SetCrosshairScale(scale) --nobody
+function AdvancedCrosshair:SetCrosshairScale(scale_mul,scale_setting_override)
+	--scale_mul argument is meant for use with pd2's new range mechanic; this is separate from the crosshair scale setting, which is applied on top of this
+	scale_mul = scale_mul or 1
 	local current_crosshair_data = self:GetCurrentCrosshair()
+	local scale_setting = (scale_setting_override or current_crosshair_data.settings.scale) * scale_mul
 	local crosshair_data = self._crosshair_data[tostring(current_crosshair_data.crosshair_id)]
 	if crosshair_data then 
 		if not crosshair_data.special_crosshair then 
 			for i=1,#current_crosshair_data.parts,1 do 
 				local part = current_crosshair_data.parts[i]
-				if part then 
+				if alive(part) then 
+					local parent = part:parent()
 					local part_data = crosshair_data.parts[i]
-					local w = part_data.w or part:w()
-					local h = part_data.h or part:h()
-					local distance = part_data.distance or 0
+					local scale = scale_setting * (crosshair_data.scale or 1)
+					local x = (part_data.x or 0) * scale
+					local y = (part_data.y or 0) * scale
+					local w,h
+					local angle = part_data.angle or part_data.rotation
+					if part_data.distance and angle then 
+						x = x + (math.sin(angle) * part_data.distance * scale)
+						y = y + (-math.cos(angle) * part_data.distance * scale)
+					end
+					if part_data.w then 
+						w = part_data.w * scale
+					end
+					if part_data.h then 
+						h = part_data.h * scale
+					end
+					part:set_position(x,y)
+
+					if w then 
+						part:set_w(w)
+					else
+						part:set_w((part_data.texture_rect and part_data.texture_rect[3] or part:texture_width()) * scale)
+					end
+					if h then 
+						part:set_h(h)
+					else
+						part:set_h((part_data.texture_rect and part_data.texture_rect[4] or part:texture_height()) * scale)
+					end
+					part:set_center(x + (parent:w()/2),y + (parent:h()/2))
 				end
 			end
 		end
@@ -2228,6 +2299,26 @@ function AdvancedCrosshair:SetCrosshairBloom(bloom)
 			local a = crosshair_data.bloom_func
 			
 			self:GetCurrentCrosshairParts(a,data)
+		end
+	end
+end
+
+function AdvancedCrosshair:SetCrosshairAlpha(alpha_mul,alpha_setting_override)
+	local current_crosshair_data,current_crosshair_id = self:GetCurrentCrosshair()
+	local alpha_setting = (alpha_mul or 1) * (alpha_setting_override or current_crosshair_data.settings.alpha or 1)
+	local crosshair_data = self._crosshair_data[tostring(current_crosshair_data.crosshair_id)]
+	if crosshair_data then 
+		if not crosshair_data.special_crosshair then 
+			for i=1,#crosshair_data.parts,1 do 
+				local part_data = crosshair_data.parts[i]
+				local part = current_crosshair_data.parts[i]
+				if alive(part) then 
+					local alpha = alpha_setting * (part_data.alpha or 1)
+					part:set_alpha(alpha)
+				end
+			end
+		else
+			--todo
 		end
 	end
 end
@@ -2366,6 +2457,45 @@ function AdvancedCrosshair:ActivateHitmarker(attack_data)
 	local headshot = attack_data.headshot
 	local crit = attack_data.crit --flag indicating crit is added from the mod, not here in vanilla
 
+	local outofrange_display_mode = self:GetHitmarkerRangeMode()
+
+	local outofrange_scale = 1
+	local outofrange_color
+	local outofrange_alpha = 1
+	local weak_hit
+	local weapon_unit = attack_data.weapon_unit
+	if outofrange_display_mode == self.OUTOFRANGE_DISPLAY_MODES.hitmarker.disabled then
+		--rien
+	else
+		if attack_data.weapon_unit and attack_data.col_ray then 
+			local ad_distance = attack_data.col_ray.distance
+			local ad_attacker = attack_data.attacker_unit
+			local ad_weaponbase = attack_data.weapon_unit:base()
+			if ad_distance and ad_attacker then 
+				if ad_weaponbase and ad_weaponbase.is_weak_hit then 
+					weak_hit = ad_weaponbase:is_weak_hit(ad_distance, ad_attacker)
+					self:log("Is weak hit?" .. tostring(weak_hit))
+				else
+					self:log("Weaponbase or is_weak_hit() does not exist!")
+				end
+			else
+				self:log("ad_distance or ad_attacker does not exist")
+			end
+		else
+			self:log("Attack data weapon unit or col_ray does not exist!")
+		end
+		
+		if weak_hit then 
+			if outofrange_display_mode == self.OUTOFRANGE_DISPLAY_MODES.hitmarker.size then
+				outofrange_scale = self.OUTOFRANGE_HITMARKER_SCALE
+			elseif outofrange_display_mode == self.OUTOFRANGE_DISPLAY_MODES.hitmarker.color then
+				outofrange_color = self.OUTOFRANGE_HITMARKER_COLOR
+			elseif outofrange_display_mode == self.OUTOFRANGE_DISPLAY_MODES.hitmarker.alpha then
+				outofrange_alpha = self.OUTOFRANGE_HITMARKER_ALPHA
+			end
+		end
+	end
+
 	local hitmarker_setting = self:GetHitmarkerSettings(result_type)
 	
 	local hitmarker_id = hitmarker_setting.hitmarker_id
@@ -2390,15 +2520,15 @@ function AdvancedCrosshair:ActivateHitmarker(attack_data)
 	local num_id = self._cache.num_hitmarkers + 1
 	
 	local panel = self._hitmarker_panel:panel({
-		alpha = (hitmarker_data.alpha or 1) * hitmarker_setting.alpha,
+		alpha = (hitmarker_data.alpha or 1) * hitmarker_setting.alpha * outofrange_alpha,
 		name = "hitmarker_" .. tostring(num_id)
 	})
 	if alive(panel) then 
 		local parts = self:CreateHitmarker(panel,{
 			parts = hitmarker_data.parts,
-			color = color,
+			color = outofrange_color or color,
 			blend_mode = self.BLEND_MODES[hitmarker_setting.blend_mode],
-			scale = (hitmarker_data.scale or 1) * (hitmarker_setting.scale or 1)
+			scale = (hitmarker_data.scale or 1) * (hitmarker_setting.scale or 1) * outofrange_scale
 		})
 		table.insert(self._cache.hitmarkers,#self._cache.hitmarkers + 1,
 			{ --this is only used for the "3D hitmarkers" feature
@@ -2781,7 +2911,8 @@ function AdvancedCrosshair:Update(t,dt)
 		local viewport_cam_fwd = viewport_cam_rot:y()
 		local ws = managers.hud._workspace
 		
-		if not player:inventory():equipped_unit() then 
+		local weapon_unit = player:inventory():equipped_unit()
+		if not weapon_unit then 
 			--this can happen when restarting the level
 			return
 		end
@@ -2856,33 +2987,76 @@ function AdvancedCrosshair:Update(t,dt)
 					end
 				end
 				
-				if self:UseDynamicColor() then 
-					local fwd_ray = state._fwd_ray	
-					local focused_person = fwd_ray and fwd_ray.unit
-					local crosshair_color = current_crosshair_data.color
-					if alive(focused_person) then
-						
-						if focused_person:character_damage() then 
-							if not focused_person:character_damage():dead() then 
-								local f_m = focused_person:movement()
-								local f_t = f_m and f_m:team() and f_m:team().id
-								if f_t then 
-									if focused_person.brain and focused_person:brain() and focused_person:brain().is_current_logic and focused_person:brain():is_current_logic("intimidated") then 
-										f_t = "converted_enemy"
+				local outofrange_display_mode = self:GetCrosshairRangeMode()
+				local use_dynamic_color = self:UseDynamicColor()
+				local fwd_ray = state._fwd_ray	
+				local focused_person = fwd_ray and fwd_ray.unit
+				local weak_hit
+				if outofrange_display_mode ~= self.OUTOFRANGE_DISPLAY_MODES.crosshair.disabled then 
+					if alive(focused_person) and focused_person:character_damage() then 
+						local weaponbase = weapon_unit:base()
+						if weaponbase and weaponbase.is_weak_hit and fwd_ray and fwd_ray.distance then 
+							weak_hit = weaponbase:is_weak_hit(fwd_ray.distance,player)
+						end
+					end
+				end
+				
+				if outofrange_display_mode == self.OUTOFRANGE_DISPLAY_MODES.crosshair.color then 
+
+					if weak_hit then 
+						self:SetCrosshairColor(self.OUTOFRANGE_CROSSHAIR_COLOR)
+					else
+						self:SetCrosshairColor(current_crosshair_data.color)
+					end
+				else
+					if use_dynamic_color then 
+						local crosshair_color = current_crosshair_data.color
+						if alive(focused_person) then
+							if focused_person:character_damage() then 
+								if not focused_person:character_damage():dead() then 
+									crosshair_color = current_crosshair_data.color
+									local f_m = focused_person:movement()
+									local f_t = f_m and f_m:team() and f_m:team().id
+									if f_t then 
+										if focused_person.brain and focused_person:brain() and focused_person:brain().is_current_logic and focused_person:brain():is_current_logic("intimidated") then 
+											f_t = "converted_enemy"
+										end
+										crosshair_color = self:GetColorByTeam(f_t)
 									end
-									crosshair_color = self:GetColorByTeam(f_t)
-								elseif not f_m then --old color determination method
-					--							self:log("NO CROSSHAIR UNIT TEAM")
-					--							if managers.enemy:is_enemy(focused_person) then 
-					--							elseif managers.enemy:is_civilian(focused_person) then
-					--							elseif managers.criminals:character_name_by_unit(focused_person) then
-									--else, is probably a car.
 								end
+							elseif focused_person:base() and focused_person:base().can_apply_tape_loop and focused_person:base():can_apply_tape_loop() then 	
+								crosshair_color = self:GetColorByTeam("law1")
 							end
-						elseif focused_person:base() and focused_person:base().can_apply_tape_loop and focused_person:base():can_apply_tape_loop() then 	
-							crosshair_color = self:GetColorByTeam("law1")
 						end
 						self:SetCrosshairColor(crosshair_color)
+					end
+					if outofrange_display_mode == self.OUTOFRANGE_DISPLAY_MODES.crosshair.size then
+						if weak_hit then 
+							local outofrange_scale = self.OUTOFRANGE_CROSSHAIR_SCALE
+							if current_crosshair_data.range_scale ~= outofrange_scale then 
+								current_crosshair_data.range_scale = outofrange_scale
+								self:SetCrosshairScale(outofrange_scale)
+							end
+						else
+							if current_crosshair_data.range_scale then 
+								current_crosshair_data.range_scale = nil
+								self:SetCrosshairScale(1)
+							end
+						end
+					elseif outofrange_display_mode == self.OUTOFRANGE_DISPLAY_MODES.crosshair.alpha then 
+						--not implemented
+						if weak_hit then 
+							local outofrange_alpha = self.OUTOFRANGE_CROSSHAIR_ALPHA
+							if current_crosshair_data.range_alpha ~= outofrange_alpha then 
+								current_crosshair_data.range_alpha = outofrange_alpha
+								self:SetCrosshairAlpha(outofrange_alpha)
+							end
+						else
+							if current_crosshair_data.range_alpha then 
+								current_crosshair_data.range_alpha = nil
+								self:SetCrosshairAlpha(1)
+							end
+						end
 					end
 				end
 
@@ -3141,8 +3315,25 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		callback = "callback_ach_hitmarkers_master_enable",
 		value = AdvancedCrosshair.settings.hitmarker_enabled,
 		menu_id = AdvancedCrosshair.hitmarkers_menu_id,
+		priority = 31
+	})
+	
+	MenuHelper:AddMultipleChoice({
+		id = "ach_hitmarkers_outofrange_mode",
+		title = "menu_ach_hitmarkers_outofrange_mode_title",
+		desc = "menu_ach_hitmarkers_outofrange_mode_desc",
+		callback = "callback_ach_hitmarkers_set_outofrange_mode",
+		items = {
+			"menu_ach_outofrange_disabled",
+			"menu_ach_outofrange_size"
+--,			"menu_ach_outofrange_color",
+--			"menu_ach_outofrange_alpha"
+		},
+		value = AdvancedCrosshair.settings.hitmarker_outofrange_mode,
+		menu_id = AdvancedCrosshair.hitmarkers_menu_id,
 		priority = 30
 	})
+	
 	MenuHelper:AddToggle({
 		id = "ach_hitmarkers_set_3d_enabled",
 		title = "menu_ach_hitmarkers_set_3d_enabled_title",
@@ -3705,6 +3896,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		menu_id = AdvancedCrosshair.crosshairs_categories_global_id,
 		priority = 8
 	})
+	
 	MenuHelper:AddButton({
 		id = "id_ach_menu_crosshairs_categories_global_color",
 		title = "menu_ach_set_color_title",
@@ -3783,7 +3975,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		id = "ach_crosshairs_general_divider_1",
 		size = 16,
 		menu_id = AdvancedCrosshair.crosshairs_menu_id,
-		priority = 8
+		priority = 9
 	})
 	MenuHelper:AddToggle({
 		id = "ach_crosshairs_general_master_enable",
@@ -3792,8 +3984,26 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		callback = "callback_ach_crosshairs_general_master_enable",
 		value = AdvancedCrosshair.settings.crosshair_enabled,
 		menu_id = AdvancedCrosshair.crosshairs_menu_id,
+		priority = 8
+	})
+	
+	MenuHelper:AddMultipleChoice({
+		id = "ach_crosshairs_general_outofrange_mode",
+		title = "menu_ach_crosshairs_general_outofrange_mode_title",
+		desc = "menu_ach_crosshairs_general_outofrange_mode_desc",
+		callback = "callback_ach_crosshairs_general_set_outofrange_mode",
+		items = {
+			"menu_ach_outofrange_disabled",
+			"menu_ach_outofrange_size"
+--,			"menu_ach_outofrange_color",
+--			"menu_ach_outofrange_alpha"
+		},
+		value = AdvancedCrosshair.settings.crosshair_outofrange_mode,
+		menu_id = AdvancedCrosshair.crosshairs_menu_id,
 		priority = 7
 	})
+	
+	
 	MenuHelper:AddToggle({
 		id = "ach_crosshairs_general_enable_shake",
 		title = "menu_ach_crosshairs_general_enable_shake_title",
@@ -4162,7 +4372,14 @@ Hooks:Add("MenuManagerBuildCustomMenus", "ach_MenuManagerBuildCustomMenus", func
 		}
 	)
 	
-	nodes[AdvancedCrosshair.crosshairs_categories_global_id] = MenuHelper:BuildMenu(AdvancedCrosshair.crosshairs_categories_global_id,{back_callback = MenuCallbackHandler.callback_ach_crosshairs_categories_global_close,focus_changed_callback = "callback_ach_crosshairs_categories_global_focus"})
+	nodes[AdvancedCrosshair.crosshairs_categories_global_id] = MenuHelper:BuildMenu(AdvancedCrosshair.crosshairs_categories_global_id,
+		{
+			area_bg = "none",
+			back_callback = MenuCallbackHandler.callback_ach_crosshairs_categories_global_close,
+			focus_changed_callback = "callback_ach_crosshairs_categories_global_focus"
+		}
+	)
+	
 	MenuHelper:AddMenuItem(crosshairs_menu,AdvancedCrosshair.crosshairs_categories_global_id,"menu_ach_crosshairs_global_menu_title","menu_ach_crosshairs_global_menu_desc",2)
 	MenuHelper:AddMenuItem(crosshairs_menu,AdvancedCrosshair.crosshairs_categories_submenu_id,"menu_ach_crosshairs_categories_menu_title","menu_ach_crosshairs_categories_menu_desc",1)
 	for cat_menu_name,cat_menu_data in pairs(AdvancedCrosshair.customization_menus) do 
@@ -4191,12 +4408,30 @@ Hooks:Add("MenuManagerBuildCustomMenus", "ach_MenuManagerBuildCustomMenus", func
 					AdvancedCrosshair.crosshair_preview_data = AdvancedCrosshair.crosshair_preview_data or AdvancedCrosshair.clbk_create_crosshair_preview(crosshair_setting)
 				end
 			end
-			nodes[firemode_menu_name] = MenuHelper:BuildMenu(firemode_menu_name,{area_bg = "none",back_callback = MenuCallbackHandler.callback_ach_crosshairs_close,focus_changed_callback = callback_category_firemode_focus_name})
+			nodes[firemode_menu_name] = MenuHelper:BuildMenu(firemode_menu_name,
+				{
+					area_bg = "none",
+					back_callback = MenuCallbackHandler.callback_ach_crosshairs_close,
+					focus_changed_callback = callback_category_firemode_focus_name
+				}
+			)
 			MenuHelper:AddMenuItem(cat_menu,firemode_menu_name,name_id,desc_id,i) --add each firemode menu to its weaponcategory parent menu
 			i = i + 1
 		end
-		nodes[cat_menu_name] = MenuHelper:BuildMenu(cat_menu_name,{area_bg = "half",back_callback = MenuCallbackHandler.callback_ach_hitmarkers_close,focus_changed_callback = "callback_ach_hitmarkers_focus"})
-		nodes[AdvancedCrosshair.crosshairs_categories_submenu_id] = MenuHelper:BuildMenu(AdvancedCrosshair.crosshairs_categories_submenu_id,{back_callback = MenuCallbackHandler.callback_ach_crosshairs_categories_close,focus_changed_callback = "callback_ach_crosshairs_categories_focus"})
+		nodes[cat_menu_name] = MenuHelper:BuildMenu(cat_menu_name,
+			{
+				area_bg = "none",
+				back_callback = MenuCallbackHandler.callback_ach_hitmarkers_close,
+				focus_changed_callback = "callback_ach_hitmarkers_focus"
+			}
+		)
+		nodes[AdvancedCrosshair.crosshairs_categories_submenu_id] = MenuHelper:BuildMenu(AdvancedCrosshair.crosshairs_categories_submenu_id,
+			{
+				area_bg = "none",
+				back_callback = MenuCallbackHandler.callback_ach_crosshairs_categories_close,
+				focus_changed_callback = "callback_ach_crosshairs_categories_focus"
+			}
+		)
 		MenuHelper:AddMenuItem(MenuHelper:GetMenu(AdvancedCrosshair.crosshairs_categories_submenu_id),cat_menu_name,cat_name_id,cat_name_desc)
 	end
 end)
@@ -4237,7 +4472,11 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 		end
 		AdvancedCrosshair:Save()
 	end
-	
+	MenuCallbackHandler.callback_ach_crosshairs_general_set_outofrange_mode = function(self,item)
+		local value = tonumber(item:value())
+		AdvancedCrosshair.settings.crosshair_outofrange_mode = value
+		AdvancedCrosshair:Save()
+	end	
 	MenuCallbackHandler.callback_ach_crosshairs_general_enable_shake = function(self,item)
 		AdvancedCrosshair.settings.use_shake = item:value() == "on"
 		if alive(AdvancedCrosshair._crosshair_panel) then 
@@ -4514,6 +4753,11 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 	end
 	MenuCallbackHandler.callback_ach_hitmarkers_master_enable = function(self,item)
 		AdvancedCrosshair.settings.hitmarker_enabled = item:value() == "on"
+		AdvancedCrosshair:Save()
+	end
+	MenuCallbackHandler.callback_ach_hitmarkers_set_outofrange_mode = function(self,item)
+		local value = tonumber(item:value())
+		AdvancedCrosshair.settings.hitmarker_outofrange_mode = value
 		AdvancedCrosshair:Save()
 	end
 	MenuCallbackHandler.callback_ach_hitmarkers_set_3d_enabled = function(self,item)
@@ -5455,7 +5699,35 @@ function AdvancedCrosshair.clbk_missing_colorpicker_prompt()
 end
 
 
+
+
+
+--MenuLobbyRenderer
+--MenuKitRenderer
+
+--allow "none" as an option for menu backgrounds, so that players can see the crosshair/hitmarker that they are customizing
+MenuPauseRenderer.orig_set_bg_area = MenuPauseRenderer.orig_set_bg_area or MenuPauseRenderer.set_bg_area
+function MenuPauseRenderer:set_bg_area(area, ...)
+    if self._menu_bg and area == "none" then
+        self._menu_bg:set_size(0,0)
+		self._menu_bg:set_top(0)
+		self._menu_bg:set_right(0)
+		if self._blur_bg then
+			self._blur_bg:set_x(self._fullscreen_panel:w())
+		end
+    else
+		if self._blur_bg then
+			self._blur_bg:set_x(0)
+		end
+        return self:orig_set_bg_area(area,...)
+    end
+end
+
+
+
+
 AdvancedCrosshair:Init()
 AdvancedCrosshair:Load()
 
 AdvancedCrosshair:CheckCreateAddonFolder()
+

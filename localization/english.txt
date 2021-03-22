@@ -71,6 +71,8 @@
 	"menu_ach_crosshairs_general_menu_desc" : "General crosshair settings",
 	"menu_ach_crosshairs_general_master_enable_title" : "Enable Crosshairs",
 	"menu_ach_crosshairs_general_master_enable_desc" : "Must be checked in order to use crosshairs",
+	"menu_ach_crosshairs_general_outofrange_mode_title" : "Out of Range Display Mode",
+	"menu_ach_crosshairs_general_outofrange_mode_desc" : "Choose how the crosshair displays when your target is out of range",
 	"menu_ach_crosshairs_general_enable_shake_title" : "Enable Shake",
 	"menu_ach_crosshairs_general_enable_shake_desc" : "If true, crosshair moves to show where your weapon is aimed.",
 	"menu_ach_crosshairs_general_enable_dynamic_color_title" : "Enable Dynamic Color",
@@ -88,8 +90,15 @@
 	"menu_ach_limit_replace" : "Replace Oldest",
 	"menu_ach_limit_unlimited" : "No Cap",
 	
+	"menu_ach_outofrange_disabled" : "No Change",
+	"menu_ach_outofrange_color" : "Color",
+	"menu_ach_outofrange_alpha" : "Alpha",
+	"menu_ach_outofrange_size" : "Size",
+	
 	"menu_ach_hitmarkers_master_enable_title" : "Enable Hitmarkers",
 	"menu_ach_hitmarkers_master_enable_desc" : "If true, shows a hitmarker when hitting an enemy",
+	"menu_ach_hitmarkers_outofrange_mode_title" : "Out of Range Display Mode",
+	"menu_ach_hitmarkers_outofrange_mode_desc" : "Choose how the crosshair displays when your target is out of range",
 	"menu_ach_hitmarkers_set_limit_behavior_title" : "Hitmarker Cap",
 	"menu_ach_hitmarkers_set_limit_behavior_desc" : "Control how the hitmarker count cap behaves",
 	"menu_ach_hitmarkers_set_max_count_title" : "Maximum Hitmarker Count",
@@ -102,7 +111,6 @@
 	"menu_ach_hitmarkers_hit_set_alpha_desc" : "(Opacity) Larger values are more visible.",
 	"menu_ach_hitmarkers_hit_set_scale_title" : "Hit: Set Hitmarker Scale",
 	"menu_ach_hitmarkers_hit_set_scale_desc" : "Set the size of the hitmarker",
-	
 	"menu_ach_hitmarkers_hit_set_duration_title" : "Hit: Duration",
 	"menu_ach_hitmarkers_hit_set_duration_desc" : "Timer of hitmarker animation (seconds).",
 	"menu_ach_hitmarkers_hit_set_blend_mode_title" : "Hit: Blend Mode",

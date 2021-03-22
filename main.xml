@@ -1,5 +1,5 @@
 <mod name="Advanced Crosshairs and Hitmarkers" author="Offyerrocker" color="Color(0.4,0.7,1)" >
-	<AssetUpdates id="29585" version="11" provider="modworkshop" install_directory="mods/" version_is_number="true" />
+	<AssetUpdates id="29585" version="12" provider="modworkshop" install_directory="mods/" version_is_number="true" />
 	<Localization directory="localization" default="english.txt">
 		<loc file="english.txt" language="english" />
 		<loc file="chinese.txt" language="chinese" />
