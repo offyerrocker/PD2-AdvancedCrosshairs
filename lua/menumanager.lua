@@ -1937,7 +1937,7 @@ function AdvancedCrosshair:OnPlayerManagerCheckSkills(pm)
 			end
 		end
 	)
-	pm._message_system:register(Message.OnEnemyShot,"ach_OnEnemyShot",function(unit,attack_data,...) 
+	pm._message_system:register(Message.OnEnemyShot,"advancedcrosshair_OnEnemyShot",function(unit,attack_data,...) 
 		if alive(unit) and attack_data and attack_data.attacker_unit and (attack_data.attacker_unit == pm:local_player()) then 
 			self:OnEnemyHit(unit,attack_data,...)
 		end
@@ -2222,7 +2222,7 @@ function AdvancedCrosshair:SetCrosshairScale(scale_mul,scale_setting_override)
 	--scale_mul argument is meant for use with pd2's new range mechanic; this is separate from the crosshair scale setting, which is applied on top of this
 	scale_mul = scale_mul or 1
 	local current_crosshair_data = self:GetCurrentCrosshair()
-	local scale_setting = (scale_setting_override or current_crosshair_data.settings.scale) * scale_mul
+	local scale_setting = (scale_setting_override or current_crosshair_data.settings.scale or 1) * scale_mul
 	local crosshair_data = self._crosshair_data[tostring(current_crosshair_data.crosshair_id)]
 	if crosshair_data then 
 		if not crosshair_data.special_crosshair then 
