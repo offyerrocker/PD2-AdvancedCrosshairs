@@ -2467,10 +2467,10 @@ function AdvancedCrosshair:ActivateHitmarker(attack_data)
 	if outofrange_display_mode == self.OUTOFRANGE_DISPLAY_MODES.hitmarker.disabled then
 		--rien
 	else
-		if attack_data.weapon_unit and attack_data.col_ray then 
+		if alive(weapon_unit) and attack_data.col_ray then 
 			local ad_distance = attack_data.col_ray.distance
 			local ad_attacker = attack_data.attacker_unit
-			local ad_weaponbase = attack_data.weapon_unit:base()
+			local ad_weaponbase = weapon_unit.base and weapon_unit:base()
 			if ad_distance and ad_attacker then 
 				if ad_weaponbase and ad_weaponbase.is_weak_hit then 
 					weak_hit = ad_weaponbase:is_weak_hit(ad_distance, ad_attacker)
