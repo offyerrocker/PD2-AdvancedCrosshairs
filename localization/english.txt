@@ -164,7 +164,6 @@
 	"menu_ach_hitsounds_master_enable_title" : "Enable Hitsounds",
 	"menu_ach_hitsounds_master_enable_desc" : "If true, plays a sound when hitting an enemy",
 	
-	
 	"menu_ach_hitsounds_set_limit_behavior_title" : "Hitsound Cap",
 	"menu_ach_hitsounds_set_limit_behavior_desc" : "Control how the hitmarker count cap behaves",
 	"menu_ach_hitsounds_max_count_title" : "Maximum Hitsound Count",
@@ -238,22 +237,13 @@
 	
 	"menu_ach_menu_misc_title" : "Misc...",
 	
-	"menu_ach_update_message_fyi_title" : "ACH Update Notifications",
-	"menu_ach_update_message_fyi_desc" : "This is your heads-up that ACH has a notification system for urgent updates.\nYou can disable these at any time but before you do, you should know that I will ONLY use this where the severity of the update actually warrant a popup. (I know how annoying these are.)\nSituations where I might use this system include:\n-Crosshairs, Hitmarkers, or Hitsound content being removed from the base ACH installation (which I currently have plans to do).\n-ACH feature incompatibility with one of your installed/enabled mods detected\n-A feature of ACH being deprecated, significantly changed, or separated into a standalone such that it would no longer function in this mod (Again, I have no plans to do this)\nIn other words, I won't misuse this if choose to allow it. You can disable it at any time anyhow- this is only intended to save people the trouble of having to check the mod description page for updates, or simply wondering why a certain feature stopped working. If all goes well, I will not have to use these notifications at all.\n\n-Offyerrocker, author of ACH",
-	
-	"menu_ach_update_message_v3" : "Halo crosshairs have been moved to a separate addon. If you had the Halo crosshairs selected, your options will be reset the next time you change your settings, unless you immediately install the Halo Crosshairs pack ( https://modworkshop.net/mod/29903 ) and restart the game. Sorry about that! With the exception of extreme or unforeseen circumstances such as DMCA takedown (for whatever reason), I will not be removing content selections from ACH in the future.",
 	"menu_ach_compatibility_warning_restorationmod" : "Restoration Mod (aka SC's Mod) will prevent Hitmarkers and Hitsounds from activating on hits on enemies. It is recommended that you enable \"Compatibility: PlayerManager:CheckSkills()\" in ACH's options to mitigate this issue.",
-	
-	"menu_ach_update_message_title" : "ACH: Urgent Notifications",
-	"menu_ach_update_message_prompt_stop_compatibility_warnings" : "Stop these ACH notifications >:(",
-	"menu_ach_update_message_prompt_yamete" : "Stop these ACH notifications >:(",
-	"menu_ach_update_message_prompt_remindmelater" : "Remind me later",
-	"menu_ach_prompt_compatibility_warning_text_1" : "The follow potential compatibility issues have been flagged:",
+
+	"menu_ach_prompt_compatibility_warning_text_1" : "The following potential compatibility issues have been flagged:",
 	"menu_ach_prompt_compatibility_warning_text_2" : "(This message will appear each time on startup when compatibility issues are detected, unless you either enable the appropriate compatibility options or turn off compatibility warnings.)",
 	"menu_ach_prompt_compatibility_warning_title" : "WARNING: Compatibility issues found!",
 	"menu_ach_menu_main_compatibility_playermanager_checkskill_title" : "Compatibility: PlayerManager:check_skills()",
 	"menu_ach_menu_main_compatibility_playermanager_checkskill_desc" : "Allows Hitmarkers and Hitsounds to function with mods such as Restoration Mod.",
 	"menu_ach_menu_main_compatibility_playerstandard_onsteelsight_title" : "Compatibility: PlayerStandard: steelsight",
 	"menu_ach_menu_main_compatibility_playerstandard_onsteelsight_desc" : "Allows \"Hide Crosshairs on ADS\" option to function with mods such as IREnFIST."
-	
 }
