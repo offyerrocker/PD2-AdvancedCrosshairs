@@ -98,7 +98,7 @@
 	"menu_ach_hitmarkers_master_enable_title" : "Enable Hitmarkers",
 	"menu_ach_hitmarkers_master_enable_desc" : "If true, shows a hitmarker when hitting an enemy",
 	"menu_ach_hitmarkers_outofrange_mode_title" : "Out of Range Display Mode",
-	"menu_ach_hitmarkers_outofrange_mode_desc" : "Choose how the crosshair displays when your target is out of range",
+	"menu_ach_hitmarkers_outofrange_mode_desc" : "Choose how the hitmarker displays when your target is out of range",
 	"menu_ach_hitmarkers_set_limit_behavior_title" : "Hitmarker Cap",
 	"menu_ach_hitmarkers_set_limit_behavior_desc" : "Control how the hitmarker count cap behaves",
 	"menu_ach_hitmarkers_set_max_count_title" : "Maximum Hitmarker Count",
@@ -165,7 +165,7 @@
 	"menu_ach_hitsounds_master_enable_desc" : "If true, plays a sound when hitting an enemy",
 	
 	"menu_ach_hitsounds_set_limit_behavior_title" : "Hitsound Cap",
-	"menu_ach_hitsounds_set_limit_behavior_desc" : "Control how the hitmarker count cap behaves",
+	"menu_ach_hitsounds_set_limit_behavior_desc" : "Control how the hitsound count cap behaves",
 	"menu_ach_hitsounds_max_count_title" : "Maximum Hitsound Count",
 	"menu_ach_hitsounds_max_count_desc" : "Max number of concurrent hitsounds (Rounded to nearest integer)",
 	"menu_ach_hitsounds_set_melee_enabled_title" : "Allow Melee Triggers",

@@ -98,7 +98,7 @@
 	"menu_ach_hitmarkers_master_enable_title" : "开启命中标记",
 	"menu_ach_hitmarkers_master_enable_desc" : "如果开启则在击中敌人的时候显示命中标记",
 	"menu_ach_hitmarkers_outofrange_mode_title" : "距离显示",
-	"menu_ach_hitmarkers_outofrange_mode_desc" : "当目标超出武器最佳射程时，选择十字准星的显示方式",
+	"menu_ach_hitmarkers_outofrange_mode_desc" : "当目标超出武器最佳射程时，选择击中显示的显示方式",
 	"menu_ach_hitmarkers_set_limit_behavior_title" : "命中标记",
 	"menu_ach_hitmarkers_set_limit_behavior_desc" : "控制命中标记数量上限",
 	"menu_ach_hitmarkers_set_max_count_title" : "最大命中标记上限",
