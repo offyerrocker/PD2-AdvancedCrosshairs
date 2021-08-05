@@ -5426,8 +5426,9 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 	
 	--creates colorpicker menu for AdvancedCrosshair mod; this menu is reused for all color-related callbacks in this mod,
 	--so it's also necessary to also update the callback whenever calling the menu
-	AdvancedCrosshair._colorpicker = AdvancedCrosshair._colorpicker or (ColorPicker and ColorPicker:new("advancedcrosshairs",{},callback(AdvancedCrosshair,AdvancedCrosshair,"set_colorpicker_menu")))
-
+	if _G.ColorPicker then 
+		AdvancedCrosshair._colorpicker = AdvancedCrosshair._colorpicker or ColorPicker:new("advancedcrosshairs",{},callback(AdvancedCrosshair,AdvancedCrosshair,"set_colorpicker_menu"))
+	end
 	
 	MenuHelper:LoadFromJsonFile(AdvancedCrosshair.path .. "menu/menu_main.json", AdvancedCrosshair, AdvancedCrosshair.settings)
 	MenuHelper:LoadFromJsonFile(AdvancedCrosshair.path .. "menu/menu_crosshairs.json", AdvancedCrosshair, AdvancedCrosshair.settings)
