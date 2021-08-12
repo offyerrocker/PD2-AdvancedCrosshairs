@@ -219,7 +219,7 @@
 	"menu_ach_reset_crosshair_settings_prompt_success_title" : "重置准星设置成功",
 	"menu_ach_reset_crosshair_settings_prompt_success_desc" : "准星设置已重置为默认",
 	"menu_ach_reset_hitmarker_settings_prompt_confirm_title" : "确认命中标记重置",
-	"menu_ach_reset_hitmarker_settings_prompt_confirm_desc" : ""确定要重置命中标记设置吗？\n你的命中标记设置将被重置回默认",
+	"menu_ach_reset_hitmarker_settings_prompt_confirm_desc" : "确定要重置命中标记设置吗？\n你的命中标记设置将被重置回默认",
 	"menu_ach_reset_hitmarker_settings_prompt_success_title" : "命中标记已重置为默认",
 	"menu_ach_reset_hitmarker_settings_prompt_success_desc" : "命中标记设置已重置为默认值\n重新启动游戏或劫案使更改生效",
 	"menu_ach_reset_hitsound_settings_prompt_confirm_title" : "确认命中声音重置",
