@@ -373,6 +373,11 @@ AdvancedCrosshair.save_data_path = AdvancedCrosshair.save_path .. "AdvancedCross
 AdvancedCrosshair.TEXTURE_PATH = "guis/textures/advanced_crosshairs/"
 AdvancedCrosshair.mod_overrides_path = "PAYDAY 2/assets/mod_overrides/"
 
+AdvancedCrosshair.ALLOWED_TEXTURE_EXTENSIONS = {
+	texture = true,
+	png = true
+}
+
 AdvancedCrosshair.ADDON_PATHS = {
 	crosshairs = {
 --		AdvancedCrosshair.mod_overrides_path .. "ACH Addons/Crosshairs/",
@@ -1057,8 +1062,9 @@ function AdvancedCrosshair:AddCustomCrosshair(id,data)
 						local folder_name = path_util:GetFileName(path_util:GetDirectory(part.texture_path))
 						local filename = path_util:GetFileName(part.texture_path)
 						local final_path = path_util:Combine(self.TEXTURE_PATH,folder_name,filename)
+						local file_extension = part.file_extension or extension
 						part.texture = final_path
-						DB:create_entry(Idstring(extension),Idstring(final_path),part.texture_path .. "." .. extension)
+						DB:create_entry(Idstring(extension),Idstring(final_path),part.texture_path .. "." .. file_extension)
 					else
 						self:log("Error: Invalid texture/texture path when reading crosshair part data for part #" .. tostring(part_index) .. " in addon: " .. tostring(id).. ". Aborting addon.")
 						return
@@ -1151,11 +1157,13 @@ function AdvancedCrosshair:LoadCrosshairAddons()
 				elseif not is_advanced then 
 					for _,filename in pairs(SystemFS:list(path_util:Combine(addon_path,foldername))) do 
 						local raw_path = path_util:Combine(addon_path,foldername,filename)
-						if path_util:GetFileExtension(filename) == extension then 
-							local texture_path = string.gsub(raw_path,"%." .. extension,"")
+						local file_extension = path_util:GetFileExtension(filename)
+						if file_extension and self.ALLOWED_TEXTURE_EXTENSIONS[utf8.to_lower(file_extension)] then 
+							local texture_path = string.gsub(raw_path,"%." .. file_extension,"")
 							
 							table.insert(parts,#parts+1,{
-								texture_path = texture_path
+								texture_path = texture_path,
+								file_extension = file_extension
 							})
 						end
 					end
@@ -1192,7 +1200,9 @@ function AdvancedCrosshair:AddCustomHitmarker(id,data)
 						local filename = path_util:GetFileName(part.texture_path)
 						local final_path = path_util:Combine(self.TEXTURE_PATH,folder_name,filename)
 						part.texture = final_path
-						DB:create_entry(Idstring(extension),Idstring(final_path),part.texture_path .. "." .. extension)
+						local file_extension = part.file_extension or extension
+--						BLT.AssetManager:CreateEntry(Idstring(font_path),texture_ids,full_asset_path .. ".texture")
+						DB:create_entry(Idstring(extension),Idstring(final_path),part.texture_path .. "." .. file_extension)
 					else
 						self:log("Error: Invalid texture/texture path when reading hitmarker part data for part #" .. tostring(part_index) .. " in addon: " .. tostring(id).. ". Aborting addon.")
 						return
@@ -1229,7 +1239,6 @@ function AdvancedCrosshair:AddCustomHitmarker(id,data)
 end
 
 function AdvancedCrosshair:LoadHitmarkerAddons()
-	local extension = "texture"
 	local path_util = BeardLib.Utils.Path
 	
 	local function load_addon_textures(addon_path,foldername,parts)
@@ -1284,11 +1293,13 @@ function AdvancedCrosshair:LoadHitmarkerAddons()
 				if not is_advanced then 
 					for _,filename in pairs(SystemFS:list(path_util:Combine(addon_path,foldername))) do 
 						local raw_path = path_util:Combine(addon_path,foldername,filename)
-						if path_util:GetFileExtension(filename) == extension then 
-							local texture_path = string.gsub(raw_path,"%." .. extension,"")
+						local file_extension = path_util:GetFileExtension(filename)
+						if file_extension and self.ALLOWED_TEXTURE_EXTENSIONS[utf8.to_lower(file_extension)] then 
+							local texture_path = string.gsub(raw_path,"%." .. file_extension,"")
 							
 							table.insert(parts,#parts+1,{
-								texture_path = texture_path
+								texture_path = texture_path,
+								file_extension = file_extension
 							})
 						end
 					end
@@ -4466,9 +4477,10 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 	end
 	
 	MenuCallbackHandler.callback_ach_crosshairs_general_master_enable = function(self,item)
-		AdvancedCrosshair.settings.crosshair_enabled = item:value() == "on"
+		local state = item:value() == "on"
+		AdvancedCrosshair.settings.crosshair_enabled = state
 		if alive (AdvancedCrosshair._crosshair_panel) then 
-			AdvancedCrosshair._crosshair_panel:hide()
+			AdvancedCrosshair._crosshair_panel:set_visible(state)
 		end
 		AdvancedCrosshair:Save()
 	end
