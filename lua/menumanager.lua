@@ -1064,7 +1064,8 @@ function AdvancedCrosshair:AddCustomCrosshair(id,data)
 						local final_path = path_util:Combine(self.TEXTURE_PATH,folder_name,filename)
 						local file_extension = part.file_extension or extension
 						part.texture = final_path
-						DB:create_entry(Idstring(extension),Idstring(final_path),part.texture_path .. "." .. file_extension)
+						--and by that I mean pawn off the work of loading your addon textures to BeardLib, which will pawn off the work to SuperBLT, which w
+						BeardLib.managers.file:AddFile(Idstring(extension),Idstring(final_path),part.texture_path .. "." .. file_extension)
 					else
 						self:log("Error: Invalid texture/texture path when reading crosshair part data for part #" .. tostring(part_index) .. " in addon: " .. tostring(id).. ". Aborting addon.")
 						return
@@ -1101,8 +1102,8 @@ function AdvancedCrosshair:AddCustomCrosshair(id,data)
 end
 
 function AdvancedCrosshair:LoadCrosshairAddons()
-	local extension = "texture"
 	local path_util = BeardLib.Utils.Path
+	local file_util = _G.FileIO
 	
 	local function load_addon_textures(addon_path,foldername,parts)
 		for part_index,part in ipairs(parts) do 
@@ -1114,13 +1115,13 @@ function AdvancedCrosshair:LoadCrosshairAddons()
 	end
 
 	for _,addon_path in pairs(self.ADDON_PATHS.crosshairs) do 
-		if SystemFS:exists(addon_path) then 
-			for _,foldername in pairs(SystemFS:list(addon_path,true)) do 
+		if file_util:DirectoryExists(addon_path) then 
+			for _,foldername in pairs(file_util:GetFolders(addon_path)) do 
 				local parts = {}
 				local is_advanced
-				local addon_lua_path = path_util:Combine(addon_path,foldername,"addon.lua")
-				if SystemFS:exists(Application:nice_path(addon_lua_path,true)) then 
+				if file_util:FileExists(Application:nice_path(path_util:Combine(addon_path,foldername,"addon.lua"),false)) then 
 					is_advanced = true
+					local addon_lua_path = path_util:Combine(addon_path,foldername,"addon.lua")
 					local addon_lua,s_error = blt.vm.loadfile(addon_lua_path) --thanks znix
 					if s_error then 
 						self:log("FATAL ERROR: LoadCrosshairAddons(): " .. tostring(s_error),{color=Color.red})
@@ -1155,7 +1156,7 @@ function AdvancedCrosshair:LoadCrosshairAddons()
 				end
 				if is_advanced then 
 				elseif not is_advanced then 
-					for _,filename in pairs(SystemFS:list(path_util:Combine(addon_path,foldername))) do 
+					for _,filename in pairs(file_util:GetFiles(path_util:Combine(addon_path,foldername))) do 
 						local raw_path = path_util:Combine(addon_path,foldername,filename)
 						local file_extension = path_util:GetFileExtension(filename)
 						if file_extension and self.ALLOWED_TEXTURE_EXTENSIONS[utf8.to_lower(file_extension)] then 
@@ -1201,8 +1202,7 @@ function AdvancedCrosshair:AddCustomHitmarker(id,data)
 						local final_path = path_util:Combine(self.TEXTURE_PATH,folder_name,filename)
 						part.texture = final_path
 						local file_extension = part.file_extension or extension
---						BLT.AssetManager:CreateEntry(Idstring(font_path),texture_ids,full_asset_path .. ".texture")
-						DB:create_entry(Idstring(extension),Idstring(final_path),part.texture_path .. "." .. file_extension)
+						BeardLib.managers.file:AddFile(Idstring(extension),Idstring(final_path),part.texture_path .. "." .. file_extension)
 					else
 						self:log("Error: Invalid texture/texture path when reading hitmarker part data for part #" .. tostring(part_index) .. " in addon: " .. tostring(id).. ". Aborting addon.")
 						return
@@ -1240,6 +1240,7 @@ end
 
 function AdvancedCrosshair:LoadHitmarkerAddons()
 	local path_util = BeardLib.Utils.Path
+	local file_util = _G.FileIO
 	
 	local function load_addon_textures(addon_path,foldername,parts)
 		for part_index,part in ipairs(parts) do 
@@ -1251,12 +1252,12 @@ function AdvancedCrosshair:LoadHitmarkerAddons()
 	end
 	
 	for _,addon_path in pairs(self.ADDON_PATHS.hitmarkers) do 
-		if SystemFS:exists(Application:nice_path(addon_path,true)) then 
-			for _,foldername in pairs(SystemFS:list(addon_path,true)) do 
+		if file_util:DirectoryExists(Application:nice_path(addon_path,true)) then 
+			for _,foldername in pairs(file_util:GetFolders(addon_path)) do 
 				local parts = {}
 				local is_advanced
 				local addon_lua_path = path_util:Combine(addon_path,foldername,"addon.lua")
-				if SystemFS:exists(addon_lua_path) then 
+				if file_util:FileExists(addon_lua_path) then 
 					is_advanced = true
 					local addon_lua = blt.vm.loadfile(addon_lua_path)
 					if s_error then 
@@ -1291,7 +1292,7 @@ function AdvancedCrosshair:LoadHitmarkerAddons()
 					end
 				end
 				if not is_advanced then 
-					for _,filename in pairs(SystemFS:list(path_util:Combine(addon_path,foldername))) do 
+					for _,filename in pairs(file_util:GetFiles(path_util:Combine(addon_path,foldername))) do 
 						local raw_path = path_util:Combine(addon_path,foldername,filename)
 						local file_extension = path_util:GetFileExtension(filename)
 						if file_extension and self.ALLOWED_TEXTURE_EXTENSIONS[utf8.to_lower(file_extension)] then 
@@ -1348,13 +1349,14 @@ end
 function AdvancedCrosshair:LoadHitsoundAddons()
 	local extension = "ogg"
 	local path_util = BeardLib.Utils.Path
+	local file_util = _G.FileIO
 	for _,addon_path in pairs(self.ADDON_PATHS.hitsounds) do 
-		if SystemFS:exists(Application:nice_path(addon_path,true)) then 
-			for _,foldername in pairs(SystemFS:list(addon_path,true)) do 
-				local is_randomized = SystemFS:exists(Application:nice_path(path_util:Combine(addon_path,foldername,"random.txt")))
+		if file_util:DirectoryExists(Application:nice_path(addon_path,true)) then 
+			for _,foldername in pairs(file_util:GetFolders(addon_path)) do 
+				local is_randomized = file_util:FileExists(Application:nice_path(path_util:Combine(addon_path,foldername,"random.txt")))
 				local variations = {}
 				local is_advanced
-				for _,filename in pairs(SystemFS:list(path_util:Combine(addon_path,foldername))) do 
+				for _,filename in pairs(file_util:GetFiles(path_util:Combine(addon_path,foldername))) do 
 					--check for advanced hitsound addon
 					if filename == "addon.lua" then
 						is_advanced = true
@@ -1387,7 +1389,7 @@ function AdvancedCrosshair:LoadHitsoundAddons()
 					end
 				end
 				if not is_advanced then
-					for _,filename in pairs(SystemFS:list(path_util:Combine(addon_path,foldername))) do 
+					for _,filename in pairs(file_util:GetFiles(path_util:Combine(addon_path,foldername))) do 
 						if path_util:GetFileExtension(filename) == extension then 
 							local raw_path = path_util:Combine(addon_path,foldername,filename)
 							
@@ -1478,9 +1480,10 @@ end
 
 function AdvancedCrosshair:CheckCreateAddonFolder()
 	--make addons folders
+	local file_util = _G.FileIO
 	local addons_path_saves = AdvancedCrosshair.save_path .. "ACH Addons/"
-	if not SystemFS:exists(Application:nice_path(addons_path_saves,true),true) then 
-		SystemFS:make_dir(addons_path_saves)
+	if not file_util:DirectoryExists(Application:nice_path(addons_path_saves,true)) then 
+		file_util:MakeDir(addons_path_saves)
 		local file = io.open(addons_path_saves .. "README.txt","w+")
 		if file then
 			--this is executed on startup, before localizationmanager is loaded
@@ -1491,8 +1494,8 @@ function AdvancedCrosshair:CheckCreateAddonFolder()
 		end
 		for addon_type,paths_tbl in pairs(AdvancedCrosshair.ADDON_PATHS) do 
 			for _,path in pairs(paths_tbl) do 
-				if not SystemFS:exists(path,true) then 
-					SystemFS:make_dir(path)
+				if not file_util:DirectoryExists(path) then 
+					file_util:MakeDir(path)
 				end
 			end
 		end
@@ -2485,15 +2488,14 @@ function AdvancedCrosshair:ActivateHitmarker(attack_data)
 			if ad_distance and ad_attacker then 
 				if ad_weaponbase and ad_weaponbase.is_weak_hit then 
 					weak_hit = ad_weaponbase:is_weak_hit(ad_distance, ad_attacker)
-					self:log("Is weak hit?" .. tostring(weak_hit))
 				else
-					self:log("Weaponbase or is_weak_hit() does not exist!")
+--					self:log("Weaponbase or is_weak_hit() does not exist!")
 				end
 			else
-				self:log("ad_distance or ad_attacker does not exist")
+--				self:log("ad_distance or ad_attacker does not exist")
 			end
 		else
-			self:log("Attack data weapon unit or col_ray does not exist!")
+--			self:log("Attack data weapon unit or col_ray does not exist!")
 		end
 		
 		if weak_hit then 
