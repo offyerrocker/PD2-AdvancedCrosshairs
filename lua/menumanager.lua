@@ -59,6 +59,18 @@
 -- override by slot (needs menu options)
 -- override by weapon id (needs menu options)
 
+
+
+
+--shortcuts to some commonly mvector3/mrot library functions for performance reasons
+local mvector3_set = mvector3.set
+local mvector3_subtract = mvector3.subtract
+local mvector3_normalize = mvector3.normalize
+local mvector3_dot = mvector3.dot
+local mvector3_x = mvector3.x
+local mvector3_y = mvector3.y
+
+
 --************************************************--
 		--init mod data
 --************************************************--
@@ -209,7 +221,7 @@ AdvancedCrosshair.default_settings = {
 		"444444",
 		"000000"
 	},
-	use_shake = true,
+	use_shake = false,
 	use_color = true,
 	use_hitpos = true,
 	use_hitsound_pos = false,
@@ -2938,14 +2950,14 @@ function AdvancedCrosshair:Update(t,dt)
 						local h_dir = Vector3()
 						local h_dir_normalized = Vector3()
 						local h_p = ws:world_to_screen(viewport_cam,hitmarker.position)
-						mvector3.set(h_dir, hitmarker.position)
-						mvector3.subtract(h_dir, viewport_cam_pos)
-						mvector3.set(h_dir_normalized, h_dir)
-						mvector3.normalize(h_dir_normalized)
+						mvector3_set(h_dir, hitmarker.position)
+						mvector3_subtract(h_dir, viewport_cam_pos)
+						mvector3_set(h_dir_normalized, h_dir)
+						mvector3_normalize(h_dir_normalized)
 						
-						local dot = mvector3.dot(viewport_cam_fwd, h_dir_normalized)
+						local dot = mvector3_dot(viewport_cam_fwd, h_dir_normalized)
 						if alive(hitmarker.panel) then 
-							if dot < 0 or hitmarker.panel:outside(mvector3.x(h_p),mvector3.y(h_p)) then 
+							if dot < 0 or hitmarker.panel:outside(mvector3_x(h_p),mvector3_y(h_p)) then 
 								hitmarker.panel:hide()
 							else
 								hitmarker.panel:show()
