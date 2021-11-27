@@ -1,5 +1,4 @@
 		--todo list, loosely sorted by descending priority:
---toggling off of an underbarrel attachment that has a different firemode than the main weapon's current firemode does not properly refresh the firemode
 
 --hitmarker preview sometimes visible when switching to crosshair menu? (attempting to replicate)
 
@@ -2787,16 +2786,18 @@ end
 
 --sets the correct crosshair visible according to current weapon data
 --ideally, should only be called on certain events, not in update
-function AdvancedCrosshair:CheckCrosshair()
+function AdvancedCrosshair:CheckCrosshair(override_params)
 	if not self:IsCrosshairEnabled() then 
 		return
 	end
+	override_params = override_params or {}
+	
 	local player = managers.player:local_player()
 	if player then 
 		local hidden = false
 		
-		local current_state = player:movement():current_state()
-		local state_name = player:movement():current_state_name()
+		local current_state = override_params.current_state or player:movement():current_state()
+		local state_name = override_params.state_name or player:movement():current_state_name()
 		
 		local inventory = player:inventory()
 		local equipped_index = inventory:equipped_selection()
@@ -2805,7 +2806,7 @@ function AdvancedCrosshair:CheckCrosshair()
 		if equipped_unit then 
 			local current_firemode = equipped_unit:base():fire_mode()
 			local weapon_base = equipped_unit:base()
-			
+						
 			if weapon_base.in_burst_mode and weapon_base:in_burst_mode() then
 				current_firemode = "burst"
 			end
@@ -2829,7 +2830,8 @@ function AdvancedCrosshair:CheckCrosshair()
 					new_current_data = underbarrel.firemodes[current_firemode]
 				end
 			end
-			
+			current_firemode = override_params.firemode or current_firemode
+
 			new_current_data = new_current_data or weapon_data.firemodes[current_firemode]
 			
 			if new_current_data and (new_current_data ~= self._cache.current_crosshair_data) then 
