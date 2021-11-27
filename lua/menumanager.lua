@@ -4093,7 +4093,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		callback = "callback_ach_hitsounds_master_enable",
 		value = AdvancedCrosshair.settings.hitsound_enabled,
 		menu_id = AdvancedCrosshair.hitsounds_menu_id,
-		priority = 28
+		priority = 29
 	})
 	
 	MenuHelper:AddToggle({
@@ -4102,6 +4102,16 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		desc = "menu_ach_hitsounds_set_melee_enabled_desc",
 		callback = "callback_ach_hitsounds_set_melee_enabled",
 		value = AdvancedCrosshair.settings.hitmarker_allow_melee,
+		menu_id = AdvancedCrosshair.hitsounds_menu_id,
+		priority = 28
+	})
+	
+	MenuHelper:AddToggle({
+		id = "ach_hitsounds_set_positional_enabled",
+		title = "menu_ach_hitsounds_set_positional_enabled_title",
+		desc = "menu_ach_hitsounds_set_positional_enabled_desc",
+		callback = "callback_ach_hitsounds_set_positional_enabled",
+		value = AdvancedCrosshair.settings.use_hitsound_pos,
 		menu_id = AdvancedCrosshair.hitsounds_menu_id,
 		priority = 27
 	})
@@ -5055,6 +5065,10 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 	end
 	MenuCallbackHandler.callback_ach_hitsounds_master_enable = function(self,item)
 		AdvancedCrosshair.settings.hitsound_enabled = item:value() == "on"
+		AdvancedCrosshair:Save()
+	end
+	MenuCallbackHandler.callback_ach_hitsounds_set_positional_enabled = function(self,item)
+		AdvancedCrosshair.settings.use_hitsound_pos = item:value() == "on"
 		AdvancedCrosshair:Save()
 	end
 	MenuCallbackHandler.callback_ach_hitsounds_set_limit_behavior = function(self,item)

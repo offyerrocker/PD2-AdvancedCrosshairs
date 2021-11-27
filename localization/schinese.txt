@@ -170,6 +170,10 @@
 	"menu_ach_hitsounds_max_count_desc" : "击中音效上限 (四舍五入至最近整数)",
 	"menu_ach_hitsounds_set_melee_enabled_title" : "允许近战触发",
 	"menu_ach_hitsounds_set_melee_enabled_desc" : "如开启,近战可触发近战音效",
+	
+	"menu_ach_hitsounds_set_positional_enabled_title" : "Enable Positional Hitsounds",
+	"menu_ach_hitsounds_set_positional_enabled_desc" : "If true, the hitsound will emanate from the origin of the hit.\nNote: Does not work for stereo sounds.",
+	
 	"menu_ach_hitsounds_set_hit_bodyshot_type_title" : "击中: 身体音效",
 	"menu_ach_hitsounds_set_hit_bodyshot_type_desc" : "设置击中身体未击杀时音效",
 	"menu_ach_hitsounds_set_hit_bodyshot_volume_title" : "击中: 身体音量",

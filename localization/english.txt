@@ -172,6 +172,10 @@
 	"menu_ach_hitsounds_set_melee_enabled_desc" : "If true, melee hits can trigger hitsounds",
 	"menu_ach_hitsounds_set_hit_bodyshot_type_title" : "Hit: Bodyshot Sound",
 	"menu_ach_hitsounds_set_hit_bodyshot_type_desc" : "The sound that plays when you hit a non-lethal bodyshot",
+	
+	"menu_ach_hitsounds_set_positional_enabled_title" : "Enable Positional Hitsounds",
+	"menu_ach_hitsounds_set_positional_enabled_desc" : "If true, the hitsound will emanate from the origin of the hit.\nNote: Does not work for stereo sounds.",
+	
 	"menu_ach_hitsounds_set_hit_bodyshot_volume_title" : "Hit: Bodyshot Volume",
 	"menu_ach_hitsounds_set_hit_bodyshot_volume_desc" : "Choose how loud this hitsound will be",
 	"menu_ach_hitsounds_set_hit_headshot_type_title" : "Hit: Headshot Sound",
