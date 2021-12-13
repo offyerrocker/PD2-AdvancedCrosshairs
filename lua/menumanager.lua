@@ -932,7 +932,7 @@ AdvancedCrosshair._hitsound_data = {
 	}
 }
 
-AdvancedCrosshair.hitmarker_menu_preview_loops = true --not yet implemented
+AdvancedCrosshair.hitmarker_menu_preview_loops = true
 
 --************************************************--
 --					Utils
@@ -2225,6 +2225,9 @@ function AdvancedCrosshair:CreateCrosshair(panel,data,scale_setting)
 			rotation = part_data.rotation,
 			w = w,
 			h = h,
+			visible = part_data.visible,
+			valign = part_data.valign,
+			halign = part_data.halign,
 			alpha = part_data.alpha or data.alpha,
 			blend_mode = part_data.blend_mode or data.blend_mode,
 			color = part_data.color or data.color,
@@ -2422,6 +2425,9 @@ function AdvancedCrosshair:CreateHitmarker(panel,data)
 			rotation = rotation,
 			w = w,
 			h = h,
+			visible = part_data.visible,
+			valign = part_data.valign,
+			halign = part_data.halign,
 			alpha = part_data.alpha,
 			blend_mode = part_data.blend_mode or data.blend_mode,
 			color = part_data.color or data.color,
@@ -4458,19 +4464,19 @@ Hooks:Add("MenuManagerBuildCustomMenus", "ach_MenuManagerBuildCustomMenus", func
 		nodes[cat_menu_name] = MenuHelper:BuildMenu(cat_menu_name,
 			{
 				area_bg = "none",
-				back_callback = MenuCallbackHandler.callback_ach_hitmarkers_close,
-				focus_changed_callback = "callback_ach_hitmarkers_focus"
-			}
-		)
-		nodes[AdvancedCrosshair.crosshairs_categories_submenu_id] = MenuHelper:BuildMenu(AdvancedCrosshair.crosshairs_categories_submenu_id,
-			{
-				area_bg = "none",
-				back_callback = MenuCallbackHandler.callback_ach_crosshairs_categories_close,
-				focus_changed_callback = "callback_ach_crosshairs_categories_focus"
+				back_callback = MenuCallbackHandler.callback_ach_crosshairs_category_close,
+				focus_changed_callback = "callback_ach_crosshairs_category_focus"
 			}
 		)
 		MenuHelper:AddMenuItem(MenuHelper:GetMenu(AdvancedCrosshair.crosshairs_categories_submenu_id),cat_menu_name,cat_name_id,cat_name_desc)
 	end
+	nodes[AdvancedCrosshair.crosshairs_categories_submenu_id] = MenuHelper:BuildMenu(AdvancedCrosshair.crosshairs_categories_submenu_id,
+		{
+			area_bg = "none",
+			back_callback = MenuCallbackHandler.callback_ach_crosshairs_categories_close,
+			focus_changed_callback = "callback_ach_crosshairs_categories_focus"
+		}
+	)
 end)
 
 Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
@@ -4491,6 +4497,10 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 	end
 	MenuCallbackHandler.callback_ach_crosshairs_categories_focus = function(self)
 		
+	end
+	MenuCallbackHandler.callback_ach_crosshairs_category_close = function(self)
+	end
+	MenuCallbackHandler.callback_ach_crosshairs_category_focus = function(self)
 	end
 	MenuCallbackHandler.callback_ach_crosshairs_focus = function(self,item)
 		--todo check for if any options were actually changed before recreating?
