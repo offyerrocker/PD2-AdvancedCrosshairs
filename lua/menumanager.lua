@@ -1,10 +1,4 @@
 		--todo list, loosely sorted by descending priority:
-	--compatibility check for:
-		--CopDamage:roll_critical_hit()
-		--NewRaycastWeaponBase:toggle_firemode()
-		--NewRaycastWeaponBase:reset_cached_gadget()
-		--PlayerMovementState:enter()
-		--PlayerStandard:_start_action_equip_weapon()
 
 --migrate the more obscure options to "Advanced Settings" menus
 --fadeout for tf2 crit
@@ -12,17 +6,6 @@
 -- the division crosshairs?
 
 --hide crosshair when interacting/when weapon is not available (chk action forbidden in playerstandard)
-
---notifications/message to users: 
-	--get mod version
-	--check mod version with settings version (last launch)
-		--if mismatch, find all messages since last launch
-			--if table not empty, show compilation of messages (localized)
-					--always append with "change notification settings in settings
-				--confirm callback is set settings version to current version
-			--if table empty, set settings version to current version
-		--set settings version to current version
-	
 
 --"trickle-down" options, eg "unchanged" inherit global setting (requires conversion from most option types to multiple choice, or else the addition of a toggle checkbox to enable global override any given option)
 
@@ -92,8 +75,8 @@ AdvancedCrosshair.HITMARKER_RAIN_SPAWN_DELAY_INTERVAL_MIN = 0.01 --seconds
 AdvancedCrosshair.HITMARKER_RAIN_SPAWN_DELAY_INTERVAL_MAX = 0.1 --seconds
 AdvancedCrosshair.HITMARKER_RAIN_TRAVEL_DURATION_MAX = 1 --seconds
 AdvancedCrosshair.HITMARKER_RAIN_TRAVEL_DURATION_MIN = 0.25 --seconds
-AdvancedCrosshair.HITMARKER_RAIN_COUNT_MIN = 64
-AdvancedCrosshair.HITMARKER_RAIN_COUNT_MAX = 128
+AdvancedCrosshair.HITMARKER_RAIN_COUNT_MIN = 48
+AdvancedCrosshair.HITMARKER_RAIN_COUNT_MAX = 64
 AdvancedCrosshair.HITMARKER_RAIN_PROC_CHANCE = 0.01 --chance to proc hitmarker rain on any kill
 AdvancedCrosshair.HITMARKER_RAIN_TEXT_FLASH_SPEED = 600
 
@@ -400,6 +383,10 @@ AdvancedCrosshair.save_path = SavePath
 AdvancedCrosshair.save_data_path = AdvancedCrosshair.save_path .. "AdvancedCrosshair.txt"
 AdvancedCrosshair.TEXTURE_PATH = "guis/textures/advanced_crosshairs/"
 AdvancedCrosshair.mod_overrides_path = "PAYDAY 2/assets/mod_overrides/"
+
+--init QuickAnimate util
+dofile(AdvancedCrosshair.path .. "classes/QuickAnimate.lua")
+AdvancedCrosshair.animator = QuickAnimate:new("ACH_Animator",{parent = AdvancedCrosshair,updater_type = QuickAnimate.updater_types.BeardLib,paused = true})
 
 AdvancedCrosshair.ALLOWED_TEXTURE_EXTENSIONS = {
 	texture = true,
@@ -2183,52 +2170,20 @@ end
 	-- hud animation manager --
 	
 function AdvancedCrosshair:animate(object,func,done_cb,...)
-	AdvancedCrosshair._animate_targets[tostring(object)] = {
-		object = object,
-		start_t = Application:time(),
-		func = func,
-		done_cb = done_cb,
-		args = {...}
-	}
+	return self.animator:animate(object,func,done_cb,...)
 end
 
-function AdvancedCrosshair:animate_remove_done_cb(object,new)
-	local o = AdvancedCrosshair._animate_targets[tostring(object)]
-	if o then 
-		o.done_cb = new
-		return true
-	end
-	return false
+function AdvancedCrosshair:animate_stop(object,do_cb,...)
+	return self.animator:animate_stop(object,do_cb,...)
 end
 
-function AdvancedCrosshair:animate_stop(object)
-	AdvancedCrosshair._animate_targets[tostring(object)] = nil
-end
-
-function AdvancedCrosshair:is_animating(object)
-	return AdvancedCrosshair._animate_targets[tostring(object)]
+function AdvancedCrosshair:is_animating(object,...)
+	return self.animator:is_animating(object,...)
 end
 
 	--hud animations
-function AdvancedCrosshair:animate_fadeout(o,t,dt,start_t,duration,from_alpha,exit_x,exit_y)
-	duration = duration or 1
-	from_alpha = from_alpha or 1
-	local ratio = math.pow((t - start_t) / duration,2)
 	
-	if ratio >= 1 then 
-		o:set_alpha(0)
-		return true
-	end
-	o:set_alpha(from_alpha * (1 - ratio))
-	if exit_y then 
-		o:set_y(o:y() + (exit_y * dt / duration))
-	end
-	if exit_x then 
-		o:set_x(o:x() + (exit_x * dt / duration))
-	end
-end
-
-function AdvancedCrosshair:animate_move_linear_endpoints(o,t,dt,start_t,duration,from_x,from_y,exit_x,exit_y)
+function AdvancedCrosshair.animate_move_linear_endpoints(o,t,dt,start_t,duration,from_x,from_y,exit_x,exit_y)
 	local ratio = (t - start_t) / duration
 	local d_x = (exit_x - from_x)
 	local d_y = (exit_y - from_y)
@@ -2250,7 +2205,7 @@ function AdvancedCrosshair:StartHitmarkerRain()
 
 	local gamer_text = self._hitmarker_panel:text({
 		name = "preview_label",
-		text = "MOM GET THE CAMERA!!!",
+		text = managers.localization:text("hud_ach_proc_easteregg_text"),
 		layer = 69, --haha nice
 		align = "center",
 		vertical = "center",
@@ -2933,7 +2888,7 @@ function AdvancedCrosshair:ActivateHitmarker(attack_data)
 	end
 end
 
-function AdvancedCrosshair:animate_hitmarker_parts(o,t,dt,start_t,duration,parts,hit_func,data)
+function AdvancedCrosshair.animate_hitmarker_parts(o,t,dt,start_t,duration,parts,hit_func,data)
 	for index,bitmap in ipairs(parts) do 
 		if not alive(bitmap) then 
 			--this usually only happens when game state changes during hitmarker animation
@@ -3241,6 +3196,7 @@ function AdvancedCrosshair:DecayBloom(bloom,t,dt)
 end
 
 function AdvancedCrosshair:Update(t,dt)
+--[[
 	--animate update
 	for object_id,data in pairs(self._animate_targets) do 
 		local result
@@ -3266,7 +3222,7 @@ function AdvancedCrosshair:Update(t,dt)
 			end
 		end
 	end				
-	
+	--]]
 
 	local player = self._cache.player_unit --this is checked after execution due to the apparent vanilla code execution order on custody:
 	--1. on entered custody, playermanager listeners for "custody" are called, including ACH's custody listener, which removes all current crosshairs and their associated cached data
@@ -3525,7 +3481,7 @@ function AdvancedCrosshair:Load()
 			self.settings[k] = v
 		end
 		
-		self:CheckSaveDataForDeprecatedValues(prev_version,new_version)
+--		self:CheckSaveDataForDeprecatedValues(prev_version,new_version)
 	else
 		self:Save()
 	end
@@ -5711,7 +5667,6 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 		AdvancedCrosshair.settings.compatibility_hook_playermanager_checkskill = enabled
 		AdvancedCrosshair:Save()
 	end
-	
 	
 	MenuCallbackHandler.callback_ach_menu_compat_compatibility_playerstandard_startactionequipweapon = function(self,item)
 		local enabled = item:value() == "on"

@@ -263,5 +263,7 @@
 	"menu_ach_menu_compat_compatibility_copdamage_damagemelee_title" : "CopDamage:damage_melee()",
 	"menu_ach_menu_compat_compatibility_copdamage_damagemelee_desc" : "Fixes potential issues with melee hit detection.",
 	"menu_ach_menu_compat_compatibility_copdamage_rollcriticalhit_title" : "CopDamage:roll_critical_hit()",
-	"menu_ach_menu_compat_compatibility_copdamage_rollcriticalhit_desc" : "Fixes potential compatibility issues with detecting critical hits on enemies."
+	"menu_ach_menu_compat_compatibility_copdamage_rollcriticalhit_desc" : "Fixes potential compatibility issues with detecting critical hits on enemies.",
+	
+	"hud_ach_proc_easteregg_text" : "MOM GET THE CAMERA!!!"
 }
