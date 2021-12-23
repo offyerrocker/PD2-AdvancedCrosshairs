@@ -1,21 +1,12 @@
 Hooks:PostHook(NewRaycastWeaponBase,"toggle_firemode","ach_toggle_firemode",function(self,skip_post_event)
-	AdvancedCrosshair:CheckCrosshair()
+	if AdvancedCrosshair:UseCompatibility_NewRaycastWeaponBaseToggleFiremode() then
+		AdvancedCrosshair:CheckCrosshair()
+	end
 end)
 
-local ids_auto = Idstring("auto")
-local ids_single = Idstring("single")
 Hooks:PostHook(NewRaycastWeaponBase,"reset_cached_gadget","ach_reset_cached_gadget",function(self)
 --called on toggle underbarrel
-	local firemode
-	local recorded_firemode = self:get_recorded_fire_mode()
-	if recorded_firemode == ids_single then 
-		firemode = "single"
-	elseif recorded_firemode == ids_auto then 
-		firemode = "auto"
+	if AdvancedCrosshair:UseCompatibility_NewRaycastWeaponBaseResetCachedGadget() then
+		AdvancedCrosshair.hook_NewRaycastWeaponBase_reset_cached_gadget(self)
 	end
-
-
-	AdvancedCrosshair:CheckCrosshair({
-		firemode = firemode
-	})
 end)

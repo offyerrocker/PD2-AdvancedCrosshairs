@@ -7,23 +7,15 @@
 	"items" : [
 		{
 			"type" : "toggle",
-			"id" : "ach_menu_main_compatibility_playermanager_checkskill",
-			"title" : "menu_ach_menu_main_compatibility_playermanager_checkskill_title",
-			"description" : "menu_ach_menu_main_compatibility_playermanager_checkskill_desc",
-			"callback" : "callback_ach_menu_main_compatibility_playermanager_checkskill",
-			"value" : "compatibility_hook_playermanager_checkskill"
-		},
-		{
-			"type" : "toggle",
-			"id" : "ach_menu_main_compatibility_playerstandard_onsteelsight",
-			"title" : "menu_ach_menu_main_compatibility_playerstandard_onsteelsight_title",
-			"description" : "menu_ach_menu_main_compatibility_playerstandard_onsteelsight_desc",
-			"callback" : "callback_ach_menu_main_compatibility_playerstandard_onsteelsight",
-			"value" : "compatibility_hook_playerstandard_onsteelsight"
+			"id" : "ach_menu_misc_can_check_melee_headshots",
+			"title" : "menu_ach_menu_misc_can_check_melee_headshots_title",
+			"description" : "menu_ach_menu_misc_can_check_melee_headshots_desc",
+			"callback" : "callback_ach_menu_misc_can_check_melee_headshots",
+			"value" : "can_check_melee_headshots"
 		},
 		{
 			"type" : "divider",
-			"id" : "ach_menu_misc_div_1",
+			"id" : "ach_menu_misc_div_2",
 			"size" : 32
 		}
 	]

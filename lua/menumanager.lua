@@ -1,6 +1,10 @@
 		--todo list, loosely sorted by descending priority:
-
---hitmarker preview sometimes visible when switching to crosshair menu? (attempting to replicate)
+	--compatibility check for:
+		--CopDamage:roll_critical_hit()
+		--NewRaycastWeaponBase:toggle_firemode()
+		--NewRaycastWeaponBase:reset_cached_gadget()
+		--PlayerMovementState:enter()
+		--PlayerStandard:_start_action_equip_weapon()
 
 --migrate the more obscure options to "Advanced Settings" menus
 --fadeout for tf2 crit
@@ -183,15 +187,28 @@ AdvancedCrosshair.DEFAULT_HITMARKER_OPTIONS = {
 	crit_color = "0000ff",
 	headcrit_color = "ff00ff"
 }
+
+--session-based settings checker
+AdvancedCrosshair.auto_compatibility_settings = {}
+
 --init default settings values
 --these are later overwritten by values read from save data, if present
 AdvancedCrosshair.default_settings = {
+	ach_save_version = 1, --this is the save version, not to be confused with the mod version. this is here to identify which save version the mod was created with
 	logs_enabled = false,
 	crosshair_enabled = true,
 	hitmarker_enabled = true,
 	hitsound_enabled = false,
+	compatibility_auto_detection = true,
 	compatibility_hook_playermanager_checkskill = false,
 	compatibility_hook_playerstandard_onsteelsight = false,
+	compatibility_hook_playerstandard_startactionequipweapon = false,
+	compatibility_hook_playermovementstate_enter = false,
+	compatibility_hook_copdamage_damagemelee = false,
+	compatibility_hook_copdamage_rollcriticalhit = false,
+	compatibility_hook_newraycastweaponbase_togglefiremode = false,
+	compatibility_hook_newraycastweaponbase_resetcachedgadget = false,
+	can_check_melee_headshots = false,
 	allow_messages = 1, --1: yes; 2: yes but no compatibility messages; 3: do not. none. never. get out of my house. die.
 	palettes = { --for colorpicker
 		"ff0000",
@@ -1481,12 +1498,77 @@ function AdvancedCrosshair:SetPaletteCodes(tbl)
 	end
 end
 
+function AdvancedCrosshair:UseCompatibilityAutoDetection()
+	return self.settings.compatibility_auto_detection
+end
+
 function AdvancedCrosshair:UseCompatibility_PlayerManagerCheckSkill()
-	return self.settings.compatibility_hook_playermanager_checkskill
+	local autodetect_compatibility_override
+	if self:UseCompatibilityAutoDetection() then 
+		autodetect_compatibility_override = self.auto_compatibility_settings.compatibility_hook_playermanager_checkskill
+	end
+	return autodetect_compatibility_override or self.settings.compatibility_hook_playermanager_checkskill
 end
 
 function AdvancedCrosshair:UseCompatibility_PlayerStandardOnSteelsight()
-	return self.settings.compatibility_hook_playerstandard_onsteelsight
+	local autodetect_compatibility_override
+	if self:UseCompatibilityAutoDetection() then 
+		autodetect_compatibility_override = self.auto_compatibility_settings.compatibility_hook_playerstandard_onsteelsight
+	end
+	return autodetect_compatibility_override or self.settings.compatibility_hook_playerstandard_onsteelsight
+end
+
+function AdvancedCrosshair:UseCompatibility_PlayerStandardStartEquipWeapon()
+	local autodetect_compatibility_override
+	if self:UseCompatibilityAutoDetection() then 
+		autodetect_compatibility_override = self.auto_compatibility_settings.compatibility_hook_playerstandard_startactionequipweapon
+	end
+	return autodetect_compatibility_override or self.settings.compatibility_hook_playerstandard_startactionequipweapon
+end
+
+function AdvancedCrosshair:UseCompatibility_PlayerMovementStateEnter()
+	local autodetect_compatibility_override
+	if self:UseCompatibilityAutoDetection() then 
+		autodetect_compatibility_override = self.auto_compatibility_settings.compatibility_hook_playermovementstate_enter
+	end
+	return autodetect_compatibility_override or self.settings.compatibility_hook_playermovementstate_enter
+end
+
+function AdvancedCrosshair:UseCompatibility_CopDamageMelee()
+	local autodetect_compatibility_override
+	if self:UseCompatibilityAutoDetection() then 
+		autodetect_compatibility_override = self.auto_compatibility_settings.compatibility_hook_copdamage_damagemelee
+	end
+	return autodetect_compatibility_override or self.settings.compatibility_hook_copdamage_damagemelee
+end
+
+function AdvancedCrosshair:UseCompatibility_CopDamageRollCrit()
+	local autodetect_compatibility_override
+	if self:UseCompatibilityAutoDetection() then 
+		autodetect_compatibility_override = self.auto_compatibility_settings.compatibility_hook_copdamage_rollcriticalhit
+	end
+	return autodetect_compatibility_override or self.settings.compatibility_hook_copdamage_rollcriticalhit
+end
+
+function AdvancedCrosshair:UseCompatibility_NewRaycastWeaponBaseToggleFiremode()
+	local autodetect_compatibility_override
+	if self:UseCompatibilityAutoDetection() then 
+		autodetect_compatibility_override = self.auto_compatibility_settings.compatibility_hook_newraycastweaponbase_togglefiremode
+	end
+	return autodetect_compatibility_override or self.settings.compatibility_hook_newraycastweaponbase_togglefiremode
+end
+
+function AdvancedCrosshair:UseCompatibility_NewRaycastWeaponBaseResetCachedGadget()
+	local autodetect_compatibility_override
+	if self:UseCompatibilityAutoDetection() then 
+		autodetect_compatibility_override = self.auto_compatibility_settings.compatibility_hook_newraycastweaponbase_resetcachedgadget
+	end
+	return autodetect_compatibility_override or self.settings.compatibility_hook_newraycastweaponbase_resetcachedgadget
+end
+
+
+function AdvancedCrosshair:CanCheckMeleeHeadshots()
+	return self.settings.can_check_melee_headshots
 end
 
 function AdvancedCrosshair:CheckCreateAddonFolder()
@@ -1558,130 +1640,424 @@ function AdvancedCrosshair:SortAddons(reference_table,organization)
 end
 
 
---startup messages
 
-AdvancedCrosshair.mod_update_alerts = {
-	{
-		version = 3,
-		text_id = "menu_ach_update_message_v3",
-		message_type = "content_removed"
-	}
-}
+--Compatibility Checking and Resolution
+
+AdvancedCrosshair.blt_hooks_source = "mods/base/req/core/Hooks.lua"
+AdvancedCrosshair.ach_hooks_source = AdvancedCrosshair.path .. "lua/menumanager.lua"
 
 AdvancedCrosshair.compatibility_checks = {
-	{
-		disabled = true,
+	compatibility_hook_playermanager_checkskill = {
+		disabled = false,
 		check_func = function()
+			--generally, first check for mods that have known incompatibilities
+			if _G.SC then 
+				--SC's Restoration Mod (https://modworkshop.net/mod/428)
+				return true
+			end
+			
+			--then perform actual source checking
 			if managers.player then 
 				local debuginfo = debug and debug.getinfo and debug.getinfo(managers.player.check_skills)
-					--you're not supposed to use this for anything but debugging your own software locally, since lua environments/installations are not guaranteed to have the debug library shipped with release version software. i gotta tho
+					--you're not supposed to use this for anything but debugging your own software locally,
+					--since lua environments/installations are not guaranteed to have the debug library shipped with release version software.
+					--i gotta tho
 				if type(debuginfo) == "table" then 
-					return debuginfo.source == "lib/managers/playermanager"
+					local short_src = debuginfo.short_src
+					if (short_src ~= AdvancedCrosshair.blt_hooks_source) and (short_src ~= AdvancedCrosshair.ach_hooks_source) then 
+						return true
+					end
 				end
 			end
-		end,
-		text_id = "menu_ach_compatibility_warning_playermanager_checkskills"
+			return false
+		end
 	},
-	{
+	compatibility_hook_playerstandard_onsteelsight = {
+		disabled = false,
+		check_func = function()
+			if _G.InFmenu then 
+				--Rokk's IReNFIST (https://modworkshop.net/mod/28585)
+				return true
+			end
+			
+			if PlayerStandard then 
+				do 
+					local debuginfo = debug and debug.getinfo and debug.getinfo(PlayerStandard._start_action_steelsight)
+					if type(debuginfo) == "table" then 
+						local short_src = debuginfo.short_src
+						if (short_src ~= AdvancedCrosshair.blt_hooks_source) and (short_src ~= AdvancedCrosshair.ach_hooks_source) then 
+							return true
+						end
+					end
+				end
+				
+				do 
+					local debuginfo = debug and debug.getinfo and debug.getinfo(PlayerStandard._end_action_steelsight)
+					if type(debuginfo) == "table" then 
+						local short_src = debuginfo.short_src
+						if (short_src ~= AdvancedCrosshair.blt_hooks_source) and (short_src ~= AdvancedCrosshair.ach_hooks_source) then 
+							return true
+						end
+					end
+				end
+			end
+			return false
+		end
+	},
+	compatibility_hook_playermovementstate_enter = {
+		disabled = false,
+		check_func = function()
+			if NewRaycastWeaponBase then 
+				local debuginfo = debug and debug.getinfo and debug.getinfo(NewRaycastWeaponBase.reset_cached_gadget)
+				if type(debuginfo) == "table" then 
+					local short_src = debuginfo.short_src
+					if (short_src ~= AdvancedCrosshair.blt_hooks_source) and (short_src ~= AdvancedCrosshair.ach_hooks_source) then 
+						return true
+					end
+				end
+			end
+			return false
+		end
+	},
+	compatibility_hook_playerstandard_startactionequipweapon = {
+		disabled = false,
+		check_func = function()
+			if PlayerMovementState then 
+				local debuginfo = debug and debug.getinfo and debug.getinfo(PlayerMovementState.enter)
+				if type(debuginfo) == "table" then 
+					local short_src = debuginfo.short_src
+					if (short_src ~= AdvancedCrosshair.blt_hooks_source) and (short_src ~= AdvancedCrosshair.ach_hooks_source) then 
+						return true
+					end
+				end
+			end
+			return false
+		end
+	},
+	compatibility_hook_copdamage_damagemelee = {
+		disabled = false,
 		check_func = function()
 			if _G.SC then 
 				return true
 			end
-		end,
-		text_id = "menu_ach_compatibility_warning_restorationmod"
+			
+			if CopDamage then 
+				local debuginfo = debug and debug.getinfo and debug.getinfo(CopDamage.damage_melee)
+				if type(debuginfo) == "table" then 
+					local short_src = debuginfo.short_src
+					if (short_src ~= AdvancedCrosshair.blt_hooks_source) and (short_src ~= AdvancedCrosshair.ach_hooks_source) then 
+						return true
+					end
+				end
+			end
+			return false
+		end
+	},
+	compatibility_hook_copdamage_rollcriticalhit = {
+		disabled = false,
+		check_func = function()
+			if _G.SC then 
+				return true
+			end
+			
+			if CopDamage then 
+				local debuginfo = debug and debug.getinfo and debug.getinfo(CopDamage.roll_critical_hit)
+				if type(debuginfo) == "table" then 
+					local short_src = debuginfo.short_src
+					if (short_src ~= AdvancedCrosshair.blt_hooks_source) and (short_src ~= AdvancedCrosshair.ach_hooks_source) then 
+						return true
+					end
+				end
+			end
+			return false
+		end
+	},
+	compatibility_hook_newraycastweaponbase_togglefiremode = {
+		disabled = false,
+		check_func = function()
+			if NewRaycastWeaponBase then 
+				local debuginfo = debug and debug.getinfo and debug.getinfo(NewRaycastWeaponBase.toggle_firemode)
+				if type(debuginfo) == "table" then 
+					local short_src = debuginfo.short_src
+					if (short_src ~= AdvancedCrosshair.blt_hooks_source) and (short_src ~= AdvancedCrosshair.ach_hooks_source) then 
+						return true
+					end
+				end
+			end
+			return false
+		end
+	},
+	compatibility_hook_newraycastweaponbase_resetcachedgadget = {
+		disabled = false,
+		check_func = function()
+			if NewRaycastWeaponBase then 
+				local debuginfo = debug and debug.getinfo and debug.getinfo(NewRaycastWeaponBase.toggle_firemode)
+				if type(debuginfo) == "table" then 
+					local short_src = debuginfo.short_src
+					if (short_src ~= AdvancedCrosshair.blt_hooks_source) and (short_src ~= AdvancedCrosshair.ach_hooks_source) then 
+						return true
+					end
+				end
+			end
+			return false
+		end
 	}
 }
 
-function AdvancedCrosshair:GetVersion() --nonfunctional; pseudocode
---	local this_mod_right_here = BeardLib:FindMod("Advanced Crosshairs, Hitmarkers, and Hitsounds")
---	if this_mod_right_here then 
---		return this_mod_right_here._update_module.modules.version
---	end
---	return 1
-end
-function AdvancedCrosshair:ShouldShowStartupMessage()
-	local setting = self.settings.allow_messages
-	if setting == 3 then 
-		return false
-	elseif setting == 1 then 
-		return true
-	end
-	return false
-end
-function AdvancedCrosshair:CheckCompatibility()
-	local results_table = {}
-	for _,compatibility_data in pairs(self.compatibility_checks) do 
-		if compatibility_data.check_func and compatibility_data.check_func() then 
-			table.insert(results_table,#results_table + 1,compatibility_data.text_id)
-		end
-	end
-	if #results_table > 0 then 
-		local result_text = managers.localization:text("menu_ach_prompt_compatibility_warning_text_1") .. "\n"
-		for _,text in ipairs(results_table) do 
-			results_text = "- " .. managers.localization:text(text) .. "\n"
-		end
-		results_text = results_text .. "\n" .. managers.localization:text("menu_ach_prompt_compatibility_warning_text_2")
-		
-		QuickMenu:new(managers.localization:text("menu_ach_prompt_compatibility_warning_title"),result_text,{
-			{
-				text = managers.localization:text("menu_ach_prompt_ok")
-			},
-			{
-				text = managers.localization:text("menu_ach_update_message_prompt_stop_compatibility_warnings"),
-				callback = function()
-					self.settings.allow_messages = 2
-					set_recent_version()
-				end
-			}
-		},true)
-		
-	end
-end
-function AdvancedCrosshair:CheckStartupMessages()
-
-	local current_version = self:GetVersion()
-	local function set_recent_version()
-		AdvancedCrosshair.settings.installation_version = current_version
-		AdvancedCrosshair:Save()
-	end
-	local installation_version = tonumber(self.settings.installation_version) or 1
-	local results_table = {}
-	if installation_version < current_version then 
-		for index,message_data in ipairs(self.mod_update_alerts) do 
-			if message_data.version and installation_version < message_data.version then 
-				table.insert(results_table,message,#results_table + 1)
+function AdvancedCrosshair:CheckCompatibilityIssues()
+	local any_found
+	for setting_name,compatibility_data in pairs(self.compatibility_checks) do 
+		if not compatibility_data.disabled then 
+			local check_result = compatibility_data.check_func and compatibility_data.check_func()
+			if check_result and setting_name and (self.settings[setting_name] ~= nil) then 
+				self.auto_compatibility_settings[setting_name] = check_result
+				any_found = any_found or check_result
 			end
 		end
 	end
+	return any_found
+end
+
+function AdvancedCrosshair:ApplyCompatibilityFixes()
+	if self:UseCompatibility_PlayerManagerCheckSkill() then
+		self:OnPlayerManagerCheckSkills(managers.player)
+	end
 	
-	if self:ShouldShowStartupMessage() and #results_table > 0 then 
-		local result_text = ""
-		for i,text in ipairs(results_table) do 
-			result_text = "- " .. managers.localization:text(text) .. "\n"
+	self:ApplyCompatibility_PlayerMovementStateEnter(self:UseCompatibility_PlayerMovementStateEnter())
+	self:ApplyCompatibility_PlayerStandardStartEquipWeapon(self:UseCompatibility_PlayerStandardStartEquipWeapon())
+	self:ApplyCompatibility_CopDamage_RollCriticalHit(self:UseCompatibility_CopDamageRollCrit())
+	self:ApplyCompatibility_CopDamage_DamageMelee(self:UseCompatibility_CopDamageMelee())
+	self:ApplyCompatibility_NewRaycastWeaponBaseToggleFiremode(self:UseCompatibility_NewRaycastWeaponBaseToggleFiremode())
+	self:ApplyCompatibility_NewRaycastWeaponBaseResetCachedGadget(self:UseCompatibility_NewRaycastWeaponBaseResetCachedGadget())
+end
+
+	--we'll make our own hooks! with blackjack! and hooks! wait no
+function AdvancedCrosshair:ApplyCompatibility_PlayerMovementStateEnter(enabled)
+	if PlayerMovementState then 
+		local orig_enter = PlayerMovementState._ach_orig_enter
+		if not (orig_enter and type(orig_enter) == "function") then 
+			orig_enter = PlayerMovementState.enter
+			PlayerMovementState._ach_orig_enter = orig_enter
 		end
 		
-		QuickMenu:new(managers.localization:text("menu_ach_update_message_title"),result_text,{
-			{
-				text = managers.localization:text("menu_ach_prompt_ok"),
-				callback = set_recent_version()
-			},
-			{
-				text = managers.localization:text("menu_ach_update_message_prompt_yamete"),
-				callback = function()
-					self.settings.allow_messages = 3
-					set_recent_version()
+		if enabled then 
+			function PlayerMovementState.enter(state,state_data,enter_data,...)
+				local result = {orig_enter(state,state_data,enter_data,...)}
+				AdvancedCrosshair.hook_PlayerMovementState_enter(state,state_data,enter_data,...)
+				return unpack(result)
+			end
+		else
+			PlayerMovementState.enter = orig_enter
+		end
+	end
+end
+
+function AdvancedCrosshair:ApplyCompatibility_PlayerStandardStartEquipWeapon(enabled)
+	if PlayerStandard then 
+		local orig_start_equip = PlayerStandard._ach_orig_start_action_equip_weapon
+		if not (orig_start_equip and type(orig_start_equip) == "function") then 
+			orig_start_equip = PlayerStandard._start_action_equip_weapon
+			PlayerStandard._ach_orig_start_action_equip_weapon = orig_start_equip
+		end
+		
+		if enabled then 
+			function PlayerStandard._start_action_equip_weapon(state,t,...)
+				local result = {orig_start_equip(state,t,...)}
+				AdvancedCrosshair.hook_PlayerStandard_start_action_equip_weapon(state,t,...)
+				return unpack(result)
+			end
+		else
+			PlayerStandard._start_action_equip_weapon = orig_start_equip
+		end
+	end
+end
+
+function AdvancedCrosshair:ApplyCompatibility_CopDamage_DamageMelee(enabled)
+
+	--remove prior posthook just in case since this is a case where running twice could be annoying for the user
+	--eg proccing duplicate hitmarkers or hitsounds
+--	Hooks:RemovePostHook("ach_copdamage_melee")
+
+	if CopDamage then 
+		local orig_damage_melee = CopDamage._ach_orig_damage_melee
+		if not (orig_damage_melee and type(orig_damage_melee) == "function") then 
+			orig_damage_melee = CopDamage.damage_melee
+			CopDamage._ach_orig_damage_melee = orig_damage_melee
+		end
+		
+		if enabled then 
+			--ersatz post-hook
+			function CopDamage.damage_melee(dmg_ext,attack_data,...)
+				local result = {orig_damage_melee(dmg_ext,attack_data,...)}
+				AdvancedCrosshair.hook_CopDamage_damage_melee(dmg_ext,attack_data)
+				return unpack(result)
+			end
+		else
+			--effectively unhooking said ersatz post-hook
+			CopDamage.damage_melee = orig_damage_melee
+		end
+	end
+end
+
+function AdvancedCrosshair:ApplyCompatibility_CopDamage_RollCriticalHit(enabled)
+	if CopDamage then 
+		local orig_roll_crit = CopDamage._ach_orig_roll_critical_hit
+		if not (orig_roll_crit and type(orig_roll_crit) == "function") then 
+			orig_roll_crit = CopDamage.roll_critical_hit
+			CopDamage._ach_orig_roll_critical_hit = orig_roll_crit
+		end
+		
+		if enabled then 
+			function CopDamage.roll_critical_hit(dmg_ext,attack_data,...)
+				local result = {orig_roll_crit(dmg_ext,attack_data,...)}
+				if attack_data then 
+					attack_data.ach_crit = result[1]
 				end
-			},
-			{
-				text = managers.localization:text("menu_ach_update_message_prompt_remindmelater"),
-				is_focused_button = true,
-				is_cancel_button = true
-			}
-		},true)
+				return unpack(result)
+			end
+		else
+			CopDamage.roll_critical_hit = orig_roll_crit
+		end
+	end
+end
+
+function AdvancedCrosshair:ApplyCompatibility_NewRaycastWeaponBaseToggleFiremode(enabled)
+	if NewRaycastWeaponBase then 
+		local orig_toggle_firemode = NewRaycastWeaponBase._ach_orig_toggle_firemode
+		if not (orig_toggle_firemode and type(orig_toggle_firemode) == "function") then 
+			orig_toggle_firemode = NewRaycastWeaponBase.toggle_firemode
+			NewRaycastWeaponBase._ach_orig_toggle_firemode = orig_toggle_firemode
+		end
 		
+		if enabled then 
+			function NewRaycastWeaponBase.toggle_firemode(wpn_base,skip_post_event,...)
+				local result = {orig_toggle_firemode(wpn_base,skip_post_event,...)}
+				AdvancedCrosshair.hook_NewRaycastWeaponBase_toggle_firemode(wpn_base,skip_post_event)
+				return unpack(result)
+			end
+		else
+			NewRaycastWeaponBase.toggle_firemode = orig_toggle_firemode
+		end
+	end
+end
+
+function AdvancedCrosshair:ApplyCompatibility_NewRaycastWeaponBaseResetCachedGadget(enabled)
+	if NewRaycastWeaponBase then 
+		local orig_reset_cached_gadget = NewRaycastWeaponBase._ach_orig_reset_cached_gadget
+		if not (orig_reset_cached_gadget and type(orig_reset_cached_gadget) == "function") then 
+			orig_reset_cached_gadget = NewRaycastWeaponBase.reset_cached_gadget
+			NewRaycastWeaponBase._ach_orig_reset_cached_gadget = orig_reset_cached_gadget
+		end
 		
-	else
-		set_recent_version()
+		if enabled then 
+			function NewRaycastWeaponBase.reset_cached_gadget(wpn_base,...)
+				local result = {orig_reset_cached_gadget(wpn_base,...)}
+				AdvancedCrosshair.hook_NewRaycastWeaponBase_reset_cached_gadget(wpn_base)
+				return unpack(result)
+			end
+		else
+			NewRaycastWeaponBase.reset_cached_gadget = orig_reset_cached_gadget
+		end
+	end
+end
+
+function AdvancedCrosshair.hook_PlayerMovementState_enter(...)
+	AdvancedCrosshair:CheckCrosshair()
+end
+
+function AdvancedCrosshair.hook_PlayerStandard_start_action_equip_weapon(state,t)
+	AdvancedCrosshair:CheckCrosshair()
+	AdvancedCrosshair:SetCrosshairBloom(0)
+	--Message.OnSwitchWeapon is called on UNEQUIP, not on weapon equip. so hooking this is what we gotta do.
+end
+
+function AdvancedCrosshair.hook_CopDamage_damage_melee(dmg_ext,attack_data)
+	--damage is applied even if the enemy is already dead, resulting in hitsounds/hitmarkers on meleeing enemy corpses
+	--therefore, deaths are detected separately in ACH, from Message.OnEnemyKilled, as a workaround
+	if attack_data.result then 
+		
+		if AdvancedCrosshair:CanCheckMeleeHeadshots() then 
+			local is_headshot
+			if attack_data.headshot == nil then 
+				if _G.SC then 
+					is_headshot = dmg_ext._head_body_name
+						and not dmg_ext._unit:in_slot(16)
+						and not dmg_ext._char_tweak.ignore_headshot
+						and attack_data.col_ray.body
+						and attack_data.col_ray.body:name() == dmg_ext._ids_head_body_name
+				else
+					is_headshot = dmg_ext._head_body_name
+						and attack_data.col_ray.body
+						and attack_data.col_ray.body:name() == dmg_ext._ids_head_body_name
+				end
+				--attack_data initially contains only the data "sent" when calculating enemy damage
+				--but attack_data is changed by the execution of damage_melee(),
+				--including the addition of the subtable attack_data.result
+				
+				attack_data.ach_headshot = is_headshot 
+				--use a separate flag from the actual flag, attack_data.headshot, to determine if the melee was a headshot
+			end
+		end
+		
+		AdvancedCrosshair:OnEnemyHit(dmg_ext._unit,attack_data)
+	end
+end
+
+function AdvancedCrosshair.hook_NewRaycastWeaponBase_toggle_firemode(wpnbase,skip_post_event)
+	AdvancedCrosshair:CheckCrosshair()
+end
+
+local ids_auto = Idstring("auto")
+local ids_single = Idstring("single")
+function AdvancedCrosshair.hook_NewRaycastWeaponBase_reset_cached_gadget(wpnbase)
+	local firemode
+	local recorded_firemode = wpnbase:get_recorded_fire_mode()
+	if recorded_firemode == ids_single then 
+		firemode = "single"
+	elseif recorded_firemode == ids_auto then 
+		firemode = "auto"
+	end
+
+	AdvancedCrosshair:CheckCrosshair({
+		firemode = firemode
+	})
+end
+
+function AdvancedCrosshair:OnPlayerManagerCheckSkills(pm,...)
+	if pm then 
+		pm._message_system:unregister(Message.OnWeaponFired,"advancedcrosshair_OnWeaponFired")
+		pm._message_system:unregister(Message.OnEnemyShot,"advancedcrosshair_OnEnemyShot")
+		pm._message_system:unregister(Message.OnEnemyKilled,"advancedcrosshair_OnEnemyKilled")
+
+		pm._message_system:register(Message.OnWeaponFired,"advancedcrosshair_OnWeaponFired",
+			function(weapon_unit,result)
+				local weapon_base = alive(weapon_unit) and weapon_unit:base()
+				if weapon_base and weapon_base._setup and weapon_base._setup.user_unit and weapon_base._setup.user_unit == pm:local_player() then 
+					self:AddBloom()
+				end
+			end
+		)
+		pm._message_system:register(Message.OnEnemyShot,"advancedcrosshair_OnEnemyShot",function(unit,attack_data,...) 
+			if alive(unit) and attack_data and attack_data.attacker_unit and (attack_data.attacker_unit == pm:local_player()) then 
+				self:OnEnemyHit(unit,attack_data,...)
+			end
+		end)
+		pm._message_system:register(Message.OnEnemyKilled,"advancedcrosshair_OnEnemyKilled",
+			function(equipped_unit,variant,killed_unit)
+				if alive(equipped_unit) and alive(killed_unit) and (variant == "fire" or variant == "poison") then 
+					self:OnEnemyHit(killed_unit,{
+						result = {
+							type = "death"
+						},
+						headshot = false, --melee can't headshot anyway
+						crit = false, --but i can't detect crits this way
+						attacker_unit = equipped_unit:base()._setup.user_unit
+					})
+				end
+			end
+		)
+		pm._listener_holder:remove("advancedcrosshair_OnEnterCustody")
+		pm._listener_holder:add("advancedcrosshair_OnEnterCustody",{pm._custody_state},callback(AdvancedCrosshair,AdvancedCrosshair,"OnPlayerManagerOnEnterCustody"))
 	end
 end
 
@@ -1948,44 +2324,6 @@ function AdvancedCrosshair:Init()
 	end
 end
 
-function AdvancedCrosshair:OnPlayerManagerCheckSkills(pm)
-
-	pm._message_system:unregister(Message.OnWeaponFired,"advancedcrosshair_OnWeaponFired")
-	pm._message_system:unregister(Message.OnEnemyShot,"advancedcrosshair_OnEnemyShot")
-	pm._message_system:unregister(Message.OnEnemyKilled,"advancedcrosshair_OnEnemyKilled")
-
-	pm._message_system:register(Message.OnWeaponFired,"advancedcrosshair_OnWeaponFired",
-		function(weapon_unit,result)
-			local weapon_base = alive(weapon_unit) and weapon_unit:base()
-			if weapon_base and weapon_base._setup and weapon_base._setup.user_unit and weapon_base._setup.user_unit == pm:local_player() then 
-				self:AddBloom()
-			end
-		end
-	)
-	pm._message_system:register(Message.OnEnemyShot,"advancedcrosshair_OnEnemyShot",function(unit,attack_data,...) 
-		if alive(unit) and attack_data and attack_data.attacker_unit and (attack_data.attacker_unit == pm:local_player()) then 
-			self:OnEnemyHit(unit,attack_data,...)
-		end
-	end)
-	pm._message_system:register(Message.OnEnemyKilled,"advancedcrosshair_OnEnemyKilled",
-		function(equipped_unit,variant,killed_unit)
-			if alive(equipped_unit) and alive(killed_unit) and (variant == "fire" or variant == "poison") then 
-				self:OnEnemyHit(killed_unit,{
-					result = {
-						type = "death"
-					},
-					headshot = false, --melee can't headshot anyway
-					crit = false, --but i can't detect crits this way
-					attacker_unit = equipped_unit:base()._setup.user_unit
-				})
-			end
-		end
-	)
-	pm._listener_holder:remove("advancedcrosshair_OnEnterCustody")
-	pm._listener_holder:add("advancedcrosshair_OnEnterCustody",{pm._custody_state},callback(self,self,"OnPlayerManagerOnEnterCustody"))
-end
-
-
 function AdvancedCrosshair:OnPlayerManagerOnEnterCustody(player_unit)
 	if (player_unit == nil) or (player_unit == managers.player:local_player()) then 
 		AdvancedCrosshair:ClearCache()
@@ -1994,14 +2332,16 @@ function AdvancedCrosshair:OnPlayerManagerOnEnterCustody(player_unit)
 end
 
 function AdvancedCrosshair:CreateHUD(t,dt) --try to create hud each run until both required elements are initiated.
-	
 
 --...it's not ideal.
 	local hud = managers.hud and managers.hud:script(PlayerBase.PLAYER_INFO_HUD_FULLSCREEN_PD2) --managers.hud._hud_hit_confirm and managers.hud._hud_hit_confirm._hud_panel
 	if managers.player and alive(managers.player:local_player()) and hud and hud.panel then 
-		if AdvancedCrosshair:UseCompatibility_PlayerManagerCheckSkill() then
-			self:OnPlayerManagerCheckSkills(managers.player)
+	
+		if self:UseCompatibilityAutoDetection() then
+			self:CheckCompatibilityIssues()
 		end
+		self:ApplyCompatibilityFixes()
+		
 		BeardLib:RemoveUpdater("advc_create_hud_delayed")
 --		managers.hud:add_updator("advancedcrosshairs_update",callback(AdvancedCrosshair,AdvancedCrosshair,"Update"))
 		self:CreateCrosshairPanel(hud.panel)
@@ -2485,8 +2825,8 @@ function AdvancedCrosshair:ActivateHitmarker(attack_data)
 	local result = attack_data.result
 	local result_type = result and result.type
 	local pos = attack_data.pos
-	local headshot = attack_data.headshot
-	local crit = attack_data.crit --flag indicating crit is added from the mod, not here in vanilla
+	local headshot = attack_data.headshot or attack_data.ach_headshot
+	local crit = attack_data.crit or attack_data.ach_crit --flag indicating crit is added from the mod, not here in vanilla
 
 	local outofrange_display_mode = self:GetHitmarkerRangeMode()
 
@@ -2628,8 +2968,8 @@ end
 function AdvancedCrosshair:GetHitsoundData(attack_data)
 	local result = attack_data.result
 	local result_type = result and result.type
-	local headshot = attack_data.headshot
-	local crit = attack_data.crit --note that the flag indicating crit is added from the mod via copbase, not here in vanilla
+	local headshot = attack_data.headshot or attack_data.ach_headshot
+	local crit = attack_data.crit or attack_data.ach_crit --note that the flag indicating crit is added from the mod via copbase, not here in vanilla
 	local volume
 	local snd_name
 	
@@ -2679,11 +3019,11 @@ function AdvancedCrosshair:GetHitsoundData(attack_data)
 	return snd_path,volume
 end
 
-function AdvancedCrosshair:ActivateHitsound(attack_data,unit)
+function AdvancedCrosshair:ActivateHitsound(attack_data,unit,no_pause)
 	local snd_path,volume = self:GetHitsoundData(attack_data)
 	if snd_path then 
 		local snd_path_2,volume_2
-		if (not self:ShouldSuppressDoubleSound()) and (attack_data.crit or attack_data.headshot) then 
+		if (not self:ShouldSuppressDoubleSound()) and (attack_data.ach_crit or attack_data.headshot or attack_data.ach_headshot) then 
 			snd_path_2,volume_2 = self:GetHitsoundData({
 				result = {
 					type = attack_data.result and attack_data.result.type or "hurt"
@@ -2753,10 +3093,12 @@ function AdvancedCrosshair:ActivateHitsound(attack_data,unit)
 		
 		
 		if source_1 then 
+			source_1:set_auto_pause(not no_pause)
 			source_1:set_volume(volume)
 			table.insert(self._cache.sound_sources,#self._cache.sound_sources + 1,source_1)
 		end
 		if source_2 then 
+			source_2:set_auto_pause(not no_pause)
 			source_2:set_volume(volume_2)
 			table.insert(self._cache.sound_sources,#self._cache.sound_sources + 1,source_2)
 		end
@@ -3174,12 +3516,26 @@ end
 
 function AdvancedCrosshair:Load()
 	local file = io.open(self.save_data_path, "r")
-	if (file) then
-		for k, v in pairs(json.decode(file:read("*all"))) do
+	local prev_version = 1
+	local new_version = self.default_settings.ach_save_version
+	if file then
+		local settings_from_file = json.decode(file:read("*all"))
+		prev_version = settings_from_file.ach_save_version or prev_version
+		for k, v in pairs(settings_from_file) do
 			self.settings[k] = v
 		end
+		
+		self:CheckSaveDataForDeprecatedValues(prev_version,new_version)
 	else
 		self:Save()
+	end
+end
+
+--if i ever need to make changes to ACH save data, here is where i'll do it
+function AdvancedCrosshair:CheckSaveDataForDeprecatedValues(prev_version,new_version)
+	if prev_version ~= new_version then 
+		--do changes here
+		--self:Save()
 	end
 end
 
@@ -3193,6 +3549,7 @@ AdvancedCrosshair.crosshairs_menu_id = "ach_menu_crosshairs"
 AdvancedCrosshair.hitmarkers_menu_id = "ach_menu_hitmarkers"
 AdvancedCrosshair.hitsounds_menu_id = "ach_menu_hitsounds"
 AdvancedCrosshair.misc_menu_id = "ach_menu_misc" --made with json, this is just for reference
+AdvancedCrosshair.compat_menu_id = "ach_menu_compat" --made with json, this is just for reference
 AdvancedCrosshair.reset_menu_id = "ach_menu_reset" --made with json, this is just for reference
 AdvancedCrosshair.crosshairs_categories_submenu_id = "ach_menu_crosshairs_categories"
 AdvancedCrosshair.crosshairs_categories_global_id = "ach_menu_crosshairs_global"
@@ -3207,6 +3564,7 @@ Hooks:Add("MenuManagerSetupCustomMenus", "ach_MenuManagerSetupCustomMenus", func
 	MenuHelper:NewMenu(AdvancedCrosshair.main_menu_id)
 	MenuHelper:NewMenu(AdvancedCrosshair.crosshairs_menu_id)
 	MenuHelper:NewMenu(AdvancedCrosshair.hitmarkers_menu_id)
+	MenuHelper:NewMenu(AdvancedCrosshair.compat_menu_id)
 	MenuHelper:NewMenu(AdvancedCrosshair.misc_menu_id)
 	MenuHelper:NewMenu(AdvancedCrosshair.crosshairs_categories_submenu_id)
 	MenuHelper:NewMenu(AdvancedCrosshair.crosshairs_categories_global_id)
@@ -5095,221 +5453,305 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 	end
 	MenuCallbackHandler.callback_ach_hitsounds_set_hit_bodyshot_type = function(self,item)
 		AdvancedCrosshair.settings.hitsound_hit_bodyshot_id = AdvancedCrosshair.hitsound_id_by_index[tonumber(item:value())]
-		if not Application:paused() then 
-			AdvancedCrosshair:ActivateHitsound({
+		AdvancedCrosshair:ActivateHitsound(
+			{
 				result = {
 					type = "hurt"
 				},
 				headshot = false,
 				crit = false
-			})
-		end
+			},
+			nil,
+			true
+		)
 		AdvancedCrosshair:Save()
 	end
 	MenuCallbackHandler.callback_ach_hitsounds_set_hit_bodyshot_volume = function(self,item)
 		AdvancedCrosshair.settings.hitsound_hit_bodyshot_volume = tonumber(item:value())
 		AdvancedCrosshair:Save()
-		if not Application:paused() then 
-			AdvancedCrosshair:ActivateHitsound({
+		AdvancedCrosshair:ActivateHitsound(
+			{
 				result = {
 					type = "hurt"
 				},
 				headshot = false,
 				crit = false
-			})
-		end
+			},
+			nil,
+			true
+		)
 	end
 	MenuCallbackHandler.callback_ach_hitsounds_set_hit_headshot_type = function(self,item)
 		AdvancedCrosshair.settings.hitsound_hit_headshot_id = AdvancedCrosshair.hitsound_id_by_index[tonumber(item:value())]	
 			
-		if not Application:paused() then 
-			AdvancedCrosshair:ActivateHitsound({
+		AdvancedCrosshair:ActivateHitsound(
+			{
 				result = {
 					type = "hurt"
 				},
 				headshot = true,
 				crit = false
-			})
-		end
+			},
+			nil,
+			true
+		)
 		AdvancedCrosshair:Save()
 	end
 	MenuCallbackHandler.callback_ach_hitsounds_set_hit_headshot_volume = function(self,item)
 		AdvancedCrosshair.settings.hitsound_hit_headshot_volume = tonumber(item:value())
 		AdvancedCrosshair:Save()
-		if not Application:paused() then 
-			AdvancedCrosshair:ActivateHitsound({
+		AdvancedCrosshair:ActivateHitsound(
+			{
 				result = {
 					type = "hurt"
 				},
 				headshot = true,
 				crit = false
-			})
-		end
+			},
+			nil,
+			true
+		)
 	end
 	MenuCallbackHandler.callback_ach_hitsounds_set_hit_bodyshot_crit_type = function(self,item)
 		AdvancedCrosshair.settings.hitsound_hit_bodyshot_crit_id = AdvancedCrosshair.hitsound_id_by_index[tonumber(item:value())]
-		if not Application:paused() then 
-			AdvancedCrosshair:ActivateHitsound({
+		AdvancedCrosshair:ActivateHitsound(
+			{
 				result = {
 					type = "hurt"
 				},
 				headshot = false,
 				crit = true
-			})
-		end
+			},
+			nil,
+			true
+		)
 		AdvancedCrosshair:Save()
 	end
 	MenuCallbackHandler.callback_ach_hitsounds_set_hit_bodyshot_crit_volume = function(self,item)
 		AdvancedCrosshair.settings.hitsound_hit_bodyshot_crit_volume = tonumber(item:value())
 		AdvancedCrosshair:Save()
-		if not Application:paused() then 
-			AdvancedCrosshair:ActivateHitsound({
+		AdvancedCrosshair:ActivateHitsound(
+			{
 				result = {
 					type = "hurt"
 				},
 				headshot = false,
 				crit = true
-			})
-		end
+			},
+			nil,
+			true
+		)
 	end
 	MenuCallbackHandler.callback_ach_hitsounds_set_hit_headshot_crit_type = function(self,item)
 		AdvancedCrosshair.settings.hitsound_hit_headshot_crit_id = AdvancedCrosshair.hitsound_id_by_index[tonumber(item:value())]
-		if not Application:paused() then 
-			AdvancedCrosshair:ActivateHitsound({
+		AdvancedCrosshair:ActivateHitsound(
+			{
 				result = {
 					type = "hurt"
 				},
 				headshot = true,
 				crit = true
-			})
-		end
+			},
+			nil,
+			true
+		)
 		AdvancedCrosshair:Save()
 	end
 	MenuCallbackHandler.callback_ach_hitsounds_set_hit_headshot_crit_volume = function(self,item)
 		AdvancedCrosshair.settings.hitsound_hit_headshot_crit_volume = tonumber(item:value())
 		AdvancedCrosshair:Save()
-		if not Application:paused() then 
-			AdvancedCrosshair:ActivateHitsound({
+		AdvancedCrosshair:ActivateHitsound(
+			{
 				result = {
 					type = "hurt"
 				},
 				headshot = true,
 				crit = true
-			})
-		end
+			},
+			nil,
+			true
+		)
 	end
 	MenuCallbackHandler.callback_ach_hitsounds_set_kill_bodyshot_type = function(self,item)
 		AdvancedCrosshair.settings.hitsound_kill_bodyshot_id = AdvancedCrosshair.hitsound_id_by_index[tonumber(item:value())]
-		if not Application:paused() then 
-			AdvancedCrosshair:ActivateHitsound({
+		AdvancedCrosshair:ActivateHitsound(
+			{
 				result = {
 					type = "death"
 				},
 				headshot = false,
 				crit = false
-			})
-		end
+			},
+			nil,
+			true
+		)
 		AdvancedCrosshair:Save()
 	end
 	MenuCallbackHandler.callback_ach_hitsounds_set_kill_bodyshot_volume = function(self,item)
 		AdvancedCrosshair.settings.hitsound_kill_bodyshot_volume = tonumber(item:value())
 		AdvancedCrosshair:Save()
-		if not Application:paused() then 
-			AdvancedCrosshair:ActivateHitsound({
+		AdvancedCrosshair:ActivateHitsound(
+			{
 				result = {
 					type = "death"
 				},
 				headshot = false,
 				crit = false
-			})
-		end
+			},
+			nil,
+			true
+		)
 	end
 	MenuCallbackHandler.callback_ach_hitsounds_set_kill_headshot_type = function(self,item)
 		AdvancedCrosshair.settings.hitsound_kill_headshot_id = AdvancedCrosshair.hitsound_id_by_index[tonumber(item:value())]
-		if not Application:paused() then 
-			AdvancedCrosshair:ActivateHitsound({
+		AdvancedCrosshair:ActivateHitsound(
+			{
 				result = {
 					type = "death"
 				},
 				headshot = true,
 				crit = false
-			})
-		end
+			},
+			nil,
+			true
+		)
 		AdvancedCrosshair:Save()
 	end
 	MenuCallbackHandler.callback_ach_hitsounds_set_kill_headshot_volume = function(self,item)
 		AdvancedCrosshair.settings.hitsound_kill_headshot_volume = tonumber(item:value())
 		AdvancedCrosshair:Save()
-		if not Application:paused() then 
-			AdvancedCrosshair:ActivateHitsound({
+		AdvancedCrosshair:ActivateHitsound(
+			{
 				result = {
 					type = "death"
 				},
 				headshot = true,
 				crit = false
-			})
-		end
+			},
+			nil,
+			true
+		)
 	end
 	MenuCallbackHandler.callback_ach_hitsounds_set_kill_bodyshot_crit_type = function(self,item)
 		AdvancedCrosshair.settings.hitsound_kill_bodyshot_crit_id = AdvancedCrosshair.hitsound_id_by_index[tonumber(item:value())]
-		if not Application:paused() then 
-			AdvancedCrosshair:ActivateHitsound({
+		AdvancedCrosshair:ActivateHitsound(
+			{
 				result = {
 					type = "death"
 				},
 				headshot = false,
 				crit = true
-			})
-		end
+			},
+			nil,
+			true
+		)
 		AdvancedCrosshair:Save()
 	end
 	MenuCallbackHandler.callback_ach_hitsounds_set_kill_bodyshot_crit_volume = function(self,item)
 		AdvancedCrosshair.settings.hitsound_kill_bodyshot_crit_volume = tonumber(item:value())
 		AdvancedCrosshair:Save()
-		if not Application:paused() then 
-			AdvancedCrosshair:ActivateHitsound({
+		AdvancedCrosshair:ActivateHitsound(
+			{
 				result = {
 					type = "death"
 				},
 				headshot = false,
 				crit = true
-			})
-		end
+			},
+			nil,
+			true
+		)
 	end
 	MenuCallbackHandler.callback_ach_hitsounds_set_kill_headshot_crit_type = function(self,item)
 		AdvancedCrosshair.settings.hitsound_kill_headshot_crit_id = AdvancedCrosshair.hitsound_id_by_index[tonumber(item:value())]
-		if not Application:paused() then 
-			AdvancedCrosshair:ActivateHitsound({
+		AdvancedCrosshair:ActivateHitsound(
+			{
 				result = {
 					type = "death"
 				},
 				headshot = true,
 				crit = true
-			})
-		end
+			},
+			nil,
+			true
+		)
 		AdvancedCrosshair:Save()
 	end
 	MenuCallbackHandler.callback_ach_hitsounds_set_kill_headshot_crit_volume = function(self,item)
 		AdvancedCrosshair.settings.hitsound_kill_headshot_crit_volume = tonumber(item:value())
 		AdvancedCrosshair:Save()
-		if not Application:paused() then 
-			AdvancedCrosshair:ActivateHitsound({
+		AdvancedCrosshair:ActivateHitsound(
+			{
 				result = {
 					type = "death"
 				},
 				headshot = true,
 				crit = true
-			})
-		end
+			},
+			nil,
+			true
+		)
 	end
 	
-	MenuCallbackHandler.callback_ach_menu_main_compatibility_playermanager_checkskill = function(self,item)
-		AdvancedCrosshair.settings.compatibility_hook_playermanager_checkskill = item:value() == "on"
+	MenuCallbackHandler.callback_ach_menu_misc_can_check_melee_headshots = function(self,item)
+		local enabled = item:value() == "on"
+		AdvancedCrosshair.settings.can_check_melee_headshots = enabled
 		AdvancedCrosshair:Save()
 	end
 	
-	MenuCallbackHandler.callback_ach_menu_main_compatibility_playerstandard_onsteelsight = function(self,item)
-		AdvancedCrosshair.settings.compatibility_hook_playerstandard_onsteelsight = item:value() == "on"
+	--compatibility settings
+	MenuCallbackHandler.callback_ach_menu_compat_compatibility_auto_detection = function(self,item)
+		local enabled = item:value() == "on"
+		AdvancedCrosshair.settings.compatibility_auto_detection = enabled
+		AdvancedCrosshair:Save()
+	end
+	
+	MenuCallbackHandler.callback_ach_menu_compat_compatibility_playermanager_checkskill = function(self,item)
+		local enabled = item:value() == "on"
+		AdvancedCrosshair.settings.compatibility_hook_playermanager_checkskill = enabled
+		AdvancedCrosshair:Save()
+	end
+	
+	
+	MenuCallbackHandler.callback_ach_menu_compat_compatibility_playerstandard_startactionequipweapon = function(self,item)
+		local enabled = item:value() == "on"
+		AdvancedCrosshair.settings.compatibility_hook_playerstandard_startactionequipweapon = enabled
+		AdvancedCrosshair:Save()
+	end
+	
+	MenuCallbackHandler.callback_ach_menu_compat_compatibility_playerstandard_onsteelsight = function(self,item)
+		local enabled = item:value() == "on"
+		AdvancedCrosshair.settings.compatibility_hook_playerstandard_onsteelsight = enabled
+		AdvancedCrosshair:Save()
+	end
+	
+	MenuCallbackHandler.callback_ach_menu_compat_compatibility_playermovementstate_enter = function(self,item)
+		local enabled = item:value() == "on"
+		AdvancedCrosshair.settings.compatibility_hook_playermovementstate_enter = enabled
+		AdvancedCrosshair:Save()
+	end
+	
+	MenuCallbackHandler.callback_ach_menu_compat_compatibility_newraycastweaponbase_togglefiremode = function(self,item)
+		local enabled = item:value() == "on"
+		AdvancedCrosshair.settings.compatibility_hook_newraycastweaponbase_togglefiremode = enabled
+		AdvancedCrosshair:Save()
+	end
+	
+	MenuCallbackHandler.callback_ach_menu_compat_compatibility_newraycastweaponbase_resetcachedgadget = function(self,item)
+		local enabled = item:value() == "on"
+		AdvancedCrosshair.settings.compatibility_hook_newraycastweaponbase_resetcachedgadget = enabled
+		AdvancedCrosshair:Save()
+	end
+	
+	MenuCallbackHandler.callback_ach_menu_compat_compatibility_copdamage_damagemelee = function(self,item)
+		local enabled = item:value() == "on"
+		AdvancedCrosshair.settings.compatibility_hook_copdamage_damagemelee = enabled
+		AdvancedCrosshair:Save()
+	end
+	
+	MenuCallbackHandler.callback_ach_menu_compat_compatibility_copdamage_rollcriticalhit = function(self,item)
+		local enabled = item:value() == "on"
+		AdvancedCrosshair.settings.compatibility_hook_copdamage_rollcriticalhit = enabled
 		AdvancedCrosshair:Save()
 	end
 	
@@ -5473,7 +5915,13 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 	
 	end
 	MenuCallbackHandler.callback_ach_misc_focus = function(self,item)
-		
+	end
+	
+	MenuCallbackHandler.callback_ach_compat_close = function(self,item)
+		AdvancedCrosshair:ApplyCompatibilityFixes()
+	end
+	MenuCallbackHandler.callback_ach_compat_focus = function(self)
+	
 	end
 	
 	--creates colorpicker menu for AdvancedCrosshair mod; this menu is reused for all color-related callbacks in this mod,
@@ -5486,6 +5934,7 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 	MenuHelper:LoadFromJsonFile(AdvancedCrosshair.path .. "menu/menu_crosshairs.json", AdvancedCrosshair, AdvancedCrosshair.settings)
 	MenuHelper:LoadFromJsonFile(AdvancedCrosshair.path .. "menu/menu_hitmarkers.json", AdvancedCrosshair, AdvancedCrosshair.settings)
 	MenuHelper:LoadFromJsonFile(AdvancedCrosshair.path .. "menu/menu_hitsounds.json", AdvancedCrosshair, AdvancedCrosshair.settings)
+	MenuHelper:LoadFromJsonFile(AdvancedCrosshair.path .. "menu/menu_compat.json", AdvancedCrosshair, AdvancedCrosshair.settings)
 	MenuHelper:LoadFromJsonFile(AdvancedCrosshair.path .. "menu/menu_misc.json", AdvancedCrosshair, AdvancedCrosshair.settings)
 	MenuHelper:LoadFromJsonFile(AdvancedCrosshair.path .. "menu/menu_reset.json", AdvancedCrosshair, AdvancedCrosshair.settings)
 end)
@@ -5783,4 +6232,3 @@ AdvancedCrosshair:Init()
 AdvancedCrosshair:Load()
 
 AdvancedCrosshair:CheckCreateAddonFolder()
-

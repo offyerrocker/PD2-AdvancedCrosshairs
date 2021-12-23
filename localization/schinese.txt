@@ -240,14 +240,28 @@
 	"menu_ach_reset_all_settings_prompt_success_desc" : "所有设置都已重置为默认值\n重新启动游戏或劫案使更改生效",
 	
 	"menu_ach_menu_misc_title" : "各种各样的",
-
-	"menu_ach_compatibility_warning_restorationmod" : "Restoration Mod (aka SC's Mod) will prevent Hitmarkers and Hitsounds from activating on hits on enemies. It is recommended that you enable \"Compatibility: PlayerManager:CheckSkills()\" in ACH's options to mitigate this issue.",
-
-	"menu_ach_prompt_compatibility_warning_text_1" : "The following potential compatibility issues have been flagged:",
-	"menu_ach_prompt_compatibility_warning_text_2" : "(This message will appear each time on startup when compatibility issues are detected, unless you either enable the appropriate compatibility options or turn off compatibility warnings.)",
-	"menu_ach_prompt_compatibility_warning_title" : "WARNING: Compatibility issues found!",
-	"menu_ach_menu_main_compatibility_playermanager_checkskill_title" : "Compatibility: PlayerManager:check_skills()",
-	"menu_ach_menu_main_compatibility_playermanager_checkskill_desc" : "Allows Hitmarkers and Hitsounds to function with mods such as Restoration Mod.",
-	"menu_ach_menu_main_compatibility_playerstandard_onsteelsight_title" : "Compatibility: PlayerStandard: steelsight",
-	"menu_ach_menu_main_compatibility_playerstandard_onsteelsight_desc" : "Allows \"Hide Crosshairs on ADS\" option to function with mods such as IREnFIST."
+	
+	"menu_ach_menu_misc_can_check_melee_headshots_title" : "Detect Melee Headshots",
+	"menu_ach_menu_misc_can_check_melee_headshots_desc" : "If true, hitmarkers and hitsounds will reflect whether or not a melee attack was a headshot.\nDoes not change damage calculations.",
+	
+	"menu_ach_menu_compat_title" : "Compatibility...",
+	
+	"menu_ach_menu_compat_compatibility_auto_detection_title" : "Compatibility Auto-Detection",
+	"menu_ach_menu_compat_compatibility_auto_detection_desc" : "Automatically enables any relevant compatibility fixes.\nAny individually enabled compatibility settings below will be enabled regardless.",
+	"menu_ach_menu_compat_compatibility_playermanager_checkskill_title" : "PlayerManager:check_skills()",
+	"menu_ach_menu_compat_compatibility_playermanager_checkskill_desc" : "Fixes potential issues with hit proc detection for hitmarkers and hitsounds.",
+	"menu_ach_menu_compat_compatibility_playerstandard_startactionequipweapon_title" : "PlayerStandard: equip weapon",
+	"menu_ach_menu_compat_compatibility_playerstandard_startactionequipweapon_desc" : "Fixes potential issues with detecting switching weapontype-specific crosshairs.",
+	"menu_ach_menu_compat_compatibility_playerstandard_onsteelsight_title" : "PlayerStandard: start/stop steelsight",
+	"menu_ach_menu_compat_compatibility_playerstandard_onsteelsight_desc" : "Fixes potential compatibility issues with the \"Hide Crosshairs on ADS\" option.",
+	"menu_ach_menu_compat_compatibility_playermovementstate_enter_title" : "PlayerMovementState:enter()",
+	"menu_ach_menu_compat_compatibility_playermovementstate_enter_desc" : "Fixes potential issues with detecting switching crosshairs.",
+	"menu_ach_menu_compat_compatibility_newraycastweaponbase_togglefiremode_title" : "NewRaycastWeaponBase:toggle_firemode()",
+	"menu_ach_menu_compat_compatibility_newraycastweaponbase_togglefiremode_desc" : "Fixes potential issues with detecting switching between firemode-specific crosshairs.",
+	"menu_ach_menu_compat_compatibility_newraycastweaponbase_resetcachedgadget_title" : "NewRaycastWeaponBase:reset_cached_gadget()",
+	"menu_ach_menu_compat_compatibility_newraycastweaponbase_resetcachedgadget_desc" : "Fixes potential issues with detecting toggling crosshairs for underbarrel weapons.",
+	"menu_ach_menu_compat_compatibility_copdamage_damagemelee_title" : "CopDamage:damage_melee()",
+	"menu_ach_menu_compat_compatibility_copdamage_damagemelee_desc" : "Fixes potential issues with melee hit detection.",
+	"menu_ach_menu_compat_compatibility_copdamage_rollcriticalhit_title" : "CopDamage:roll_critical_hit()",
+	"menu_ach_menu_compat_compatibility_copdamage_rollcriticalhit_desc" : "Fixes potential compatibility issues with detecting critical hits on enemies."
 }
