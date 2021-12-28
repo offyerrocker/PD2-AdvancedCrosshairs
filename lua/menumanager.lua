@@ -1,3 +1,5 @@
+log("[Advanced Crosshairs] Loading menumanager.lua")
+
 		--todo list, loosely sorted by descending priority:
 
 --migrate the more obscure options to "Advanced Settings" menus
@@ -2282,8 +2284,9 @@ function AdvancedCrosshair:Init()
 		self:log("sblt xaudio does not exist")
 	end
 	
-	self:log("Checking os.date()")
-	if os.date("%d/%m") == "1/4" then 
+--	self:log("Checking os.date()")
+	local d -- = os.date("%d/%m")
+	if d == "1/4" then 
 		self:log("April Fool's!")
 		self._cache.HITMARKER_RAIN_ENABLED = true
 	end
@@ -3530,6 +3533,8 @@ AdvancedCrosshair.hitmarker_id_by_index = {}
 AdvancedCrosshair.hitsound_id_by_index = {}
 Hooks:Add("MenuManagerSetupCustomMenus", "ach_MenuManagerSetupCustomMenus", function(menu_manager, nodes)
 	
+	AdvancedCrosshair:log("MenuManagerSetupCustomMenus begin")
+	
 	MenuHelper:NewMenu(AdvancedCrosshair.main_menu_id)
 	MenuHelper:NewMenu(AdvancedCrosshair.crosshairs_menu_id)
 	MenuHelper:NewMenu(AdvancedCrosshair.hitmarkers_menu_id)
@@ -3549,6 +3554,8 @@ Hooks:Add("MenuManagerSetupCustomMenus", "ach_MenuManagerSetupCustomMenus", func
 			AdvancedCrosshair.customization_menus[cat_menu_name].child_menus[firemode_menu_name] = {menu = MenuHelper:NewMenu(firemode_menu_name),firemode = firemode}
 		end
 	end
+	
+	AdvancedCrosshair:log("MenuManagerSetupCustomMenus complete")
 	
 end)
 
@@ -4829,6 +4836,15 @@ end)
 
 Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 	AdvancedCrosshair:log("MenuManagerInitialize begin")
+	
+	AdvancedCrosshair:log("ACH addresses:")
+	for k,v in pairs(AdvancedCrosshair) do 
+		if type(v) == "function" then 
+			AdvancedCrosshair:log(tostring(v) .. " | " .. tostring(k) .. "()")
+		end
+	end
+	
+	
 	MenuCallbackHandler.callback_ach_main_close = function(self)
 	end
 	
@@ -6194,8 +6210,7 @@ function AdvancedCrosshair.clbk_missing_colorpicker_prompt()
 end
 
 
-
-
+AdvancedCrosshair:log("menumanager.lua loading complete")
 
 --MenuLobbyRenderer
 --MenuKitRenderer
@@ -6217,9 +6232,6 @@ function MenuPauseRenderer:set_bg_area(area, ...)
         return self:orig_set_bg_area(area,...)
     end
 end
-
-
-
 
 AdvancedCrosshair:Init()
 AdvancedCrosshair:Load()
