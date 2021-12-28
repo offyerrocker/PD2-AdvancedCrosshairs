@@ -1559,6 +1559,7 @@ function AdvancedCrosshair:CanCheckMeleeHeadshots()
 end
 
 function AdvancedCrosshair:CheckCreateAddonFolder()
+	self:log("CheckCreateAddonFolder()")
 	--make addons folders
 	local file_util = _G.FileIO
 	local addons_path_saves = AdvancedCrosshair.save_path .. "ACH Addons/"
@@ -1580,6 +1581,7 @@ function AdvancedCrosshair:CheckCreateAddonFolder()
 			end
 		end
 	end
+	self:log("CheckCreateAddonFolder() complete")
 end
 
 function AdvancedCrosshair:SortAddons(reference_table,organization)
@@ -2266,17 +2268,26 @@ end
 	--**********************--
 --these should only run once, when the player spawns
 function AdvancedCrosshair:Init()
+	self:log("Init()...")
 	BeardLib:AddUpdater("advancedcrosshairs_update",callback(AdvancedCrosshair,AdvancedCrosshair,"Update"),true)
 --	managers.hud:remove_updator("advancedcrosshairs_update")
 --	managers.hud:add_updator("advancedcrosshairs_update",callback(AdvancedCrosshair,AdvancedCrosshair,"Update"))
 --	managers.hud:add_updator("advc_create_hud_delayed",callback(AdvancedCrosshair,AdvancedCrosshair,"CreateHUD"))
 	BeardLib:AddUpdater("advc_create_hud_delayed",callback(AdvancedCrosshair,AdvancedCrosshair,"CreateHUD"))
 	if blt.xaudio then
+		self:log("Setting up blt xaudio...")
         blt.xaudio.setup()
+		self:log("sblt xaudio setup complete")
+	else
+		self:log("sblt xaudio does not exist")
 	end
+	
+	self:log("Checking os.date()")
 	if os.date("%d/%m") == "1/4" then 
+		self:log("April Fool's!")
 		self._cache.HITMARKER_RAIN_ENABLED = true
 	end
+	 self:log("Init done")
 end
 
 function AdvancedCrosshair:OnPlayerManagerOnEnterCustody(player_unit)
@@ -3471,6 +3482,7 @@ function AdvancedCrosshair:Save()
 end
 
 function AdvancedCrosshair:Load()
+	self:log("Loading settings from file")
 	local file = io.open(self.save_data_path, "r")
 	local prev_version = 1
 	local new_version = self.default_settings.ach_save_version
@@ -3485,6 +3497,7 @@ function AdvancedCrosshair:Load()
 	else
 		self:Save()
 	end
+	self:log("Settings loaded.")
 end
 
 --if i ever need to make changes to ACH save data, here is where i'll do it
@@ -3541,6 +3554,8 @@ end)
 
 Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus", function(menu_manager, nodes)
 
+	AdvancedCrosshair:log("MenuManagerPopulateCustomMenus begin")
+	
 	AdvancedCrosshair:log("Loading addons...")
 	AdvancedCrosshair:LoadAllAddons() --load custom crosshairs, hitmarkers, and hitsounds
 
@@ -3654,7 +3669,9 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 --		hs_i = hs_i + 1
 	end
 	
---hitmarker menus	
+	AdvancedCrosshair:log("Populating hitmarker menus...")
+	
+--hitmarker menus
 	MenuHelper:AddToggle({
 		id = "ach_hitmarkers_master_enable",
 		title = "menu_ach_hitmarkers_master_enable_title",
@@ -3999,6 +4016,8 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 	
 	--define open preview clbk (not specific to any submenu; shown on interacting with any firemode menu option)
 	
+	AdvancedCrosshair:log("Populating customization_menus...")
+	
 	for cat_menu_name,cat_menu_data in pairs(AdvancedCrosshair.customization_menus) do 
 		local i = 1 --?
 		local category = cat_menu_data.category_name
@@ -4233,6 +4252,8 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		end
 	end
 	
+	AdvancedCrosshair:log("Populating crosshair menus...")
+	
 	MenuHelper:AddMultipleChoice({
 		id = "id_ach_menu_crosshairs_categories_global_type",
 		title = "menu_ach_set_bitmap_title",
@@ -4317,6 +4338,8 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		priority = 1
 	})
 	
+	
+	AdvancedCrosshair:log("Populating general crosshair menu...")
 	
 	MenuHelper:AddDivider({
 		id = "ach_crosshairs_general_divider_1",
@@ -4405,6 +4428,8 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 	
 	
 	--hitsounds	
+	
+	AdvancedCrosshair:log("Populating hitsound menus...")
 	
 	MenuHelper:AddToggle({
 		id = "ach_hitsounds_master_enable",
@@ -4717,9 +4742,14 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		menu_id = AdvancedCrosshair.hitsounds_menu_id,
 		priority = 1
 	})
+	
+	AdvancedCrosshair:log("MenuManagerPopulateCustomMenus complete")
 end)
 
 Hooks:Add("MenuManagerBuildCustomMenus", "ach_MenuManagerBuildCustomMenus", function( menu_manager, nodes )
+
+	AdvancedCrosshair:log("MenuManagerBuildCustomMenus begin")
+	
 	local crosshairs_menu = MenuHelper:GetMenu(AdvancedCrosshair.crosshairs_menu_id)
 	nodes[AdvancedCrosshair.main_menu_id] = MenuHelper:BuildMenu(
 		AdvancedCrosshair.main_menu_id,{
@@ -4736,6 +4766,8 @@ Hooks:Add("MenuManagerBuildCustomMenus", "ach_MenuManagerBuildCustomMenus", func
 			focus_changed_callback = "callback_ach_crosshairs_categories_global_focus"
 		}
 	)
+	
+	AdvancedCrosshair:log("Building customization menu...")
 	
 	MenuHelper:AddMenuItem(crosshairs_menu,AdvancedCrosshair.crosshairs_categories_global_id,"menu_ach_crosshairs_global_menu_title","menu_ach_crosshairs_global_menu_desc",2)
 	MenuHelper:AddMenuItem(crosshairs_menu,AdvancedCrosshair.crosshairs_categories_submenu_id,"menu_ach_crosshairs_categories_menu_title","menu_ach_crosshairs_categories_menu_desc",1)
@@ -4791,9 +4823,12 @@ Hooks:Add("MenuManagerBuildCustomMenus", "ach_MenuManagerBuildCustomMenus", func
 			focus_changed_callback = "callback_ach_crosshairs_categories_focus"
 		}
 	)
+	
+	AdvancedCrosshair:log("MenuManagerBuildCustomMenus complete")
 end)
 
 Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
+	AdvancedCrosshair:log("MenuManagerInitialize begin")
 	MenuCallbackHandler.callback_ach_main_close = function(self)
 	end
 	
@@ -5892,6 +5927,9 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 	MenuHelper:LoadFromJsonFile(AdvancedCrosshair.path .. "menu/menu_compat.json", AdvancedCrosshair, AdvancedCrosshair.settings)
 	MenuHelper:LoadFromJsonFile(AdvancedCrosshair.path .. "menu/menu_misc.json", AdvancedCrosshair, AdvancedCrosshair.settings)
 	MenuHelper:LoadFromJsonFile(AdvancedCrosshair.path .. "menu/menu_reset.json", AdvancedCrosshair, AdvancedCrosshair.settings)
+	
+	
+	AdvancedCrosshair:log("MenuManagerInitialize complete")
 end)
 
 
