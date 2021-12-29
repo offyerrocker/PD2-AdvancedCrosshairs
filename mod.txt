@@ -7,34 +7,34 @@
 	"blt_version" : 2,
 	"priority" : 7,
 	"color" : "0 128 255",
-	"image" : "icon.png",
+	"DISABLED_image" : "icon.png",
 	"hooks" : [
 		{
 			"hook_id" : "lib/managers/menumanager",
 			"script_path" : "lua/menumanager.lua"
 		},
 		{
-			"hook_id" : "lib/managers/playermanager",
+			"DISABLED_hook_id" : "lib/managers/playermanager",
 			"script_path" : "lua/playermanager.lua"
 		},
 		{
-			"hook_id" : "lib/managers/hud/hudhitconfirm",
+			"DISABLED_hook_id" : "lib/managers/hud/hudhitconfirm",
 			"script_path" : "lua/hudhitconfirm.lua"
 		},
 		{
-			"hook_id" : "lib/units/beings/player/states/playerstandard",
+			"DISABLED_hook_id" : "lib/units/beings/player/states/playerstandard",
 			"script_path" : "lua/playerstandard.lua"
 		},
 		{
-			"hook_id" : "lib/units/beings/player/states/playermovementstate",
+			"DISABLED_hook_id" : "lib/units/beings/player/states/playermovementstate",
 			"script_path" : "lua/playermovementstate.lua"
 		},
 		{
-			"hook_id" : "lib/units/weapons/newraycastweaponbase",
+			"DISABLED_hook_id" : "lib/units/weapons/newraycastweaponbase",
 			"script_path" : "lua/newraycastweaponbase.lua"
 		},
 		{
-			"hook_id" : "lib/units/enemies/cop/copdamage",
+			"DISABLED_hook_id" : "lib/units/enemies/cop/copdamage",
 			"script_path" : "lua/copdamage.lua"
 		}
 	]
