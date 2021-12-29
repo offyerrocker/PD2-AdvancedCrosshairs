@@ -61,7 +61,7 @@ local mvector3_y = mvector3.y
 		--init mod data
 --************************************************--
 _G.AdvancedCrosshair = {}
-AdvancedCrosshair._animate_targets = {}
+--AdvancedCrosshair._animate_targets = {}
 AdvancedCrosshair._panel = nil
 AdvancedCrosshair._hitmarker_panel = nil
 AdvancedCrosshair._crosshair_panel = nil
@@ -96,10 +96,10 @@ AdvancedCrosshair.OUTOFRANGE_DISPLAY_MODES = {
 	}
 }
 --todo menu options for these
-AdvancedCrosshair.OUTOFRANGE_CROSSHAIR_SCALE = 2/3
-AdvancedCrosshair.OUTOFRANGE_HITMARKER_SCALE = 2/3
-AdvancedCrosshair.OUTOFRANGE_CROSSHAIR_ALPHA = 1/3
-AdvancedCrosshair.OUTOFRANGE_HITMARKER_ALPHA = 1/3
+AdvancedCrosshair.OUTOFRANGE_CROSSHAIR_SCALE = 0.66
+AdvancedCrosshair.OUTOFRANGE_HITMARKER_SCALE = 0.66
+AdvancedCrosshair.OUTOFRANGE_CROSSHAIR_ALPHA = 0.33
+AdvancedCrosshair.OUTOFRANGE_HITMARKER_ALPHA = 0.33
 AdvancedCrosshair.OUTOFRANGE_CROSSHAIR_COLOR = Color(0.3,0.3,0.3)
 AdvancedCrosshair.OUTOFRANGE_HITMARKER_COLOR = Color(0.3,0.3,0.3)
 
