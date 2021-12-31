@@ -14,27 +14,27 @@
 			"script_path" : "lua/menumanager.lua"
 		},
 		{
-			"DISABLED_hook_id" : "lib/managers/playermanager",
+			"hook_id" : "lib/managers/playermanager",
 			"script_path" : "lua/playermanager.lua"
 		},
 		{
-			"DISABLED_hook_id" : "lib/managers/hud/hudhitconfirm",
+			"hook_id" : "lib/managers/hud/hudhitconfirm",
 			"script_path" : "lua/hudhitconfirm.lua"
 		},
 		{
-			"DISABLED_hook_id" : "lib/units/beings/player/states/playerstandard",
+			"hook_id" : "lib/units/beings/player/states/playerstandard",
 			"script_path" : "lua/playerstandard.lua"
 		},
 		{
-			"DISABLED_hook_id" : "lib/units/beings/player/states/playermovementstate",
+			"hook_id" : "lib/units/beings/player/states/playermovementstate",
 			"script_path" : "lua/playermovementstate.lua"
 		},
 		{
-			"DISABLED_hook_id" : "lib/units/weapons/newraycastweaponbase",
+			"hook_id" : "lib/units/weapons/newraycastweaponbase",
 			"script_path" : "lua/newraycastweaponbase.lua"
 		},
 		{
-			"DISABLED_hook_id" : "lib/units/enemies/cop/copdamage",
+			"hook_id" : "lib/units/enemies/cop/copdamage",
 			"script_path" : "lua/copdamage.lua"
 		}
 	]

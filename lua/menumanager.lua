@@ -2304,8 +2304,8 @@ end
 --these should only run once, when the player spawns
 function AdvancedCrosshair:Init()
 	self:log("Init()...")
---	BeardLib:AddUpdater("advancedcrosshairs_update",callback(AdvancedCrosshair,AdvancedCrosshair,"Update"),true)
---	BeardLib:AddUpdater("advc_create_hud_delayed",callback(AdvancedCrosshair,AdvancedCrosshair,"CreateHUD"))
+	BeardLib:AddUpdater("advancedcrosshairs_update",callback(AdvancedCrosshair,AdvancedCrosshair,"Update"),true)
+	BeardLib:AddUpdater("advc_create_hud_delayed",callback(AdvancedCrosshair,AdvancedCrosshair,"CreateHUD"))
 	if blt.xaudio then
 		self:log("Setting up blt xaudio...")
         blt.xaudio.setup()
@@ -2314,7 +2314,7 @@ function AdvancedCrosshair:Init()
 		self:log("sblt xaudio does not exist")
 	end
 	
---	self:log("Checking os.date()")
+	self:log("Checking os.date()")
 	local d -- = os.date("%d/%m")
 	if d == "1/4" then 
 		self:log("April Fool's!")
@@ -2335,18 +2335,32 @@ function AdvancedCrosshair:CreateHUD(t,dt) --try to create hud each run until bo
 
 	AdvancedCrosshair:log("Executing " .. "CreateHUD" .. "()")
 --...it's not ideal.
-	local hud = managers.hud and managers.hud:script(PlayerBase.PLAYER_INFO_HUD_FULLSCREEN_PD2) --managers.hud._hud_hit_confirm and managers.hud._hud_hit_confirm._hud_panel
-	if managers.player and alive(managers.player:local_player()) and hud and hud.panel then 
-	
-		if self:UseCompatibilityAutoDetection() then
-			self:CheckCompatibilityIssues()
+--	local hud = managers.hud and managers.hud:script(PlayerBase.PLAYER_INFO_HUD_FULLSCREEN_PD2) --managers.hud._hud_hit_confirm and managers.hud._hud_hit_confirm._hud_panel
+	if managers.player and alive(managers.player:local_player()) and managers.gui_data then 
+		AdvancedCrosshair:log("Creating custom ACH fullscreen workspace")
+		local ws = self._ws or managers.gui_data:create_fullscreen_workspace()
+		AdvancedCrosshair:log("Getting main child panel")
+		local panel = ws and ws:panel()
+		self._ws_child_panel = panel
+		self._ws = ws or self._ws
+		if alive(panel) then 
+			AdvancedCrosshair:log("Checking Compatibility autodetection")
+			if self:UseCompatibilityAutoDetection() then
+				AdvancedCrosshair:log("Compatibility autodetection enabled")
+				self:CheckCompatibilityIssues()
+			end
+			AdvancedCrosshair:log("Applying Compatibility Fixes")
+			self:ApplyCompatibilityFixes()
+			
+			BeardLib:RemoveUpdater("advc_create_hud_delayed")
+	--			managers.hud:add_updator("advancedcrosshairs_update",callback(AdvancedCrosshair,AdvancedCrosshair,"Update"))
+			AdvancedCrosshair:log("Creating crosshair panel")
+			self:CreateCrosshairPanel(panel)
+			AdvancedCrosshair:log("Creating crosshairs")
+			self:CreateCrosshairs()
+			
+			AdvancedCrosshair:log("CreateHUD() done")
 		end
-		self:ApplyCompatibilityFixes()
-		
-		BeardLib:RemoveUpdater("advc_create_hud_delayed")
---		managers.hud:add_updator("advancedcrosshairs_update",callback(AdvancedCrosshair,AdvancedCrosshair,"Update"))
-		self:CreateCrosshairPanel(hud.panel)
-		self:CreateCrosshairs()
 	end
 end
 
@@ -3309,7 +3323,7 @@ function AdvancedCrosshair:Update(t,dt)
 		local viewport_cam_pos = managers.viewport:get_current_camera_position()
 		local viewport_cam_rot = managers.viewport:get_current_camera_rotation()
 		local viewport_cam_fwd = viewport_cam_rot:y()
-		local ws = managers.hud._workspace
+		local ws = self._ws --or managers.hud._workspace
 		
 		local weapon_unit = player:inventory():equipped_unit()
 		if not weapon_unit then 
