@@ -3,7 +3,7 @@
 	"description" : "This isn't your average everyday crosshair!",
 	"author" : "Offyerrocker",
 	"contact" : "Discord: Offyerrocker#3878",
-	"version" : "19",
+	"version" : "20",
 	"blt_version" : 2,
 	"priority" : 7,
 	"color" : "0 128 255",
