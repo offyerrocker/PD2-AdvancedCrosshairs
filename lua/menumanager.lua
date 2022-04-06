@@ -3520,8 +3520,9 @@ Hooks:Add("MenuManagerSetupCustomMenus", "ach_MenuManagerSetupCustomMenus", func
 	MenuHelper:NewMenu(AdvancedCrosshair.main_menu_id)
 	MenuHelper:NewMenu(AdvancedCrosshair.crosshairs_menu_id)
 	MenuHelper:NewMenu(AdvancedCrosshair.hitmarkers_menu_id)
-	MenuHelper:NewMenu(AdvancedCrosshair.compat_menu_id)
-	MenuHelper:NewMenu(AdvancedCrosshair.misc_menu_id)
+	MenuHelper:NewMenu(AdvancedCrosshair.hitsounds_menu_id)
+--	MenuHelper:NewMenu(AdvancedCrosshair.compat_menu_id)
+--	MenuHelper:NewMenu(AdvancedCrosshair.misc_menu_id)
 	MenuHelper:NewMenu(AdvancedCrosshair.crosshairs_categories_submenu_id)
 	MenuHelper:NewMenu(AdvancedCrosshair.crosshairs_categories_global_id)
 	for _,cat in ipairs(AdvancedCrosshair.VALID_WEAPON_CATEGORIES) do 
@@ -4401,7 +4402,23 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		menu_id = AdvancedCrosshair.crosshairs_menu_id,
 		priority = 1
 	})
-	
+		
+	--all custom keybinds, except for those specified in a mod.txt, or those whose parent menus are a direct child of the blt mod options menu, will cause a crash when binding the key (reason unknown)
+	--the calback does not seem to activate even when defined in the ach main menu
+	--so this keybind will be defined in mod.txt until this issue is fixed
+	--[[
+	MenuHelper:AddKeybinding({
+		id = "ach_crosshairs_toggle_crosshair_visibility",
+		title = "menu_ach_toggle_crosshair_visibility_title",
+		desc = "menu_ach_toggle_crosshair_visibility_desc",
+		callback = "callback_ach_toggle_crosshair_visibility",
+		connection_name = "ach_keybind_toggle_crosshair",
+		binding = "num *",
+		button = "num *",
+		menu_id = AdvancedCrosshair.hitsounds_menu_id
+		priority = 1
+	})
+	--]]
 	
 	
 	--hitsounds	
@@ -4721,13 +4738,48 @@ end)
 
 Hooks:Add("MenuManagerBuildCustomMenus", "ach_MenuManagerBuildCustomMenus", function( menu_manager, nodes )
 	local crosshairs_menu = MenuHelper:GetMenu(AdvancedCrosshair.crosshairs_menu_id)
-	nodes[AdvancedCrosshair.main_menu_id] = MenuHelper:BuildMenu(
+	
+	--create main menu
+	local ach_main_menu = MenuHelper:BuildMenu(
 		AdvancedCrosshair.main_menu_id,{
 			area_bg = "none",
 			back_callback = "callback_ach_main_close",
 			focus_changed_callback = "callback_ach_main_focus"
 		}
 	)
+	nodes[AdvancedCrosshair.main_menu_id] = ach_main_menu
+	MenuHelper:AddMenuItem(nodes.blt_options,AdvancedCrosshair.main_menu_id,"menu_ach_menu_main_title","menu_ach_menu_main_desc")
+	
+	--create crosshairs menu
+	nodes[AdvancedCrosshair.crosshairs_menu_id] = MenuHelper:BuildMenu(
+		AdvancedCrosshair.crosshairs_menu_id,{
+			area_bg = "none",
+			back_callback = "callback_ach_crosshairs_close",
+			focus_changed_callback = "callback_ach_crosshairs_focus"
+		}
+	)
+	MenuHelper:AddMenuItem(ach_main_menu,AdvancedCrosshair.crosshairs_menu_id,"menu_ach_crosshairs_menu_title","menu_ach_crosshairs_menu_desc")
+	
+	--create hitmarkers menu
+	nodes[AdvancedCrosshair.hitmarkers_menu_id] = MenuHelper:BuildMenu(
+		AdvancedCrosshair.hitmarkers_menu_id,{
+			area_bg = "none",
+			back_callback = "callback_ach_hitmarkers_close",
+			focus_changed_callback = "callback_ach_hitmarkers_focus"
+		}
+	)
+	MenuHelper:AddMenuItem(ach_main_menu,AdvancedCrosshair.hitmarkers_menu_id,"menu_ach_hitmarkers_menu_title","menu_ach_hitmarkers_menu_desc")
+	
+	--create hitsounds menu
+	nodes[AdvancedCrosshair.hitsounds_menu_id] = MenuHelper:BuildMenu(
+		AdvancedCrosshair.hitsounds_menu_id,{
+			area_bg = "none",
+			back_callback = "callback_ach_hitsounds_close",
+			focus_changed_callback = "callback_ach_hitsounds_focus"
+		}
+	)
+	MenuHelper:AddMenuItem(ach_main_menu,AdvancedCrosshair.hitsounds_menu_id,"menu_ach_hitsounds_menu_title","menu_ach_hitsounds_menu_desc")
+	
 	
 	nodes[AdvancedCrosshair.crosshairs_categories_global_id] = MenuHelper:BuildMenu(AdvancedCrosshair.crosshairs_categories_global_id,
 		{
@@ -4736,9 +4788,18 @@ Hooks:Add("MenuManagerBuildCustomMenus", "ach_MenuManagerBuildCustomMenus", func
 			focus_changed_callback = "callback_ach_crosshairs_categories_global_focus"
 		}
 	)
-	
 	MenuHelper:AddMenuItem(crosshairs_menu,AdvancedCrosshair.crosshairs_categories_global_id,"menu_ach_crosshairs_global_menu_title","menu_ach_crosshairs_global_menu_desc",2)
+	
+	
+	nodes[AdvancedCrosshair.crosshairs_categories_submenu_id] = MenuHelper:BuildMenu(AdvancedCrosshair.crosshairs_categories_submenu_id,
+		{
+			area_bg = "none",
+			back_callback = MenuCallbackHandler.callback_ach_crosshairs_categories_close,
+			focus_changed_callback = "callback_ach_crosshairs_categories_focus"
+		}
+	)
 	MenuHelper:AddMenuItem(crosshairs_menu,AdvancedCrosshair.crosshairs_categories_submenu_id,"menu_ach_crosshairs_categories_menu_title","menu_ach_crosshairs_categories_menu_desc",1)
+	
 	for cat_menu_name,cat_menu_data in pairs(AdvancedCrosshair.customization_menus) do 
 		local cat_menu = MenuHelper:GetMenu(cat_menu_name)
 		local category = tostring(cat_menu_data.category_name)
@@ -4784,13 +4845,8 @@ Hooks:Add("MenuManagerBuildCustomMenus", "ach_MenuManagerBuildCustomMenus", func
 		)
 		MenuHelper:AddMenuItem(MenuHelper:GetMenu(AdvancedCrosshair.crosshairs_categories_submenu_id),cat_menu_name,cat_name_id,cat_name_desc)
 	end
-	nodes[AdvancedCrosshair.crosshairs_categories_submenu_id] = MenuHelper:BuildMenu(AdvancedCrosshair.crosshairs_categories_submenu_id,
-		{
-			area_bg = "none",
-			back_callback = MenuCallbackHandler.callback_ach_crosshairs_categories_close,
-			focus_changed_callback = "callback_ach_crosshairs_categories_focus"
-		}
-	)
+	
+--	MenuHelper:AddMenuItem(MenuHelper:GetMenu(crosshairs_menu),AdvancedCrosshair.crosshairs_categories_submenu_id,title,desc]
 end)
 
 Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
@@ -4831,6 +4887,15 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 		AdvancedCrosshair.settings.crosshair_enabled = state
 		if alive (AdvancedCrosshair._crosshair_panel) then 
 			AdvancedCrosshair._crosshair_panel:set_visible(state)
+		end
+		AdvancedCrosshair:Save()
+	end
+	MenuCallbackHandler.callback_ach_toggle_crosshair_visibility = function(self)
+		local state = not AdvancedCrosshair:IsCrosshairEnabled()
+		AdvancedCrosshair.settings.crosshair_enabled = state
+		if alive (AdvancedCrosshair._crosshair_panel) then 
+			AdvancedCrosshair._crosshair_panel:set_visible(state)
+			AdvancedCrosshair:CheckCrosshair()
 		end
 		AdvancedCrosshair:Save()
 	end
@@ -5885,10 +5950,12 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 		AdvancedCrosshair._colorpicker = AdvancedCrosshair._colorpicker or ColorPicker:new("advancedcrosshairs",{},callback(AdvancedCrosshair,AdvancedCrosshair,"set_colorpicker_menu"))
 	end
 	
+	--[[
 	MenuHelper:LoadFromJsonFile(AdvancedCrosshair.path .. "menu/menu_main.json", AdvancedCrosshair, AdvancedCrosshair.settings)
 	MenuHelper:LoadFromJsonFile(AdvancedCrosshair.path .. "menu/menu_crosshairs.json", AdvancedCrosshair, AdvancedCrosshair.settings)
 	MenuHelper:LoadFromJsonFile(AdvancedCrosshair.path .. "menu/menu_hitmarkers.json", AdvancedCrosshair, AdvancedCrosshair.settings)
 	MenuHelper:LoadFromJsonFile(AdvancedCrosshair.path .. "menu/menu_hitsounds.json", AdvancedCrosshair, AdvancedCrosshair.settings)
+	--]]
 	MenuHelper:LoadFromJsonFile(AdvancedCrosshair.path .. "menu/menu_compat.json", AdvancedCrosshair, AdvancedCrosshair.settings)
 	MenuHelper:LoadFromJsonFile(AdvancedCrosshair.path .. "menu/menu_misc.json", AdvancedCrosshair, AdvancedCrosshair.settings)
 	MenuHelper:LoadFromJsonFile(AdvancedCrosshair.path .. "menu/menu_reset.json", AdvancedCrosshair, AdvancedCrosshair.settings)

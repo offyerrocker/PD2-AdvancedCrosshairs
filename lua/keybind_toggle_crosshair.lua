@@ -1,0 +1,3 @@
+if MenuCallbackHandler then 
+	MenuCallbackHandler:callback_ach_toggle_crosshair_visibility()
+end
