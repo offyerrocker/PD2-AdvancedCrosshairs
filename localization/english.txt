@@ -24,8 +24,8 @@
 	"menu_ach_set_scale_desc" : "Change the size multiplier for your crosshair",
 	"menu_ach_set_bitmap_title" : "Set Image",
 	"menu_ach_set_bitmap_desc" : "Select the bitmap you want to use",
-	"menu_ach_set_hide_on_ads_title" : "ADS Hides Crosshair",
-	"menu_ach_set_hide_on_ads_desc" : "If true, the crosshair will hide when aiming down sights.",
+	"menu_ach_set_ads_behavior_title" : "ADS Behavior",
+	"menu_ach_set_ads_behavior_desc" : "Change how aiming down sights affects crosshairs.",
 	"menu_ach_preview_bloom_title" : "Preview Bloom",
 	"menu_ach_preview_bloom_desc" : "Click to simulate firing reticle bloom",
 	"menu_ach_change_crosshair_weapon_category_desc" : "Edit the crosshair for this weapon category...",
@@ -56,6 +56,11 @@
 	"menu_ach_crosshairs_general_set_dynamic_color_misc_desc" : "Set the crosshair color for miscellaneous teams like Gangsters",
 	"menu_ach_toggle_crosshair_visibility_title" : "Keybind: Toggle Crosshair",
 	"menu_ach_toggle_crosshair_visibility_desc" : "Assign a key to enable/disable the crosshair functionality and visibility.",
+	
+	"menu_ach_crosshair_ads_behavior_none" : "No effect",
+	"menu_ach_crosshair_ads_behavior_hide" : "Hide when ADS",
+	"menu_ach_crosshair_ads_behavior_show" : "Only show when ADS",
+	
 	
 	
 	"menu_ach_hitmarkers_master_enable_title" : "Enable Hitmarkers",
@@ -164,7 +169,6 @@
 	"menu_ach_limit_hard" : "Hard Cap",
 	"menu_ach_limit_replace" : "Replace Oldest",
 	"menu_ach_limit_unlimited" : "No Cap",
-	
 	
 	
 	"menu_ach_menu_compat_title" : "Compatibility...",

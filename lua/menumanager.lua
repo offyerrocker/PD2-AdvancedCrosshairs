@@ -157,7 +157,8 @@ AdvancedCrosshair.DEFAULT_CROSSHAIR_OPTIONS = {
 	color = "ffffff",
 	alpha = 1,
 	overrides_global = false,
-	hide_on_ads = false, --since this was added post-1.0, be aware that this value can be nil in some users' settings
+	--hide_on_ads = false, --added in v2, deprecated in v21
+	ads_behavior = 1, --1: no special behavior. 2: hide on ads. 3: only show on ads. added in v21
 	scale = 1
 }
 AdvancedCrosshair.DEFAULT_HITMARKER_OPTIONS = {
@@ -177,7 +178,16 @@ AdvancedCrosshair.auto_compatibility_settings = {}
 --init default settings values
 --these are later overwritten by values read from save data, if present
 AdvancedCrosshair.default_settings = {
-	ach_save_version = 1, --this is the save version, not to be confused with the mod version. this is here to identify which save version the mod was created with
+	ach_save_version = 2, 
+	--[[
+		this is the save version, not to be confused with the mod version. this is here to identify which save version the mod was created with/
+			[version lookup]
+			ACH version	range	:	save version
+						<19		: 	nil (0)
+						19-20	:	1
+						21		:	2
+						
+	--]]
 	logs_enabled = false,
 	crosshair_enabled = true,
 	hitmarker_enabled = true,
@@ -192,7 +202,7 @@ AdvancedCrosshair.default_settings = {
 	compatibility_hook_newraycastweaponbase_togglefiremode = false,
 	compatibility_hook_newraycastweaponbase_resetcachedgadget = false,
 	can_check_melee_headshots = false,
-	allow_messages = 1, --1: yes; 2: yes but no compatibility messages; 3: do not. none. never. get out of my house. die.
+	allow_messages = 1, -- (unused) 1: yes; 2: yes but no compatibility messages; 3: do not. none. never. get out of my house. die.
 	palettes = { --for colorpicker
 		"ff0000",
 		"ffff00",
@@ -3101,6 +3111,7 @@ function AdvancedCrosshair:CheckCrosshair(override_params)
 		
 		local current_state = override_params.current_state or player:movement():current_state()
 		local state_name = override_params.state_name or player:movement():current_state_name()
+		local is_in_steelsight = current_state:in_steelsight() 
 		
 		local inventory = player:inventory()
 		local equipped_index = inventory:equipped_selection()
@@ -3142,8 +3153,10 @@ function AdvancedCrosshair:CheckCrosshair(override_params)
 				self._cache.current_crosshair_data = new_current_data
 				
 			end
-			
-			if self._cache.current_crosshair_data.settings.hide_on_ads and current_state:in_steelsight() then 
+			local ads_behavior = self._cache.current_crosshair_data.settings.ads_behavior
+			if ads_behavior == 2 and is_in_steelsight then 
+				hidden = true
+			elseif ads_behavior == 3 and not is_in_steelsight then
 				hidden = true
 			end
 --			hidden = hidden or current_state:_is_reloading() or current_state:_changing_weapon() or current_state:_is_meleeing() or current_state._use_item_expire_t or current_state:_interacting() or current_state:_is_throwing_projectile() or current_state:_is_deploying_bipod() or current_state._menu_closed_fire_cooldown > 0 or current_state:is_switching_stances()
@@ -3472,27 +3485,57 @@ end
 
 function AdvancedCrosshair:Load()
 	local file = io.open(self.save_data_path, "r")
-	local prev_version = 1
+	local prev_version = 0
 	local new_version = self.default_settings.ach_save_version
 	if file then
 		local settings_from_file = json.decode(file:read("*all"))
 		prev_version = settings_from_file.ach_save_version or prev_version
+		
+		self:CheckSaveDataForDeprecatedValues(prev_version,new_version,settings_from_file)
+		
 		for k, v in pairs(settings_from_file) do
 			self.settings[k] = v
 		end
 		
---		self:CheckSaveDataForDeprecatedValues(prev_version,new_version)
 	else
 		self:Save()
 	end
 end
 
 --if i ever need to make changes to ACH save data, here is where i'll do it
-function AdvancedCrosshair:CheckSaveDataForDeprecatedValues(prev_version,new_version)
+function AdvancedCrosshair:CheckSaveDataForDeprecatedValues(prev_version,new_version,save_data)
+
+	--version-to-version specific changes are also possible
 	if prev_version ~= new_version then 
-		--do changes here
-		--self:Save()
+	
+		--transfer "hide on ads" settings for users with save data pre-v21
+		if save_data.crosshairs then 
+			for category,category_data in pairs(save_data.crosshairs) do
+				for firemode,firemode_data in pairs(category_data) do 
+					local hide_on_ads = firemode_data.hide_on_ads
+					if hide_on_ads then 
+						firemode_data.hide_on_ads = nil
+						firemode_data.ads_behavior = 2 --hide when ads
+					else
+						firemode_data.ads_behavior = 1 --no special ads behavior
+					end
+				end
+			end
+		end
+		local global_crosshair_data = save_data.crosshair_global
+		if global_crosshair_data then 
+			local hide_on_ads = global_crosshair_data.hide_on_ads
+			if hide_on_ads then 
+				global_crosshair_data.hide_on_ads = nil
+				global_crosshair_data.ads_behavior = 2 --hide when ads
+			else
+				global_crosshair_data.ads_behavior = 1 --no special ads behavior
+			end
+		end
+		
+		
 	end
+	
 end
 
 --************************************************--
@@ -4108,10 +4151,10 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 				AdvancedCrosshair:Save()
 			end
 			
-			--set hide on ads
-			local set_hide_on_ads_callback_name = firemode_menu_name .. "_set_hide_on_ads"
-			MenuCallbackHandler[set_hide_on_ads_callback_name] = function(self,item)
-				crosshair_setting.hide_on_ads = item:value() == "on"
+			--set ads behavior
+			local set_ads_behavior_callback_name = firemode_menu_name .. "_set_ads_behavior"
+			MenuCallbackHandler[set_ads_behavior_callback_name] = function(self,item)
+				crosshair_setting.ads_behavior = tonumber(item:value())
 				AdvancedCrosshair:Save()
 			end
 			
@@ -4198,12 +4241,17 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 				priority = 5
 			})
 			
-			MenuHelper:AddToggle({
-				id = "id_" .. set_hide_on_ads_callback_name,
-				title = "menu_ach_set_hide_on_ads_title",
-				desc = "menu_ach_set_hide_on_ads_desc",
-				callback = set_hide_on_ads_callback_name,
-				value = crosshair_setting.hide_on_ads,
+			MenuHelper:AddMultipleChoice({
+				id = "id_" .. set_ads_behavior_callback_name,
+				title = "menu_ach_set_ads_behavior_title",
+				desc = "menu_ach_set_ads_behavior_desc",
+				callback = set_ads_behavior_callback_name,
+				items = {
+					"menu_ach_crosshair_ads_behavior_none",
+					"menu_ach_crosshair_ads_behavior_hide",
+					"menu_ach_crosshair_ads_behavior_show"
+				},
+				value = crosshair_setting.ads_behavior,
 				menu_id = firemode_menu_name,
 				priority = 4
 			})
@@ -4292,12 +4340,17 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		priority = 4
 	})
 
-	MenuHelper:AddToggle({
-		id = "id_ach_menu_crosshairs_categories_global_set_ads_hides_crosshair",
-		title = "menu_ach_set_hide_on_ads_title",
-		desc = "menu_ach_set_hide_on_ads_desc",
-		callback = "callback_ach_crosshairs_categories_global_ads_hides_crosshair",
-		value = AdvancedCrosshair.settings.crosshair_global.hide_on_ads,
+	MenuHelper:AddMultipleChoice({
+		id = "id_ach_menu_crosshairs_categories_global_set_ads_behavior",
+		title = "menu_ach_set_ads_behavior_title",
+		desc = "menu_ach_set_ads_behavior_desc",
+		callback = "callback_ach_crosshairs_categories_global_ads_behavior",
+		items = {
+			"menu_ach_crosshair_ads_behavior_none",
+			"menu_ach_crosshair_ads_behavior_hide",
+			"menu_ach_crosshair_ads_behavior_show"
+		},
+		value = AdvancedCrosshair.settings.crosshair_global.ads_behavior,
 		menu_id = AdvancedCrosshair.crosshairs_categories_global_id,
 		priority = 3
 	})
@@ -5065,8 +5118,9 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 			AdvancedCrosshair.clbk_missing_colorpicker_prompt()
 		end	
 	end
-	MenuCallbackHandler.callback_ach_crosshairs_categories_global_ads_hides_crosshair = function(self,item)
-		AdvancedCrosshair.settings.crosshair_global.hide_on_ads = item:value() == "on"
+	MenuCallbackHandler.callback_ach_crosshairs_categories_global_ads_behavior = function(self,item)
+		local value = tonumber(item:value())
+		AdvancedCrosshair.settings.crosshair_global.ads_behavior = value
 		AdvancedCrosshair:Save()
 	end
 	
