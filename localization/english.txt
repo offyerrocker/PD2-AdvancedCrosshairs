@@ -180,7 +180,7 @@
 	"menu_ach_menu_compat_compatibility_playerstandard_startactionequipweapon_title" : "PlayerStandard: equip weapon",
 	"menu_ach_menu_compat_compatibility_playerstandard_startactionequipweapon_desc" : "Fixes potential issues with detecting switching weapontype-specific crosshairs.",
 	"menu_ach_menu_compat_compatibility_playerstandard_onsteelsight_title" : "PlayerStandard: start/stop steelsight",
-	"menu_ach_menu_compat_compatibility_playerstandard_onsteelsight_desc" : "Fixes potential compatibility issues with the \"Hide Crosshairs on ADS\" option.",
+	"menu_ach_menu_compat_compatibility_playerstandard_onsteelsight_desc" : "Fixes potential compatibility issues with crosshairs' \"ADS Behavior\" option.",
 	"menu_ach_menu_compat_compatibility_playermovementstate_enter_title" : "PlayerMovementState:enter()",
 	"menu_ach_menu_compat_compatibility_playermovementstate_enter_desc" : "Fixes potential issues with detecting switching crosshairs.",
 	"menu_ach_menu_compat_compatibility_newraycastweaponbase_togglefiremode_title" : "NewRaycastWeaponBase:toggle_firemode()",
