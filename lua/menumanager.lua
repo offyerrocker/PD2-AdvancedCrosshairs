@@ -2473,10 +2473,10 @@ function AdvancedCrosshair:CreateCrosshairByWeapon(unit,weapon_index)
 					visible = false,
 					alpha = crosshair_setting.alpha
 				})
-local _crosshair_data = self._crosshair_data[underbarrel_crosshair_id]
-_crosshair_data = _crosshair_data or self._crosshair_data.pdth_classic
+				local _crosshair_data = self._crosshair_data[underbarrel_crosshair_id]
+				_crosshair_data = _crosshair_data or self._crosshair_data.pdth_classic
 
-				underbarrels_data[tostring(underbarrel)].firemodes[firemode] = { --using a tostring(table) as an index is gross but i gotta
+				underbarrels_data[tostring(underbarrel)].firemodes[firemode] = { --using a table as an index is gross but i gotta
 					underbarrel_index = underbarrel_index,
 					crosshair_id = underbarrel_crosshair_id,
 					base = underbarrel,
@@ -3564,8 +3564,6 @@ Hooks:Add("MenuManagerSetupCustomMenus", "ach_MenuManagerSetupCustomMenus", func
 	MenuHelper:NewMenu(AdvancedCrosshair.crosshairs_menu_id)
 	MenuHelper:NewMenu(AdvancedCrosshair.hitmarkers_menu_id)
 	MenuHelper:NewMenu(AdvancedCrosshair.hitsounds_menu_id)
---	MenuHelper:NewMenu(AdvancedCrosshair.compat_menu_id)
---	MenuHelper:NewMenu(AdvancedCrosshair.misc_menu_id)
 	MenuHelper:NewMenu(AdvancedCrosshair.crosshairs_categories_submenu_id)
 	MenuHelper:NewMenu(AdvancedCrosshair.crosshairs_categories_global_id)
 	for _,cat in ipairs(AdvancedCrosshair.VALID_WEAPON_CATEGORIES) do 
@@ -3630,21 +3628,12 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 	local crosshair_items
 	AdvancedCrosshair.crosshair_id_by_index,crosshair_items = AdvancedCrosshair:SortAddons(AdvancedCrosshair._crosshair_data,"alphabetical")
 	
---	local crosshair_items = {}
---	local i = 1
---	for id,crosshair_data in pairs(AdvancedCrosshair._crosshair_data) do 
---		table.insert(crosshair_items,i,crosshair_data.name_id)
---		table.insert(AdvancedCrosshair.crosshair_id_by_index,i,id)
---		i = i + 1
---	end
-	
 --for hitmarkers:
 	local hitmarker_kill_bitmap_index = 1
 	local hitmarker_hit_bitmap_index = 1
 	local hitmarker_items
 	AdvancedCrosshair.hitmarker_id_by_index,hitmarker_items = AdvancedCrosshair:SortAddons(AdvancedCrosshair._hitmarker_data,"alphabetical")
 	
---	local h_i = 1
 	for h_i,id in ipairs(AdvancedCrosshair.hitmarker_id_by_index) do 
 		if id == AdvancedCrosshair.settings.hitmarker_kill_id then
 			hitmarker_kill_bitmap_index = h_i
@@ -3652,9 +3641,6 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		if id == AdvancedCrosshair.settings.hitmarker_hit_id then 
 			hitmarker_hit_bitmap_index = h_i
 		end
---		table.insert(hitmarker_items,h_i,hitmarker_data.name_id)
---		table.insert(AdvancedCrosshair.hitmarker_id_by_index,h_i,id)
---		h_i = h_i + 1
 	end
 	
 	local hs_i = 1
@@ -3693,9 +3679,6 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		if id == AdvancedCrosshair.settings.hitsound_kill_headshot_crit_id then 
 			hitsound_kill_headshot_crit_index = hs_i
 		end
---		table.insert(hitsound_items,hs_i,hitsound_data.name_id)
---		table.insert(AdvancedCrosshair.hitsound_id_by_index,hs_i,id)
---		hs_i = hs_i + 1
 	end
 	
 --hitmarker menus	
@@ -6004,12 +5987,6 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 		AdvancedCrosshair._colorpicker = AdvancedCrosshair._colorpicker or ColorPicker:new("advancedcrosshairs",{},callback(AdvancedCrosshair,AdvancedCrosshair,"set_colorpicker_menu"))
 	end
 	
-	--[[
-	MenuHelper:LoadFromJsonFile(AdvancedCrosshair.path .. "menu/menu_main.json", AdvancedCrosshair, AdvancedCrosshair.settings)
-	MenuHelper:LoadFromJsonFile(AdvancedCrosshair.path .. "menu/menu_crosshairs.json", AdvancedCrosshair, AdvancedCrosshair.settings)
-	MenuHelper:LoadFromJsonFile(AdvancedCrosshair.path .. "menu/menu_hitmarkers.json", AdvancedCrosshair, AdvancedCrosshair.settings)
-	MenuHelper:LoadFromJsonFile(AdvancedCrosshair.path .. "menu/menu_hitsounds.json", AdvancedCrosshair, AdvancedCrosshair.settings)
-	--]]
 	MenuHelper:LoadFromJsonFile(AdvancedCrosshair.path .. "menu/menu_compat.json", AdvancedCrosshair, AdvancedCrosshair.settings)
 	MenuHelper:LoadFromJsonFile(AdvancedCrosshair.path .. "menu/menu_misc.json", AdvancedCrosshair, AdvancedCrosshair.settings)
 	MenuHelper:LoadFromJsonFile(AdvancedCrosshair.path .. "menu/menu_reset.json", AdvancedCrosshair, AdvancedCrosshair.settings)
