@@ -3533,7 +3533,7 @@ function AdvancedCrosshair:CheckSaveDataForDeprecatedValues(prev_version,new_ver
 			end
 		end
 		
-		
+		save_data.ach_save_version = new_version
 	end
 	
 end
