@@ -271,7 +271,7 @@ AdvancedCrosshair.default_settings = {
 	hitmarker_hit_duration = 0.4,
 	hitmarker_hit_alpha = 1,
 	hitmarker_hit_scale = 1,
-	hitmarker_hit_blend_mode = "normal",
+	hitmarker_hit_blend_mode = 1,
 	hitmarker_hit_bodyshot_color = "ffffff",
 	hitmarker_hit_bodyshot_crit_color = "00ffff",
 	hitmarker_hit_headshot_color = "ff0000",
@@ -280,7 +280,7 @@ AdvancedCrosshair.default_settings = {
 	hitmarker_kill_duration = 0.4,
 	hitmarker_kill_alpha = 1,
 	hitmarker_kill_scale = 1,
-	hitmarker_kill_blend_mode = "normal",
+	hitmarker_kill_blend_mode = 1, --normal
 	hitmarker_kill_bodyshot_color = "ffffff",
 	hitmarker_kill_bodyshot_crit_color = "00ffff",
 	hitmarker_kill_headshot_color = "ff0000",
@@ -2410,7 +2410,7 @@ function AdvancedCrosshair:CreateCrosshairByWeapon(unit,weapon_index)
 	for _,firemode in pairs(self.VALID_WEAPON_FIREMODES) do
 		local crosshair_id = self:GetCrosshairType(weapon_index,weapon_id,weapon_category,firemode,is_revolver,is_akimbo)
 		local crosshair_tweakdata = self._crosshair_data[crosshair_id]
-		local crosshair_setting = self.settings.crosshairs[weapon_category][firemode]
+		local crosshair_setting = weapon_category and self.settings.crosshairs[weapon_category] and self.settings.crosshairs[weapon_category][firemode]
 		if crosshair_setting then 
 			if crosshair_setting.overrides_global then 
 				--crosshair_setting = crosshair_setting --boy i sure hope it do
