@@ -2020,6 +2020,7 @@ function AdvancedCrosshair.hook_NewRaycastWeaponBase_reset_cached_gadget(wpnbase
 	})
 end
 
+--this doesn't need an ApplyCompatibility function since its contents are run manually at the same time as the other ApplyCompatibility functions
 function AdvancedCrosshair:OnPlayerManagerCheckSkills(pm,...)
 	if pm then 
 		pm._message_system:unregister(Message.OnWeaponFired,"advancedcrosshair_OnWeaponFired")
@@ -2290,10 +2291,8 @@ function AdvancedCrosshair:Init()
 end
 
 function AdvancedCrosshair:OnPlayerManagerOnEnterCustody(player_unit)
-	if (player_unit == nil) or (player_unit == managers.player:local_player()) then 
-		AdvancedCrosshair:ClearCache()
-		AdvancedCrosshair:RemoveAllCrosshairs(true)
-	end
+	AdvancedCrosshair:ClearCache()
+	AdvancedCrosshair:RemoveAllCrosshairs(true)
 end
 
 function AdvancedCrosshair:CreateHUD(t,dt) --try to create hud each run until both required elements are initiated.
@@ -2341,6 +2340,7 @@ function AdvancedCrosshair:CreateCrosshairPanel(parent_panel)
 end
 
 function AdvancedCrosshair:CreateCrosshairs()
+	self:RemoveAllCrosshairs(false)
 	local player = managers.player:local_player()
 	local inventory = player:inventory()
 	local equipped_unit = inventory:equipped_unit()
@@ -3435,6 +3435,12 @@ function AdvancedCrosshair:Update(t,dt)
 				
 			end
 		end
+	else
+	--[[
+		if self:IsCrosshairEnabled() then 
+			self:OnPlayerManagerOnEnterCustody()
+		end
+		--]]
 	end
 	self._cache.player_unit = managers.player:local_player()
 end
