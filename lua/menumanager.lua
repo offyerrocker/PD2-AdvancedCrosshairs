@@ -2426,7 +2426,7 @@ function AdvancedCrosshair:CreateCrosshairByWeapon(unit,weapon_index)
 			visible = false,
 			alpha = crosshair_setting.alpha
 		})
-		local parts = self:CreateCrosshair(firemode_panel,crosshair_tweakdata,crosshair_setting.scale)
+		local parts = self:CreateCrosshair(firemode_panel,crosshair_tweakdata,crosshair_setting)
 		firemodes_data[firemode] = {
 			base = weapon_base,
 			crosshair_id = crosshair_id,
@@ -2481,7 +2481,7 @@ function AdvancedCrosshair:CreateCrosshairByWeapon(unit,weapon_index)
 					crosshair_id = underbarrel_crosshair_id,
 					base = underbarrel,
 					panel = underbarrel_firemode_panel,
-					parts = self:CreateCrosshair(underbarrel_firemode_panel,_crosshair_data,crosshair_setting.scale),
+					parts = self:CreateCrosshair(underbarrel_firemode_panel,_crosshair_data,crosshair_setting),
 --					settings = self.DEFAULT_CROSSHAIR_OPTIONS
 					color = Color(crosshair_setting.color),
 					settings = crosshair_setting,
@@ -2499,12 +2499,14 @@ function AdvancedCrosshair:CreateCrosshairByWeapon(unit,weapon_index)
 	}
 end
 
-function AdvancedCrosshair:CreateCrosshair(panel,data,scale_setting)
+function AdvancedCrosshair:CreateCrosshair(panel,data,user_settings)
 	--if data.special_crosshair then 
 	--	do stuff here
 	--end
 	local results = {}
-	local scale_setting = (scale_setting or 1)
+	user_settings = user_settings or {}
+	local scale_setting = (user_settings.scale or 1)
+	local color = data.color or (user_settings.color and Color(user_settings.color))
 	for i,part_data in ipairs(data.parts) do 
 		local scale = scale_setting * (data.scale or 1)
 		local x = (part_data.x or 0) * scale
@@ -2535,7 +2537,7 @@ function AdvancedCrosshair:CreateCrosshair(panel,data,scale_setting)
 			halign = part_data.halign,
 			alpha = part_data.alpha or data.alpha,
 			blend_mode = part_data.blend_mode or data.blend_mode,
-			color = part_data.color or data.color,
+			color = color,
 			render_template = part_data.render_template or data.render_template,
 			layer = (part_data.layer or data.layer or 0)
 		})
@@ -6084,7 +6086,8 @@ function AdvancedCrosshair.clbk_hitmarker_preview(preview_data)
 		if not (panel and alive(panel)) then
 			panel = preview_panel:panel({
 				alpha = (hitmarker_data.alpha or 1) * hitmarker_setting.alpha,
-				name = panel_name
+				name = panel_name,
+				layer = 999
 			})
 		end
 		
@@ -6142,7 +6145,8 @@ function AdvancedCrosshair.clbk_create_crosshair_preview(crosshair_setting)
 			menupanel:remove(menupanel:child("ach_preview"))
 		end
 		local preview_panel = menupanel:panel({
-			name = "ach_preview"
+			name = "ach_preview", 
+			layer = 999
 		})
 		local screenshot_bg = preview_panel:bitmap({
 			name = "screenshot_bg",
@@ -6184,7 +6188,7 @@ function AdvancedCrosshair.clbk_create_crosshair_preview(crosshair_setting)
 		})
 		AdvancedCrosshair.crosshair_preview_data = {
 			panel = preview_panel,
-			parts = AdvancedCrosshair:CreateCrosshair(crosshair_preview_panel,crosshair_data,crosshair_setting.scale),
+			parts = AdvancedCrosshair:CreateCrosshair(crosshair_preview_panel,crosshair_data,crosshair_setting),
 			crosshair_id = crosshair_id,
 			bloom = 0
 		}
