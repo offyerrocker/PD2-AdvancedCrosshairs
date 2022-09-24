@@ -265,6 +265,7 @@
 	"menu_weapon_firemode_single" : "单发模式",
 	"menu_weapon_firemode_auto" : "自动模式",
 	"menu_weapon_firemode_burst" : "三连发模式",
+	"menu_weapon_firemode_volley" : "Volley",
 	
 	"menu_crosshair_pdth_classic" : "经典",
 	"menu_crosshair_none" : "None",

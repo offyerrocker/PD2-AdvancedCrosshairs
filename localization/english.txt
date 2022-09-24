@@ -265,6 +265,7 @@
 	"menu_weapon_firemode_single" : "Single",
 	"menu_weapon_firemode_auto" : "Auto",
 	"menu_weapon_firemode_burst" : "Burst",
+	"menu_weapon_firemode_volley" : "Volley",
 	
 	"menu_crosshair_pdth_classic" : "Classic",
 	"menu_crosshair_none" : "None",

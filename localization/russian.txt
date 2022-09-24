@@ -265,6 +265,7 @@
 	"menu_weapon_firemode_single" : "Одиночные",
 	"menu_weapon_firemode_auto" : "Автоматические",
 	"menu_weapon_firemode_burst" : "Полуавтоматические",
+	"menu_weapon_firemode_volley" : "Volley",
 	
 	"menu_crosshair_pdth_classic" : "Классический",
 	"menu_crosshair_none" : "Никакой",

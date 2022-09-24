@@ -1,6 +1,20 @@
 		--todo list, loosely sorted by descending priority:
 
+--sort firemode menus consistently according to VALID_WEAPON_FIREMODES 
+
+
+-- akimbo crosshair support
+-- override by slot (needs menu options)
+-- override by weapon id (needs menu options)
+
 --migrate the more obscure options to "Advanced Settings" menus
+
+--selection parity for hitmarkers
+
+
+
+--"force check validity" button to manually call CheckSaveDataForDeprecatedValues()
+
 --fadeout for tf2 crit
 
 -- the division crosshairs?
@@ -40,10 +54,6 @@
 -- test burstfire support
 -- hide character + bg menu like how blt mods menu does (and fails to restore after hitting back lol)
 --vehicle crosshair
-
--- akimbo crosshair support
--- override by slot (needs menu options)
--- override by weapon id (needs menu options)
 
 
 
@@ -147,7 +157,8 @@ AdvancedCrosshair.VALID_WEAPON_CATEGORIES = {
 AdvancedCrosshair.VALID_WEAPON_FIREMODES = {
 	"single",
 	"auto",
-	"burst"
+	"burst",
+	"volley"
 }
 --revolver and akimbo are subtypes; akimbo is checked but revolver is ignored
 
@@ -178,14 +189,15 @@ AdvancedCrosshair.auto_compatibility_settings = {}
 --init default settings values
 --these are later overwritten by values read from save data, if present
 AdvancedCrosshair.default_settings = {
-	ach_save_version = 2, 
+	ach_save_version = 3, 
 	--[[
 		this is the save version, not to be confused with the mod version. this is here to identify which save version the mod was created with/
 			[version lookup]
-			ACH version	range	:	save version
-						<19		: 	nil (0)
+			ACH version	range	:	save version (reason for change)
+						<19		: 	nil/0
 						19-20	:	1
-						21		:	2
+						21-25	:	2
+						26-		:	3	(U228, Volley firemode)
 						
 	--]]
 	logs_enabled = false,
@@ -1833,7 +1845,7 @@ function AdvancedCrosshair:ApplyCompatibility_PlayerMovementStateEnter(enabled)
 	if PlayerMovementState then 
 		local orig_enter = PlayerMovementState._ach_orig_enter
 		if not (orig_enter and type(orig_enter) == "function") then 
-			orig_enter = PlayerMovementState.enter
+			orig_enter = Hooks:GetFunction(PlayerMovementState,"enter")
 			PlayerMovementState._ach_orig_enter = orig_enter
 		end
 		
@@ -1853,7 +1865,7 @@ function AdvancedCrosshair:ApplyCompatibility_PlayerStandardStartEquipWeapon(ena
 	if PlayerStandard then 
 		local orig_start_equip = PlayerStandard._ach_orig_start_action_equip_weapon
 		if not (orig_start_equip and type(orig_start_equip) == "function") then 
-			orig_start_equip = PlayerStandard._start_action_equip_weapon
+			orig_start_equip = Hooks:GetFunction(PlayerStandard,"_start_action_equip_weapon")
 			PlayerStandard._ach_orig_start_action_equip_weapon = orig_start_equip
 		end
 		
@@ -1878,7 +1890,7 @@ function AdvancedCrosshair:ApplyCompatibility_CopDamage_DamageMelee(enabled)
 	if CopDamage then 
 		local orig_damage_melee = CopDamage._ach_orig_damage_melee
 		if not (orig_damage_melee and type(orig_damage_melee) == "function") then 
-			orig_damage_melee = CopDamage.damage_melee
+			orig_damage_melee = Hooks:GetFunction(CopDamage,"damage_melee")
 			CopDamage._ach_orig_damage_melee = orig_damage_melee
 		end
 		
@@ -1900,7 +1912,7 @@ function AdvancedCrosshair:ApplyCompatibility_CopDamage_RollCriticalHit(enabled)
 	if CopDamage then 
 		local orig_roll_crit = CopDamage._ach_orig_roll_critical_hit
 		if not (orig_roll_crit and type(orig_roll_crit) == "function") then 
-			orig_roll_crit = CopDamage.roll_critical_hit
+			orig_roll_crit = Hooks:GetFunction(CopDamage,"roll_critical_hit")
 			CopDamage._ach_orig_roll_critical_hit = orig_roll_crit
 		end
 		
@@ -1922,7 +1934,7 @@ function AdvancedCrosshair:ApplyCompatibility_NewRaycastWeaponBaseToggleFiremode
 	if NewRaycastWeaponBase then 
 		local orig_toggle_firemode = NewRaycastWeaponBase._ach_orig_toggle_firemode
 		if not (orig_toggle_firemode and type(orig_toggle_firemode) == "function") then 
-			orig_toggle_firemode = NewRaycastWeaponBase.toggle_firemode
+			orig_toggle_firemode = Hooks:GetFunction(NewRaycastWeaponBase,"toggle_firemode")
 			NewRaycastWeaponBase._ach_orig_toggle_firemode = orig_toggle_firemode
 		end
 		
@@ -1942,7 +1954,7 @@ function AdvancedCrosshair:ApplyCompatibility_NewRaycastWeaponBaseResetCachedGad
 	if NewRaycastWeaponBase then 
 		local orig_reset_cached_gadget = NewRaycastWeaponBase._ach_orig_reset_cached_gadget
 		if not (orig_reset_cached_gadget and type(orig_reset_cached_gadget) == "function") then 
-			orig_reset_cached_gadget = NewRaycastWeaponBase.reset_cached_gadget
+			orig_reset_cached_gadget = Hooks:GetFunction(NewRaycastWeaponBase,"reset_cached_gadget")
 			NewRaycastWeaponBase._ach_orig_reset_cached_gadget = orig_reset_cached_gadget
 		end
 		
@@ -2004,20 +2016,16 @@ function AdvancedCrosshair.hook_NewRaycastWeaponBase_toggle_firemode(wpnbase,ski
 	AdvancedCrosshair:CheckCrosshair()
 end
 
-local ids_auto = Idstring("auto")
-local ids_single = Idstring("single")
 function AdvancedCrosshair.hook_NewRaycastWeaponBase_reset_cached_gadget(wpnbase)
-	local firemode
 	local recorded_firemode = wpnbase:get_recorded_fire_mode()
-	if recorded_firemode == ids_single then 
-		firemode = "single"
-	elseif recorded_firemode == ids_auto then 
-		firemode = "auto"
+	for _,firemode in pairs(AdvancedCrosshair.VALID_WEAPON_FIREMODES) do 
+		if recorded_firemode == Idstring(firemode) then 
+			AdvancedCrosshair:CheckCrosshair({
+				firemode = firemode
+			})
+			break
+		end
 	end
-
-	AdvancedCrosshair:CheckCrosshair({
-		firemode = firemode
-	})
 end
 
 --this doesn't need an ApplyCompatibility function since its contents are run manually at the same time as the other ApplyCompatibility functions
@@ -3516,10 +3524,18 @@ function AdvancedCrosshair:CheckSaveDataForDeprecatedValues(prev_version,new_ver
 	--version-to-version specific changes are also possible
 	if prev_version ~= new_version then 
 	
-		--transfer "hide on ads" settings for users with save data pre-v21
 		if save_data.crosshairs then 
 			for category,category_data in pairs(save_data.crosshairs) do
+				
+				for _,firemode in pairs(self.VALID_WEAPON_FIREMODES) do 
+					--add firemode-specific preferences for any missing firemodes pre-v26 (specifically volley from U228)
+					if not category_data[firemode] then 
+						category_data[firemode] = table.deep_map_copy(self.DEFAULT_CROSSHAIR_OPTIONS)
+					end
+				end
+				
 				for firemode,firemode_data in pairs(category_data) do 
+					--transfer "hide on ads" settings for users with save data pre-v21
 					local hide_on_ads = firemode_data.hide_on_ads
 					if hide_on_ads then 
 						firemode_data.hide_on_ads = nil
@@ -3528,6 +3544,7 @@ function AdvancedCrosshair:CheckSaveDataForDeprecatedValues(prev_version,new_ver
 						firemode_data.ads_behavior = 1 --no special ads behavior
 					end
 				end
+				
 			end
 		end
 		local global_crosshair_data = save_data.crosshair_global
@@ -3540,6 +3557,9 @@ function AdvancedCrosshair:CheckSaveDataForDeprecatedValues(prev_version,new_ver
 				global_crosshair_data.ads_behavior = 1 --no special ads behavior
 			end
 		end
+		
+		
+		
 		
 		save_data.ach_save_version = new_version
 	end
