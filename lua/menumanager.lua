@@ -3131,6 +3131,8 @@ function AdvancedCrosshair:CheckCrosshair(override_params)
 			local current_firemode = equipped_unit:base():fire_mode()
 			local weapon_base = equipped_unit:base()
 						
+			--for the burstfire mod
+			--probably obsolete now that burstfire is a game feature
 			if weapon_base.in_burst_mode and weapon_base:in_burst_mode() then
 				current_firemode = "burst"
 			end
@@ -3527,34 +3529,42 @@ function AdvancedCrosshair:CheckSaveDataForDeprecatedValues(prev_version,new_ver
 		if save_data.crosshairs then 
 			for category,category_data in pairs(save_data.crosshairs) do
 				
-				for _,firemode in pairs(self.VALID_WEAPON_FIREMODES) do 
-					--add firemode-specific preferences for any missing firemodes pre-v26 (specifically volley from U228)
-					if not category_data[firemode] then 
-						category_data[firemode] = table.deep_map_copy(self.DEFAULT_CROSSHAIR_OPTIONS)
+				if prev_version <= 3 then
+					for _,firemode in pairs(self.VALID_WEAPON_FIREMODES) do 
+						--add firemode-specific preferences for any missing firemodes pre-v26 (specifically volley from U228)
+						if not category_data[firemode] then 
+							category_data[firemode] = table.deep_map_copy(self.DEFAULT_CROSSHAIR_OPTIONS)
+						end
 					end
 				end
 				
-				for firemode,firemode_data in pairs(category_data) do 
-					--transfer "hide on ads" settings for users with save data pre-v21
-					local hide_on_ads = firemode_data.hide_on_ads
-					if hide_on_ads then 
-						firemode_data.hide_on_ads = nil
-						firemode_data.ads_behavior = 2 --hide when ads
-					else
-						firemode_data.ads_behavior = 1 --no special ads behavior
+				if prev_version <= 2 then
+					for firemode,firemode_data in pairs(category_data) do 
+						--transfer "hide on ads" settings for users with save data pre-v21
+						local hide_on_ads = firemode_data.hide_on_ads
+						if hide_on_ads then 
+							firemode_data.hide_on_ads = nil
+							firemode_data.ads_behavior = 2 --hide when ads
+						else
+							firemode_data.ads_behavior = 1 --no special ads behavior
+						end
 					end
 				end
-				
 			end
 		end
-		local global_crosshair_data = save_data.crosshair_global
-		if global_crosshair_data then 
-			local hide_on_ads = global_crosshair_data.hide_on_ads
-			if hide_on_ads then 
-				global_crosshair_data.hide_on_ads = nil
-				global_crosshair_data.ads_behavior = 2 --hide when ads
-			else
-				global_crosshair_data.ads_behavior = 1 --no special ads behavior
+		
+		--transfer "hide on ads" settings for users with save data pre-v21
+		--(for global crosshair, which is stored at a different depth)
+		if prev_version <= 2 then 
+			local global_crosshair_data = save_data.crosshair_global
+			if global_crosshair_data then 
+				local hide_on_ads = global_crosshair_data.hide_on_ads
+				if hide_on_ads then 
+					global_crosshair_data.hide_on_ads = nil
+					global_crosshair_data.ads_behavior = 2 --hide when ads
+				else
+					global_crosshair_data.ads_behavior = 1 --no special ads behavior
+				end
 			end
 		end
 		
