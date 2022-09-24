@@ -1652,9 +1652,13 @@ end
 
 --Compatibility Checking and Resolution
 
-AdvancedCrosshair.blt_hooks_source = "mods/base/req/core/Hooks.lua"
-AdvancedCrosshair.ach_hooks_source = AdvancedCrosshair.path .. "lua/menumanager.lua"
+AdvancedCrosshair.blt_hooks_source = "@mods/base/req/core/Hooks.lua"
+AdvancedCrosshair.ach_hooks_source = AdvancedCrosshair.path .. "lua/menumanager.lua" --no longer used
 
+--these functions check for BLT hooks
+--all hooks using the hooks system are designed to be intercompatible, 
+--but directly overwriting any given function (without using Hooks:GetFunction() ) would break all hooks to that function.
+--ACH here checks for any functions that are overwritten without hooks (shame on you!) so that they can be manually re-hooked (hypothetically, without breaking any involved mods)
 AdvancedCrosshair.compatibility_checks = {
 	compatibility_hook_playermanager_checkskill = {
 		disabled = false,
@@ -1667,13 +1671,13 @@ AdvancedCrosshair.compatibility_checks = {
 			
 			--then perform actual source checking
 			if managers.player then 
-				local debuginfo = debug and debug.getinfo and debug.getinfo(managers.player.check_skills)
+				local debuginfo = debug and debug.getinfo and debug.getinfo(Hooks:GetFunction(PlayerManager,"check_skills"))
 					--you're not supposed to use this for anything but debugging your own software locally,
 					--since lua environments/installations are not guaranteed to have the debug library shipped with release version software.
 					--i gotta tho
 				if type(debuginfo) == "table" then 
-					local short_src = debuginfo.short_src
-					if (short_src ~= AdvancedCrosshair.blt_hooks_source) and (short_src ~= AdvancedCrosshair.ach_hooks_source) then 
+					local source = debuginfo.source
+					if (source ~= AdvancedCrosshair.blt_hooks_source) and (source ~= "lib/managers/playermanager.lua") then 
 						return true
 					end
 				end
@@ -1690,21 +1694,21 @@ AdvancedCrosshair.compatibility_checks = {
 			end
 			
 			if PlayerStandard then 
+				local playerstandard_source = "lib/units/beings/player/states/playerstandard.lua"
 				do 
-					local debuginfo = debug and debug.getinfo and debug.getinfo(PlayerStandard._start_action_steelsight)
+					local debuginfo = debug and debug.getinfo and debug.getinfo(Hooks:GetFunction(PlayerStandard,"_start_action_steelsight"))
 					if type(debuginfo) == "table" then 
-						local short_src = debuginfo.short_src
-						if (short_src ~= AdvancedCrosshair.blt_hooks_source) and (short_src ~= AdvancedCrosshair.ach_hooks_source) then 
+						local source = debuginfo.source
+						if (source ~= AdvancedCrosshair.blt_hooks_source) and (source ~= playerstandard_source) then 
 							return true
 						end
 					end
 				end
 				
 				do 
-					local debuginfo = debug and debug.getinfo and debug.getinfo(PlayerStandard._end_action_steelsight)
+					local debuginfo = debug and debug.getinfo and debug.getinfo(Hooks:GetFunction(PlayerStandard,"_end_action_steelsight"))
 					if type(debuginfo) == "table" then 
-						local short_src = debuginfo.short_src
-						if (short_src ~= AdvancedCrosshair.blt_hooks_source) and (short_src ~= AdvancedCrosshair.ach_hooks_source) then 
+						if (source ~= AdvancedCrosshair.blt_hooks_source) and (source ~= playerstandard_source) then 
 							return true
 						end
 					end
@@ -1717,10 +1721,10 @@ AdvancedCrosshair.compatibility_checks = {
 		disabled = false,
 		check_func = function()
 			if NewRaycastWeaponBase then 
-				local debuginfo = debug and debug.getinfo and debug.getinfo(NewRaycastWeaponBase.reset_cached_gadget)
+				local debuginfo = debug and debug.getinfo and debug.getinfo(Hooks:GetFunction(NewRaycastWeaponBase,"reset_cached_gadget"))
 				if type(debuginfo) == "table" then 
-					local short_src = debuginfo.short_src
-					if (short_src ~= AdvancedCrosshair.blt_hooks_source) and (short_src ~= AdvancedCrosshair.ach_hooks_source) then 
+					local source = debuginfo.source
+					if (source ~= AdvancedCrosshair.blt_hooks_source) and (source ~= "lib/units/weapons/newraycastweaponbase.lua") then 
 						return true
 					end
 				end
@@ -1732,10 +1736,10 @@ AdvancedCrosshair.compatibility_checks = {
 		disabled = false,
 		check_func = function()
 			if PlayerMovementState then 
-				local debuginfo = debug and debug.getinfo and debug.getinfo(PlayerMovementState.enter)
+				local debuginfo = debug and debug.getinfo and debug.getinfo(Hooks:GetFunction(PlayerMovementState,"enter"))
 				if type(debuginfo) == "table" then 
-					local short_src = debuginfo.short_src
-					if (short_src ~= AdvancedCrosshair.blt_hooks_source) and (short_src ~= AdvancedCrosshair.ach_hooks_source) then 
+					local source = debuginfo.source
+					if (source ~= AdvancedCrosshair.blt_hooks_source) and (source ~= "lib/units/beings/player/states/playermovement.lua") then 
 						return true
 					end
 				end
@@ -1751,10 +1755,10 @@ AdvancedCrosshair.compatibility_checks = {
 			end
 			
 			if CopDamage then 
-				local debuginfo = debug and debug.getinfo and debug.getinfo(CopDamage.damage_melee)
+				local debuginfo = debug and debug.getinfo and debug.getinfo(Hooks:GetFunction(CopDamage,"damage_melee"))
 				if type(debuginfo) == "table" then 
-					local short_src = debuginfo.short_src
-					if (short_src ~= AdvancedCrosshair.blt_hooks_source) and (short_src ~= AdvancedCrosshair.ach_hooks_source) then 
+					local source = debuginfo.source
+					if (source ~= AdvancedCrosshair.blt_hooks_source) and (source ~= "lib/units/enemies/cop/copdamage.lua") then 
 						return true
 					end
 				end
@@ -1770,10 +1774,10 @@ AdvancedCrosshair.compatibility_checks = {
 			end
 			
 			if CopDamage then 
-				local debuginfo = debug and debug.getinfo and debug.getinfo(CopDamage.roll_critical_hit)
+				local debuginfo = debug and debug.getinfo and debug.getinfo(Hooks:GetFunction(CopDamage,"roll_critical_hit"))
 				if type(debuginfo) == "table" then 
-					local short_src = debuginfo.short_src
-					if (short_src ~= AdvancedCrosshair.blt_hooks_source) and (short_src ~= AdvancedCrosshair.ach_hooks_source) then 
+					local source = debuginfo.source
+					if (source ~= AdvancedCrosshair.blt_hooks_source) and (source ~= "lib/units/enemies/cop/copdamage.lua") then 
 						return true
 					end
 				end
@@ -1785,10 +1789,10 @@ AdvancedCrosshair.compatibility_checks = {
 		disabled = false,
 		check_func = function()
 			if NewRaycastWeaponBase then 
-				local debuginfo = debug and debug.getinfo and debug.getinfo(NewRaycastWeaponBase.toggle_firemode)
+				local debuginfo = debug and debug.getinfo and debug.getinfo(Hooks:GetFunction(NewRaycastWeaponBase,"toggle_firemode"))
 				if type(debuginfo) == "table" then 
-					local short_src = debuginfo.short_src
-					if (short_src ~= AdvancedCrosshair.blt_hooks_source) and (short_src ~= AdvancedCrosshair.ach_hooks_source) then 
+					local source = debuginfo.source
+					if (source ~= AdvancedCrosshair.blt_hooks_source) and (source ~= "lib/units/weapons/newraycastweaponbase.lua") then 
 						return true
 					end
 				end
@@ -1800,10 +1804,10 @@ AdvancedCrosshair.compatibility_checks = {
 		disabled = false,
 		check_func = function()
 			if NewRaycastWeaponBase then 
-				local debuginfo = debug and debug.getinfo and debug.getinfo(NewRaycastWeaponBase.toggle_firemode)
+				local debuginfo = debug and debug.getinfo and debug.getinfo(Hooks:GetFunction(NewRaycastWeaponBase,"toggle_firemode"))
 				if type(debuginfo) == "table" then 
-					local short_src = debuginfo.short_src
-					if (short_src ~= AdvancedCrosshair.blt_hooks_source) and (short_src ~= AdvancedCrosshair.ach_hooks_source) then 
+					local source = debuginfo.source
+					if (source ~= AdvancedCrosshair.blt_hooks_source) and (source ~= "lib/units/weapons/newraycastweaponbase.lua") then 
 						return true
 					end
 				end
@@ -1819,9 +1823,9 @@ function AdvancedCrosshair:CheckCompatibilityIssues()
 		if not compatibility_data.disabled then 
 			local check_result = compatibility_data.check_func and compatibility_data.check_func()
 			if check_result and setting_name and (self.settings[setting_name] ~= nil) then 
-				self.auto_compatibility_settings[setting_name] = check_result
 				any_found = any_found or check_result
 			end
+			self.auto_compatibility_settings[setting_name] = check_result
 		end
 	end
 	return any_found
