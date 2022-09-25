@@ -4895,13 +4895,48 @@ Hooks:Add("MenuManagerBuildCustomMenus", "ach_MenuManagerBuildCustomMenus", func
 	)
 	MenuHelper:AddMenuItem(crosshairs_menu,AdvancedCrosshair.crosshairs_categories_submenu_id,"menu_ach_crosshairs_categories_menu_title","menu_ach_crosshairs_categories_menu_desc",1)
 	
+	--alphabetically sort firemode and weapon categories 
+	local sorted_customization_menus = {} 
 	for cat_menu_name,cat_menu_data in pairs(AdvancedCrosshair.customization_menus) do 
+		table.insert(sorted_customization_menus,cat_menu_name)
+	end
+	local function get_category_name_id(cat_menu_name)
+		local cat_menu_data = AdvancedCrosshair.customization_menus[cat_menu_name]
+		local category = tostring(cat_menu_data.category_name)
+		local cat_name_id = "menu_weapon_category_" .. category
+		return cat_name_id
+	end
+	table.sort(sorted_customization_menus,function(a,b)
+		return managers.localization:text(get_category_name_id(a)) < managers.localization:text(get_category_name_id(b))
+	end)
+	
+	local function get_firemode(cat_menu_data,firemode_menu_name)
+		local firemode_menu = cat_menu_data.child_menus[firemode_menu_name]
+		local firemode = tostring(firemode_menu.firemode)
+		return firemode
+	end
+	
+	for _,cat_menu_name in ipairs(sorted_customization_menus) do 
+		local cat_menu_data = AdvancedCrosshair.customization_menus[cat_menu_name]
+		
 		local cat_menu = MenuHelper:GetMenu(cat_menu_name)
 		local category = tostring(cat_menu_data.category_name)
 		local cat_name_id = "menu_weapon_category_" .. category
 		local cat_name_desc = "menu_ach_change_crosshair_weapon_category_desc"
-		local i = 1
-		for firemode_menu_name,firemode_menu in pairs(cat_menu_data.child_menus) do
+		
+		local sorted_firemode_menus = {}
+		for firemode_menu_name,firemode_menu in pairs(cat_menu_data.child_menus) do 
+			table.insert(sorted_firemode_menus,firemode_menu_name)
+		end
+		table.sort(sorted_firemode_menus,function(a,b)
+			return table.index_of(AdvancedCrosshair.VALID_WEAPON_FIREMODES,get_firemode(cat_menu_data,a)) < table.index_of(AdvancedCrosshair.VALID_WEAPON_FIREMODES,get_firemode(cat_menu_data,b))
+		end)
+		
+--		for firemode_menu_name,firemode_menu in pairs(cat_menu_data.child_menus) do
+		for i,firemode_menu_name in ipairs(sorted_firemode_menus) do 
+			AdvancedCrosshair:log(firemode_menu_name)
+			local firemode_menu = cat_menu_data.child_menus[firemode_menu_name]
+			
 			local firemode = tostring(firemode_menu.firemode)
 			local name_id = "menu_weapon_firemode_" .. firemode
 			local desc_id = cat_name_id
@@ -4929,7 +4964,7 @@ Hooks:Add("MenuManagerBuildCustomMenus", "ach_MenuManagerBuildCustomMenus", func
 				}
 			)
 			MenuHelper:AddMenuItem(cat_menu,firemode_menu_name,name_id,desc_id,i) --add each firemode menu to its weaponcategory parent menu
-			i = i + 1
+			
 		end
 		nodes[cat_menu_name] = MenuHelper:BuildMenu(cat_menu_name,
 			{
