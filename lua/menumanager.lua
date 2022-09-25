@@ -154,6 +154,12 @@ AdvancedCrosshair.VALID_WEAPON_CATEGORIES = {
 	"crossbow"
 }
 
+--akimbo compatibility, by duplicating all weapon categories as akimbos
+for i=#AdvancedCrosshair.VALID_WEAPON_CATEGORIES,1,-1 do 
+	local category = AdvancedCrosshair.VALID_WEAPON_CATEGORIES[i]
+	table.insert(AdvancedCrosshair.VALID_WEAPON_CATEGORIES,#AdvancedCrosshair.VALID_WEAPON_CATEGORIES + 1,"akimbo_" .. category)
+end
+
 AdvancedCrosshair.VALID_WEAPON_FIREMODES = {
 	"single",
 	"auto",
@@ -3472,7 +3478,7 @@ function AdvancedCrosshair:GetCrosshairType(slot,weapon_id,category,firemode,is_
 	if not result then 
 		if category then 
 			if is_akimbo then 
-				--todo akimbo check [category .. "_akimbo"]
+				category = "akimbo_" .. category
 			end
 			if not (self.settings.crosshairs[category] and self.settings.crosshairs[category][firemode]) then 
 				self:log("ERROR: GetCrosshairType() Bad category " .. tostring(category) .. "/firemode " .. tostring(firemode))
@@ -3530,6 +3536,17 @@ function AdvancedCrosshair:CheckSaveDataForDeprecatedValues(prev_version,new_ver
 	--version-to-version specific changes are also possible
 	if prev_version ~= new_version then 
 	
+		--check for missing categories (namely akimbos, in ACH v27)
+		if prev_version <= 4 then 
+			for _,category in ipairs(AdvancedCrosshair.VALID_WEAPON_CATEGORIES) do 
+				if not save_data.crosshairs[category] then 
+					save_data.crosshairs[category] = {}
+					for _,firemode in pairs(self.VALID_WEAPON_FIREMODES) do 
+						save_data.crosshairs[category][firemode] = table.deep_map_copy(self.DEFAULT_CROSSHAIR_OPTIONS)
+					end
+				end
+			end
+		end
 		if save_data.crosshairs then 
 			for category,category_data in pairs(save_data.crosshairs) do
 				
