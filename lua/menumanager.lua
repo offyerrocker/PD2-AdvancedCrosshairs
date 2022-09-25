@@ -210,6 +210,7 @@ AdvancedCrosshair.default_settings = {
 	crosshair_enabled = true,
 	hitmarker_enabled = true,
 	hitsound_enabled = false,
+	easter_eggs_enabled = true, --enables hitmarker rain (currently the only easter egg)
 	compatibility_auto_detection = true,
 	compatibility_hook_playermanager_checkskill = false,
 	compatibility_hook_playerstandard_onsteelsight = false,
@@ -1581,6 +1582,9 @@ function AdvancedCrosshair:UseCompatibility_NewRaycastWeaponBaseResetCachedGadge
 	return autodetect_compatibility_override or self.settings.compatibility_hook_newraycastweaponbase_resetcachedgadget
 end
 
+function AdvancedCrosshair:IsEasterEggsEnabled()
+	return self.settings.easter_eggs_enabled
+end
 
 function AdvancedCrosshair:CanCheckMeleeHeadshots()
 	return self.settings.can_check_melee_headshots
@@ -2303,8 +2307,10 @@ function AdvancedCrosshair:Init()
 	if blt.xaudio then
         blt.xaudio.setup()
 	end
-	if os.date("%d/%m") == "1/4" then 
-		self._cache.HITMARKER_RAIN_ENABLED = true
+	if self:IsEasterEggsEnabled() then
+		if os.date("%d/%m") == "1/4" then 
+			self._cache.HITMARKER_RAIN_ENABLED = true
+		end
 	end
 end
 
@@ -4215,6 +4221,24 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 				end
 			end
 			
+			MenuHelper:AddButton({
+				id = "id_header_empty_button_" .. firemode_menu_name,
+				title = managers.localization:text("menu_weapon_category_" .. category) .. ": " .. managers.localization:text("menu_weapon_firemode_" .. firemode),
+				desc = managers.localization:text("menu_ach_crosshair_generic_header_desc"),
+				localized = false,
+				callback = "callback_ach_empty_button",
+				menu_id = firemode_menu_name,
+				disabled = true,
+				priority = 12
+			})
+			
+			MenuHelper:AddDivider({
+				id = "divider_1_" .. firemode_menu_name,
+				size = 8,
+				menu_id = firemode_menu_name,
+				priority = 11
+			})
+			
 			MenuHelper:AddToggle({
 				id = "id_" .. set_crosshair_override_global_callback_name,
 				title = "menu_ach_set_override_title",
@@ -4299,7 +4323,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 			})
 			
 			MenuHelper:AddDivider({
-				id = "divider_1_" .. firemode_menu_name,
+				id = "divider_2_" .. firemode_menu_name,
 				size = 24,
 				menu_id = firemode_menu_name,
 				priority = 3
@@ -4323,6 +4347,24 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 			break
 		end
 	end
+	
+				
+	MenuHelper:AddButton({
+		id = "id_header_empty_button_global",
+		title = "menu_ach_crosshair_global_header_title",
+		desc = "menu_ach_crosshair_global_header_desc",
+		callback = "callback_ach_empty_button",
+		menu_id = AdvancedCrosshair.crosshairs_categories_global_id,
+		disabled = true,
+		priority = 10
+	})
+	
+	MenuHelper:AddDivider({
+		id = "divider_1_ach_menu_crosshairs_categories_global",
+		size = 8,
+		menu_id = AdvancedCrosshair.crosshairs_categories_global_id,
+		priority = 9
+	})
 	
 	MenuHelper:AddMultipleChoice({
 		id = "id_ach_menu_crosshairs_categories_global_type",
@@ -4398,7 +4440,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 	})
 	
 	MenuHelper:AddDivider({
-		id = "divider_1_ach_menu_crosshairs_categories_global",
+		id = "divider_2_ach_menu_crosshairs_categories_global",
 		size = 24,
 		menu_id = AdvancedCrosshair.crosshairs_categories_global_id,
 		priority = 2
@@ -4924,17 +4966,16 @@ Hooks:Add("MenuManagerBuildCustomMenus", "ach_MenuManagerBuildCustomMenus", func
 		local cat_name_id = "menu_weapon_category_" .. category
 		local cat_name_desc = "menu_ach_change_crosshair_weapon_category_desc"
 		
+		--sort firemode menus according to the order of VALID_WEAPON_FIREMODES
 		local sorted_firemode_menus = {}
 		for firemode_menu_name,firemode_menu in pairs(cat_menu_data.child_menus) do 
 			table.insert(sorted_firemode_menus,firemode_menu_name)
 		end
 		table.sort(sorted_firemode_menus,function(a,b)
-			return table.index_of(AdvancedCrosshair.VALID_WEAPON_FIREMODES,get_firemode(cat_menu_data,a)) < table.index_of(AdvancedCrosshair.VALID_WEAPON_FIREMODES,get_firemode(cat_menu_data,b))
+			return (table.index_of(AdvancedCrosshair.VALID_WEAPON_FIREMODES,get_firemode(cat_menu_data,a)) or 0) < (table.index_of(AdvancedCrosshair.VALID_WEAPON_FIREMODES,get_firemode(cat_menu_data,b)) or 0)
 		end)
 		
---		for firemode_menu_name,firemode_menu in pairs(cat_menu_data.child_menus) do
-		for i,firemode_menu_name in ipairs(sorted_firemode_menus) do 
-			AdvancedCrosshair:log(firemode_menu_name)
+		for i,firemode_menu_name in ipairs(sorted_firemode_menus) do
 			local firemode_menu = cat_menu_data.child_menus[firemode_menu_name]
 			
 			local firemode = tostring(firemode_menu.firemode)
@@ -4986,7 +5027,9 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 	MenuCallbackHandler.callback_ach_main_focus = function(self,item)
 	end
 	
-	
+	MenuCallbackHandler.callback_ach_empty_button = function(self)
+		--this is an empty callback for the "header" buttons
+	end
 	--**************** crosshairs options ****************
 	
 	
@@ -5848,6 +5891,23 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 	MenuCallbackHandler.callback_ach_menu_misc_can_check_melee_headshots = function(self,item)
 		local enabled = item:value() == "on"
 		AdvancedCrosshair.settings.can_check_melee_headshots = enabled
+		AdvancedCrosshair:Save()
+	end
+	
+	MenuCallbackHandler.callback_ach_menu_misc_easter_eggs_enabled = function(self,item)
+		local enabled = item:value() == "on"
+		AdvancedCrosshair.settings.easter_eggs_enabled = enabled
+		
+		if enabled then 
+			if os.date("%d/%m") == "1/4" then 
+				AdvancedCrosshair._cache.HITMARKER_RAIN_ENABLED = true
+			else
+				AdvancedCrosshair._cache.HITMARKER_RAIN_ENABLED = false
+			end
+		else
+			AdvancedCrosshair._cache.HITMARKER_RAIN_ENABLED = false
+		end
+		
 		AdvancedCrosshair:Save()
 	end
 	

@@ -14,6 +14,9 @@
 	
 	"menu_ach_crosshairs_categories_menu_title" : "Менять по типу оружия...",
 	"menu_ach_crosshairs_categories_menu_desc" : "Изменить прицел по типу оружия и режиму огня",
+	"menu_ach_crosshair_global_header_title" : "Global Crosshair",
+	"menu_ach_crosshair_global_header_desc" : "The current menu lets you edit the default crosshair for all weapons",
+	"menu_ach_crosshair_generic_header_desc" : "The current menu lets you edit the crosshair for the specified weapon type and firemode",
 	"menu_ach_set_override_title" : "Использовать этот прицел",
 	"menu_ach_set_override_desc" : "Использовать эти настройки вместо \"Глобального прицела\"",
 	"menu_ach_set_color_title" : "Цвет",
@@ -198,6 +201,8 @@
 	
 	"menu_ach_menu_misc_can_check_melee_headshots_title" : "Попадания в голову холодным оружием",
 	"menu_ach_menu_misc_can_check_melee_headshots_desc" : "Хитмаркеры и звуки будут показывать, что оружие ближнего боя попало в голову.\nНе влияет на урон.",
+	"menu_ach_menu_misc_easter_eggs_enabled_title" : "Enable Easter Eggs",
+	"menu_ach_menu_misc_easter_eggs_enabled_desc" : "Enables some fun little easter eggs.",
 	"menu_ach_menu_reset_title" : "Обнулить настройки...",
 	"menu_ach_reset_crosshair_settings_title" : "Обнулить настройки прицела",
 	"menu_ach_reset_crosshair_settings_desc" : "Возвращает все настройки прицела на стандартные",

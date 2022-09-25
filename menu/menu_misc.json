@@ -17,6 +17,14 @@
 			"type" : "divider",
 			"id" : "ach_menu_misc_div_2",
 			"size" : 32
+		},
+		{
+			"type" : "toggle",
+			"id" : "ach_menu_misc_easter_eggs_enabled",
+			"title" : "menu_ach_menu_misc_easter_eggs_enabled_title",
+			"description" : "menu_ach_menu_misc_easter_eggs_enabled_desc",
+			"callback" : "callback_ach_menu_misc_easter_eggs_enabled",
+			"value" : "easter_eggs_enabled"
 		}
 	]
 }
