@@ -1026,7 +1026,9 @@ function AdvancedCrosshair.concat(...)
 end
 
 function AdvancedCrosshair:GetWeaponCategory(categories)
-	local category,is_revolver,is_akimbo
+	local category = "assault_rifle"
+	local is_revolver = false
+	local is_akimbo = false
 	for _,cat in pairs(categories) do 
 		if cat == "revolver" then 
 			is_revolver = true
@@ -2431,6 +2433,9 @@ function AdvancedCrosshair:CreateCrosshairByWeapon(unit,weapon_index)
 	local weapon_id = weapon_base:get_name_id()
 	local firemodes_data = {}
 	local weapon_category,is_revolver,is_akimbo = self:GetWeaponCategory(weapon_base:categories())
+	if is_akimbo then 
+		weapon_category = "akimbo_" .. weapon_category
+	end
 	for _,firemode in pairs(self.VALID_WEAPON_FIREMODES) do
 		local crosshair_id = self:GetCrosshairType(weapon_index,weapon_id,weapon_category,firemode,is_revolver,is_akimbo)
 		local crosshair_tweakdata = self._crosshair_data[crosshair_id]
@@ -2481,6 +2486,9 @@ function AdvancedCrosshair:CreateCrosshairByWeapon(unit,weapon_index)
 			}
 			for _,firemode in pairs(self.VALID_WEAPON_FIREMODES) do
 				local underbarrel_category,underbarrel_is_revolver,underbarrel_is_akimbo = self:GetWeaponCategory(underbarrel_tweakdata.categories)
+				if underbarrel_is_akimbo then 
+					underbarrel_category = "akimbo_" .. underbarrel_category 
+				end
 				local underbarrel_crosshair_id = self:GetCrosshairType(nil,underbarrel_id,underbarrel_category,firemode,underbarrel_is_revolver,underbarrel_is_akimbo)
 				local crosshair_setting = self.settings.crosshairs[underbarrel_category][firemode]
 				if crosshair_setting then 
@@ -3483,9 +3491,6 @@ function AdvancedCrosshair:GetCrosshairType(slot,weapon_id,category,firemode,is_
 
 	if not result then 
 		if category then 
-			if is_akimbo then 
-				category = "akimbo_" .. category
-			end
 			if not (self.settings.crosshairs[category] and self.settings.crosshairs[category][firemode]) then 
 				self:log("ERROR: GetCrosshairType() Bad category " .. tostring(category) .. "/firemode " .. tostring(firemode))
 				return self.DEFAULT_CROSSHAIR_OPTIONS.crosshair_id
