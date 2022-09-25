@@ -195,14 +195,14 @@ AdvancedCrosshair.auto_compatibility_settings = {}
 --init default settings values
 --these are later overwritten by values read from save data, if present
 AdvancedCrosshair.default_settings = {
-	ach_save_version = 3, 
+	ach_save_version = 4,
 	--[[
 		this is the save version, not to be confused with the mod version. this is here to identify which save version the mod was created with/
 			[version lookup]
 			ACH version	range	:	save version (reason for change)
 						<19		: 	nil/0
 						19-20	:	1
-						21-25	:	2
+						21-25	:	2	(Hide on ADS behavior change)
 						26-		:	3	(U228, Volley firemode)
 						
 	--]]
@@ -3543,7 +3543,7 @@ function AdvancedCrosshair:CheckSaveDataForDeprecatedValues(prev_version,new_ver
 	if prev_version ~= new_version then 
 	
 		--check for missing categories (namely akimbos, in ACH v27)
-		if prev_version <= 4 then 
+		if prev_version < 4 then 
 			for _,category in ipairs(AdvancedCrosshair.VALID_WEAPON_CATEGORIES) do 
 				if not save_data.crosshairs[category] then 
 					save_data.crosshairs[category] = {}
@@ -3556,7 +3556,7 @@ function AdvancedCrosshair:CheckSaveDataForDeprecatedValues(prev_version,new_ver
 		if save_data.crosshairs then 
 			for category,category_data in pairs(save_data.crosshairs) do
 				
-				if prev_version <= 3 then
+				if prev_version < 3 then
 					for _,firemode in pairs(self.VALID_WEAPON_FIREMODES) do 
 						--add firemode-specific preferences for any missing firemodes pre-v26 (specifically volley from U228)
 						if not category_data[firemode] then 
@@ -3565,7 +3565,7 @@ function AdvancedCrosshair:CheckSaveDataForDeprecatedValues(prev_version,new_ver
 					end
 				end
 				
-				if prev_version <= 2 then
+				if prev_version < 2 then
 					for firemode,firemode_data in pairs(category_data) do 
 						--transfer "hide on ads" settings for users with save data pre-v21
 						local hide_on_ads = firemode_data.hide_on_ads
@@ -3582,7 +3582,7 @@ function AdvancedCrosshair:CheckSaveDataForDeprecatedValues(prev_version,new_ver
 		
 		--transfer "hide on ads" settings for users with save data pre-v21
 		--(for global crosshair, which is stored at a different depth)
-		if prev_version <= 2 then 
+		if prev_version < 2 then 
 			local global_crosshair_data = save_data.crosshair_global
 			if global_crosshair_data then 
 				local hide_on_ads = global_crosshair_data.hide_on_ads
