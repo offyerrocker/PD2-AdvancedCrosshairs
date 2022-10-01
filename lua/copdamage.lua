@@ -5,7 +5,7 @@
 --so yeah don't look at me,
 --if you crashed, look elsewhere in the script stack before you report this bug to me
 
-local advanced_crosshairs_did_not_crash_you = CopDamage.roll_critical_hit
+local advanced_crosshairs_did_not_crash_you = Hooks:GetFunction(CopDamage,"roll_critical_hit")
 CopDamage.ach_orig_roll_critical_hit = advanced_crosshairs_did_not_crash_you
 function CopDamage:roll_critical_hit(attack_data,...)
 	local result = {advanced_crosshairs_did_not_crash_you(self,attack_data,...)}
