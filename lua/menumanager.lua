@@ -1221,7 +1221,7 @@ function AdvancedCrosshair:LoadCrosshairAddons(addons_dir)
 				--load the addon xml file as if it were a beardlib mod (if xml file is present)
 				self:LoadAddonXML(foldername,full_addon_path)
 			
-				if file_util:FileExists(Application:nice_path(addon_lua_file_path)) then
+				if file_util:FileExists(addon_lua_file_path) then
 					is_advanced = true
 					local addon_lua,s_error = blt.vm.loadfile(addon_lua_file_path) --thanks znix (non-sarcastic)
 					if s_error then 
@@ -1356,20 +1356,20 @@ function AdvancedCrosshair:LoadHitmarkerAddons(addons_dir)
 	end
 	
 	for _,addon_path in pairs(addons_dir) do 
-		if file_util:DirectoryExists(Application:nice_path(addon_path,true)) then 
+		if file_util:DirectoryExists(addon_path) then 
 			for _,foldername in pairs(file_util:GetFolders(addon_path)) do 
 				local full_addon_path = path_util:Combine(addon_path,foldername)
 				
 				local parts = {}
 				local is_advanced
-				local addon_lua_path = path_util:Combine(full_addon_path,self.addon_lua_file_name)
+				local addon_lua_file_path = path_util:Combine(full_addon_path,self.addon_lua_file_name)
 				
 				--load the addon xml file as if it were a beardlib mod (if xml file is present)
 				self:LoadAddonXML(foldername,full_addon_path)
 					
-				if file_util:FileExists(addon_lua_path) then 
+				if file_util:FileExists(addon_lua_file_path) then 
 					is_advanced = true
-					local addon_lua = blt.vm.loadfile(addon_lua_path)
+					local addon_lua = blt.vm.loadfile(addon_lua_file_path)
 					if s_error then 
 						self:log("FATAL ERROR: LoadHitmarkerAddons(): " .. tostring(s_error),{color=Color.red})
 					elseif addon_lua then 
@@ -1381,7 +1381,7 @@ function AdvancedCrosshair:LoadHitmarkerAddons(addons_dir)
 									if type(hitmarker_data.parts) == "table" then 
 										load_addon_textures(addon_path,foldername,hitmarker_data.parts)
 									else
-										self:log("Error: LoadHitmarkerAddons() megapack " .. addon_lua_path .. " returned invalid data. Expected results: [string],[table]. Got: [" .. type(id) .. "] " .. tostring(id) .. ", [" .. type(addon_data) .. "] " .. tostring(addon_data) .. ".")
+										self:log("Error: LoadHitmarkerAddons() megapack " .. addon_lua_file_path .. " returned invalid data. Expected results: [string],[table]. Got: [" .. type(id) .. "] " .. tostring(id) .. ", [" .. type(addon_data) .. "] " .. tostring(addon_data) .. ".")
 										break
 									end
 									self:AddCustomHitmarker(hitmarker_id,hitmarker_data)
@@ -1391,13 +1391,13 @@ function AdvancedCrosshair:LoadHitmarkerAddons(addons_dir)
 								if type(addon_data.parts) == "table" then 
 									load_addon_textures(addon_path,foldername,addon_data.parts)
 								else
-									self:log("Error: LoadHitmarkerAddons() " .. addon_lua_path .. " contains invalid parts data: " .. tostring(addon_data.parts) .. " (table expected, got " .. type(addon_data.parts) .. ").")
+									self:log("Error: LoadHitmarkerAddons() " .. addon_lua_file_path .. " contains invalid parts data: " .. tostring(addon_data.parts) .. " (table expected, got " .. type(addon_data.parts) .. ").")
 									break
 								end
 								self:AddCustomHitmarker(addon_id,addon_data)
 							end
 						else
-							self:log("Error: LoadHitmarkerAddons() " .. addon_lua_path .. " returned invalid data. Expected results: [string],[table]. Got: [" .. type(id) .. "] " .. tostring(id) .. ", [" .. type(addon_data) .. "] " .. tostring(addon_data) .. ".")
+							self:log("Error: LoadHitmarkerAddons() " .. addon_lua_file_path .. " returned invalid data. Expected results: [string],[table]. Got: [" .. type(id) .. "] " .. tostring(id) .. ", [" .. type(addon_data) .. "] " .. tostring(addon_data) .. ".")
 						end
 					end
 				end
@@ -1467,17 +1467,15 @@ function AdvancedCrosshair:LoadHitsoundAddons(addons_dir)
 				
 				local variations = {}
 				local is_advanced
-				
 				local addon_lua_file_path = path_util:Combine(full_addon_path,self.addon_lua_file_name)
+				
+				--load the addon xml file as if it were a beardlib mod (if xml file is present)
+				self:LoadAddonXML(foldername,full_addon_path)
+				
 				if file_util:FileExists(Application:nice_path(addon_lua_file_path)) then
 					is_advanced = true
-					
-					--load the addon xml file as if it were a beardlib mod (if xml file is present)
-					self:LoadAddonXML(foldername,full_addon_path)
-					
 					local addon_lua,s_error = blt.vm.loadfile(addon_lua_file_path)
 					if s_error then 
---					self:log("Error: LoadHitsoundAddons() Chunk " .. tostring(addon_lua_file_path) .. " could not compile!")
 						self:log("FATAL ERROR: LoadHitsoundAddons(): " .. tostring(s_error),{color=Color.red})
 					elseif addon_lua then 
 						local addon_id,addon_data = addon_lua()
@@ -1495,7 +1493,6 @@ function AdvancedCrosshair:LoadHitsoundAddons(addons_dir)
 								addon_data.path = path_util:Combine(full_addon_path,addon_data.path_local)
 							end
 							self:AddCustomHitsound(addon_id,addon_data)
---							break
 						else
 							self:log("Error: LoadHitsoundAddons() " .. addon_lua_file_path .. " returned invalid data. Expected results: [string],[table]. Got: [" .. type(id) .. "] " .. tostring(id) .. ", [" .. type(addon_data) .. "] " .. tostring(addon_data) .. ".")
 						end
