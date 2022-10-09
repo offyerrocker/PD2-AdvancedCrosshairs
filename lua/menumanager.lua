@@ -1665,12 +1665,8 @@ end
 --Compatibility Checking and Resolution
 
 AdvancedCrosshair.blt_hooks_source = "@mods/base/req/core/Hooks.lua"
-AdvancedCrosshair.ach_hooks_source = AdvancedCrosshair.path .. "lua/menumanager.lua" --no longer used
+AdvancedCrosshair.ach_hooks_source = AdvancedCrosshair.path .. "lua/menumanager.lua" 
 
---these functions check for BLT hooks
---all hooks using the hooks system are designed to be intercompatible, 
---but directly overwriting any given function (without using Hooks:GetFunction() ) would break all hooks to that function.
---ACH here checks for any functions that are overwritten without hooks (shame on you!) so that they can be manually re-hooked (hypothetically, without breaking any involved mods)
 AdvancedCrosshair.compatibility_checks = {
 	compatibility_hook_playermanager_checkskill = {
 		disabled = false,
@@ -1683,13 +1679,13 @@ AdvancedCrosshair.compatibility_checks = {
 			
 			--then perform actual source checking
 			if managers.player then 
-				local debuginfo = debug and debug.getinfo and debug.getinfo(Hooks:GetFunction(PlayerManager,"check_skills"))
+				local debuginfo = debug and debug.getinfo and debug.getinfo(PlayerManager.check_skills)
 					--you're not supposed to use this for anything but debugging your own software locally,
 					--since lua environments/installations are not guaranteed to have the debug library shipped with release version software.
 					--i gotta tho
 				if type(debuginfo) == "table" then 
 					local source = debuginfo.source
-					if (source ~= AdvancedCrosshair.blt_hooks_source) and (source ~= "lib/managers/playermanager.lua") then 
+					if (source ~= AdvancedCrosshair.blt_hooks_source) and (source ~= AdvancedCrosshair.ach_hooks_source) then 
 						return true
 					end
 				end
@@ -1706,21 +1702,20 @@ AdvancedCrosshair.compatibility_checks = {
 			end
 			
 			if PlayerStandard then 
-				local playerstandard_source = "lib/units/beings/player/states/playerstandard.lua"
 				do 
-					local debuginfo = debug and debug.getinfo and debug.getinfo(Hooks:GetFunction(PlayerStandard,"_start_action_steelsight"))
+					local debuginfo = debug and debug.getinfo and debug.getinfo(PlayerStandard._start_action_steelsight)
 					if type(debuginfo) == "table" then 
 						local source = debuginfo.source
-						if (source ~= AdvancedCrosshair.blt_hooks_source) and (source ~= playerstandard_source) then 
+						if (source ~= AdvancedCrosshair.blt_hooks_source) and (source ~= AdvancedCrosshair.ach_hooks_source) then 
 							return true
 						end
 					end
 				end
 				
 				do 
-					local debuginfo = debug and debug.getinfo and debug.getinfo(Hooks:GetFunction(PlayerStandard,"_end_action_steelsight"))
+					local debuginfo = debug and debug.getinfo and debug.getinfo(PlayerStandard._end_action_steelsight)
 					if type(debuginfo) == "table" then 
-						if (source ~= AdvancedCrosshair.blt_hooks_source) and (source ~= playerstandard_source) then 
+						if (source ~= AdvancedCrosshair.blt_hooks_source) and (source ~= AdvancedCrosshair.ach_hooks_source) then 
 							return true
 						end
 					end
@@ -1733,10 +1728,10 @@ AdvancedCrosshair.compatibility_checks = {
 		disabled = false,
 		check_func = function()
 			if NewRaycastWeaponBase then 
-				local debuginfo = debug and debug.getinfo and debug.getinfo(Hooks:GetFunction(NewRaycastWeaponBase,"reset_cached_gadget"))
+				local debuginfo = debug and debug.getinfo and debug.getinfo(NewRaycastWeaponBase.reset_cached_gadget)
 				if type(debuginfo) == "table" then 
 					local source = debuginfo.source
-					if (source ~= AdvancedCrosshair.blt_hooks_source) and (source ~= "lib/units/weapons/newraycastweaponbase.lua") then 
+					if (source ~= AdvancedCrosshair.blt_hooks_source) and (source ~= AdvancedCrosshair.ach_hooks_source) then 
 						return true
 					end
 				end
@@ -1748,10 +1743,10 @@ AdvancedCrosshair.compatibility_checks = {
 		disabled = false,
 		check_func = function()
 			if PlayerMovementState then 
-				local debuginfo = debug and debug.getinfo and debug.getinfo(Hooks:GetFunction(PlayerMovementState,"enter"))
+				local debuginfo = debug and debug.getinfo and debug.getinfo(PlayerMovementState.enter)
 				if type(debuginfo) == "table" then 
 					local source = debuginfo.source
-					if (source ~= AdvancedCrosshair.blt_hooks_source) and (source ~= "lib/units/beings/player/states/playermovement.lua") then 
+					if (source ~= AdvancedCrosshair.blt_hooks_source) and (source ~= AdvancedCrosshair.ach_hooks_source) then 
 						return true
 					end
 				end
@@ -1767,10 +1762,10 @@ AdvancedCrosshair.compatibility_checks = {
 			end
 			
 			if CopDamage then 
-				local debuginfo = debug and debug.getinfo and debug.getinfo(Hooks:GetFunction(CopDamage,"damage_melee"))
+				local debuginfo = debug and debug.getinfo and debug.getinfo(CopDamage.damage_melee)
 				if type(debuginfo) == "table" then 
 					local source = debuginfo.source
-					if (source ~= AdvancedCrosshair.blt_hooks_source) and (source ~= "lib/units/enemies/cop/copdamage.lua") then 
+					if (source ~= AdvancedCrosshair.blt_hooks_source) and (source ~= AdvancedCrosshair.ach_hooks_source) then 
 						return true
 					end
 				end
@@ -1786,10 +1781,10 @@ AdvancedCrosshair.compatibility_checks = {
 			end
 			
 			if CopDamage then 
-				local debuginfo = debug and debug.getinfo and debug.getinfo(Hooks:GetFunction(CopDamage,"roll_critical_hit"))
+				local debuginfo = debug and debug.getinfo and debug.getinfo(CopDamage.roll_critical_hit)
 				if type(debuginfo) == "table" then 
 					local source = debuginfo.source
-					if (source ~= AdvancedCrosshair.blt_hooks_source) and (source ~= "lib/units/enemies/cop/copdamage.lua") then 
+					if (source ~= AdvancedCrosshair.blt_hooks_source) and (source ~= AdvancedCrosshair.ach_hooks_source) then 
 						return true
 					end
 				end
@@ -1801,10 +1796,10 @@ AdvancedCrosshair.compatibility_checks = {
 		disabled = false,
 		check_func = function()
 			if NewRaycastWeaponBase then 
-				local debuginfo = debug and debug.getinfo and debug.getinfo(Hooks:GetFunction(NewRaycastWeaponBase,"toggle_firemode"))
+				local debuginfo = debug and debug.getinfo and debug.getinfo(NewRaycastWeaponBase.toggle_firemode)
 				if type(debuginfo) == "table" then 
 					local source = debuginfo.source
-					if (source ~= AdvancedCrosshair.blt_hooks_source) and (source ~= "lib/units/weapons/newraycastweaponbase.lua") then 
+					if (source ~= AdvancedCrosshair.blt_hooks_source) and (source ~= AdvancedCrosshair.ach_hooks_source) then 
 						return true
 					end
 				end
@@ -1816,10 +1811,10 @@ AdvancedCrosshair.compatibility_checks = {
 		disabled = false,
 		check_func = function()
 			if NewRaycastWeaponBase then 
-				local debuginfo = debug and debug.getinfo and debug.getinfo(Hooks:GetFunction(NewRaycastWeaponBase,"toggle_firemode"))
+				local debuginfo = debug and debug.getinfo and debug.getinfo(NewRaycastWeaponBase.toggle_firemode)
 				if type(debuginfo) == "table" then 
 					local source = debuginfo.source
-					if (source ~= AdvancedCrosshair.blt_hooks_source) and (source ~= "lib/units/weapons/newraycastweaponbase.lua") then 
+					if (source ~= AdvancedCrosshair.blt_hooks_source) and (source ~= AdvancedCrosshair.ach_hooks_source) then 
 						return true
 					end
 				end
@@ -1861,7 +1856,7 @@ function AdvancedCrosshair:ApplyCompatibility_PlayerMovementStateEnter(enabled)
 	if PlayerMovementState then 
 		local orig_enter = PlayerMovementState._ach_orig_enter
 		if not (orig_enter and type(orig_enter) == "function") then 
-			orig_enter = Hooks:GetFunction(PlayerMovementState,"enter")
+			orig_enter = PlayerMovementState.enter
 			PlayerMovementState._ach_orig_enter = orig_enter
 		end
 		
@@ -1881,7 +1876,7 @@ function AdvancedCrosshair:ApplyCompatibility_PlayerStandardStartEquipWeapon(ena
 	if PlayerStandard then 
 		local orig_start_equip = PlayerStandard._ach_orig_start_action_equip_weapon
 		if not (orig_start_equip and type(orig_start_equip) == "function") then 
-			orig_start_equip = Hooks:GetFunction(PlayerStandard,"_start_action_equip_weapon")
+			orig_start_equip = PlayerStandard._start_action_equip_weapon
 			PlayerStandard._ach_orig_start_action_equip_weapon = orig_start_equip
 		end
 		
@@ -1906,7 +1901,7 @@ function AdvancedCrosshair:ApplyCompatibility_CopDamage_DamageMelee(enabled)
 	if CopDamage then 
 		local orig_damage_melee = CopDamage._ach_orig_damage_melee
 		if not (orig_damage_melee and type(orig_damage_melee) == "function") then 
-			orig_damage_melee = Hooks:GetFunction(CopDamage,"damage_melee")
+			orig_damage_melee = CopDamage.damage_melee
 			CopDamage._ach_orig_damage_melee = orig_damage_melee
 		end
 		
@@ -1928,7 +1923,7 @@ function AdvancedCrosshair:ApplyCompatibility_CopDamage_RollCriticalHit(enabled)
 	if CopDamage then 
 		local orig_roll_crit = CopDamage._ach_orig_roll_critical_hit
 		if not (orig_roll_crit and type(orig_roll_crit) == "function") then 
-			orig_roll_crit = Hooks:GetFunction(CopDamage,"roll_critical_hit")
+			orig_roll_crit = CopDamage.roll_critical_hit
 			CopDamage._ach_orig_roll_critical_hit = orig_roll_crit
 		end
 		
@@ -1950,7 +1945,7 @@ function AdvancedCrosshair:ApplyCompatibility_NewRaycastWeaponBaseToggleFiremode
 	if NewRaycastWeaponBase then 
 		local orig_toggle_firemode = NewRaycastWeaponBase._ach_orig_toggle_firemode
 		if not (orig_toggle_firemode and type(orig_toggle_firemode) == "function") then 
-			orig_toggle_firemode = Hooks:GetFunction(NewRaycastWeaponBase,"toggle_firemode")
+			orig_toggle_firemode = NewRaycastWeaponBase.toggle_firemode
 			NewRaycastWeaponBase._ach_orig_toggle_firemode = orig_toggle_firemode
 		end
 		
@@ -1970,7 +1965,7 @@ function AdvancedCrosshair:ApplyCompatibility_NewRaycastWeaponBaseResetCachedGad
 	if NewRaycastWeaponBase then 
 		local orig_reset_cached_gadget = NewRaycastWeaponBase._ach_orig_reset_cached_gadget
 		if not (orig_reset_cached_gadget and type(orig_reset_cached_gadget) == "function") then 
-			orig_reset_cached_gadget = Hooks:GetFunction(NewRaycastWeaponBase,"reset_cached_gadget")
+			orig_reset_cached_gadget = NewRaycastWeaponBase.reset_cached_gadget
 			NewRaycastWeaponBase._ach_orig_reset_cached_gadget = orig_reset_cached_gadget
 		end
 		
