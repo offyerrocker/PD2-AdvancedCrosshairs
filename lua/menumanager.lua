@@ -1128,7 +1128,12 @@ function AdvancedCrosshair:LoadAddonXML(foldername,full_addon_path)
 				end
 				
 				--visually add the new beardlib mod to the menu list
-				bl_menus_mods:AddMod(mod,bl_framework_base_class)
+				if bl_menus_mods then
+					--temporarily disabled because it inexplicably broke as soon as i pushed the branch live i guess
+--					if not game_state_machine or GameStateFilters.menu[game_state_machine:current_state_name()] then
+--						bl_menus_mods:AddMod(mod,bl_framework_base)
+--					end
+				end
 			end
 		else
 			self:log("Skipped loading " .. tostring(self.addon_xml_file_name) .. " for hitsound addon: [" .. tostring(foldername) .. "]")
@@ -3714,9 +3719,9 @@ end)
 Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus", function(menu_manager, nodes)
 
 	AdvancedCrosshair:log("Loading addons...")
+	Hooks:Call("ACH_LoadAllAddons")
 	AdvancedCrosshair:LoadAllAddons() --load custom crosshairs, hitmarkers, and hitsounds
 
-	Hooks:Call("ACH_LoadAllAddons")
 
 	
 	AdvancedCrosshair:log("Addon loading complete.")
