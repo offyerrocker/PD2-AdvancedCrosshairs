@@ -7,6 +7,19 @@
 	"items" : [
 		{
 			"type" : "toggle",
+			"id" : "ach_menu_misc_enable_logs",
+			"title" : "menu_ach_menu_misc_enable_logs_title",
+			"description" : "menu_ach_menu_misc_enable_logs_desc",
+			"callback" : "callback_ach_menu_misc_enable_logs",
+			"value" : "logs_enabled"
+		},
+		{
+			"type" : "divider",
+			"id" : "ach_menu_misc_div_4",
+			"size" : 16
+		},
+		{
+			"type" : "toggle",
 			"id" : "ach_menu_misc_can_check_melee_headshots",
 			"title" : "menu_ach_menu_misc_can_check_melee_headshots_title",
 			"description" : "menu_ach_menu_misc_can_check_melee_headshots_desc",
@@ -15,8 +28,8 @@
 		},
 		{
 			"type" : "divider",
-			"id" : "ach_menu_misc_div_2",
-			"size" : 32
+			"id" : "ach_menu_misc_div_3",
+			"size" : 16
 		},
 		{
 			"type" : "toggle",
@@ -25,6 +38,11 @@
 			"description" : "menu_ach_menu_misc_easter_eggs_enabled_desc",
 			"callback" : "callback_ach_menu_misc_easter_eggs_enabled",
 			"value" : "easter_eggs_enabled"
+		},
+		{
+			"type" : "divider",
+			"id" : "ach_menu_misc_div_2",
+			"size" : 16
 		}
 	]
 }

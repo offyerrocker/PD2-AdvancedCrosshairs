@@ -80,6 +80,8 @@ AdvancedCrosshair.url_colorpicker = "https://modwork.shop/29641"
 AdvancedCrosshair.url_ach_github = "https://github.com/offyerrocker/PD2-AdvancedCrosshairs"
 AdvancedCrosshair.url_ach_mws = "https://modwork.shop/29585"
 
+AdvancedCrosshair.addon_xml_file_name = "mod.xml"
+AdvancedCrosshair.addon_lua_file_name = "addon.lua"
 AdvancedCrosshair.addons_readme_txt = "README - generated from AdvancedCrosshair v2 - \n\nThis directory is where you can install add-on folders for Crosshairs, Hitmarkers, or Hitsounds.\nThese must be folders, no archives or files- .texture, .zip, .7zip, .tar, etc. will not be read!\nTo install add-ons, place the add-on folder(s) in one of the three subfolders according to the type of add-on- NOT directly in the same folder as this file.\n\nPlease refer to the documentation for more information: \n$LINK\n\nP.S. You can safely delete this readme file if you wish. It will only be re-generated on launch if ACH is installed and the ACH Addons folder is removed.\nHave a nice day!"
 AdvancedCrosshair.HITMARKER_RAIN_SPAWN_DELAY_INTERVAL_MIN = 0.01 --seconds
 AdvancedCrosshair.HITMARKER_RAIN_SPAWN_DELAY_INTERVAL_MAX = 0.1 --seconds
@@ -112,7 +114,6 @@ AdvancedCrosshair.OUTOFRANGE_CROSSHAIR_ALPHA = 0.33
 AdvancedCrosshair.OUTOFRANGE_HITMARKER_ALPHA = 0.33
 AdvancedCrosshair.OUTOFRANGE_CROSSHAIR_COLOR = Color(0.3,0.3,0.3)
 AdvancedCrosshair.OUTOFRANGE_HITMARKER_COLOR = Color(0.3,0.3,0.3)
-
 AdvancedCrosshair.STATES_CROSSHAIR_ALLOWED = {
 	empty = false,
 	standard = true,
@@ -417,6 +418,9 @@ AdvancedCrosshair.mod_overrides_path = "PAYDAY 2/assets/mod_overrides/"
 dofile(AdvancedCrosshair.path .. "classes/QuickAnimate.lua")
 AdvancedCrosshair.animator = QuickAnimate:new("ACH_Animator",{parent = AdvancedCrosshair,updater_type = QuickAnimate.updater_types.BeardLib,paused = true})
 
+AdvancedCrosshair.ALLOWED_SOUND_EXTENSIONS = {
+	ogg = true
+}
 AdvancedCrosshair.ALLOWED_TEXTURE_EXTENSIONS = {
 	texture = true,
 	png = true
@@ -1085,9 +1089,51 @@ end
 --simple custom add-ons should simply be added inside the mods/saves/AdvancedCrosshairs folder, and this mod will take care of adding them
 
 function AdvancedCrosshair:LoadAllAddons()
-	self:LoadCrosshairAddons()
-	self:LoadHitmarkerAddons()
-	self:LoadHitsoundAddons()
+	if not BeardLib.Frameworks.Base then 
+		self:log("Error loading addon xml: BeardLib AddFramework missing!")
+	end
+	
+	self:LoadCrosshairAddons(self.ADDON_PATHS.crosshairs)
+	self:LoadHitmarkerAddons(self.ADDON_PATHS.hitmarkers)
+	self:LoadHitsoundAddons(self.ADDON_PATHS.hitsounds)
+	
+	local modsmenu = BeardLib.Menus.Mods
+	if modsmenu then
+		--organize the list of beardlib mods now that any mods from ACH have been added
+		modsmenu._list:AlignItems(true)
+	end
+end
+
+function AdvancedCrosshair:LoadAddonXML(foldername,full_addon_path)
+	local path_util = BeardLib.Utils.Path
+	local bl_framework_base = BeardLib.Frameworks.Base
+	local bl_framework_base_class = FrameworkBase
+	local bl_menus_mods = BeardLib.Menus.Mods
+	local file_util = _G.FileIO
+	
+	local xml_file_path = path_util:Combine(full_addon_path,self.addon_xml_file_name)
+	if file_util:FileExists(Application:nice_path(xml_file_path)) then 
+		if bl_framework_base then
+			bl_framework_base:LoadMod(foldername,full_addon_path,xml_file_path)
+			local mod = bl_framework_base:GetModByDir(foldername)
+			if mod then
+				
+				--load modules (namely, assetupdates)
+				mod:PreInitModules(mod._auto_init_modules)
+				
+				--manually call version check
+				local assetsupdates = mod:GetModule("AssetUpdates")
+				if assetsupdates then
+					assetsupdates:CheckVersion()
+				end
+				
+				--visually add the new beardlib mod to the menu list
+				bl_menus_mods:AddMod(mod,bl_framework_base_class)
+			end
+		else
+			self:log("Skipped loading " .. tostring(self.addon_xml_file_name) .. " for hitsound addon: [" .. tostring(foldername) .. "]")
+		end
+	end
 end
 
 function AdvancedCrosshair:AddCustomCrosshair(id,data)
@@ -1147,9 +1193,12 @@ function AdvancedCrosshair:AddCustomCrosshair(id,data)
 	end
 end
 
-function AdvancedCrosshair:LoadCrosshairAddons()
+function AdvancedCrosshair:LoadCrosshairAddons(addons_dir)
 	local path_util = BeardLib.Utils.Path
 	local file_util = _G.FileIO
+	local bl_framework_base = BeardLib.Frameworks.Base
+	local bl_framework_base_class = FrameworkBase
+	local bl_menus_mods = BeardLib.Menus.Mods
 	
 	local function load_addon_textures(addon_path,foldername,parts)
 		for part_index,part in ipairs(parts) do 
@@ -1160,15 +1209,21 @@ function AdvancedCrosshair:LoadCrosshairAddons()
 		end
 	end
 
-	for _,addon_path in pairs(self.ADDON_PATHS.crosshairs) do 
+	for _,addon_path in pairs(addons_dir) do 
 		if file_util:DirectoryExists(addon_path) then 
 			for _,foldername in pairs(file_util:GetFolders(addon_path)) do 
+				local full_addon_path = path_util:Combine(addon_path,foldername)
+				
 				local parts = {}
 				local is_advanced
-				if file_util:FileExists(Application:nice_path(path_util:Combine(addon_path,foldername,"addon.lua"),false)) then 
+				local addon_lua_file_path = path_util:Combine(full_addon_path,self.addon_lua_file_name)
+				
+				--load the addon xml file as if it were a beardlib mod (if xml file is present)
+				self:LoadAddonXML(foldername,full_addon_path)
+			
+				if file_util:FileExists(Application:nice_path(addon_lua_file_path)) then
 					is_advanced = true
-					local addon_lua_path = path_util:Combine(addon_path,foldername,"addon.lua")
-					local addon_lua,s_error = blt.vm.loadfile(addon_lua_path) --thanks znix
+					local addon_lua,s_error = blt.vm.loadfile(addon_lua_file_path) --thanks znix (non-sarcastic)
 					if s_error then 
 						self:log("FATAL ERROR: LoadCrosshairAddons(): " .. tostring(s_error),{color=Color.red})
 					elseif addon_lua then 
@@ -1180,7 +1235,7 @@ function AdvancedCrosshair:LoadCrosshairAddons()
 									if type(crosshair_data.parts) == "table" then 
 										load_addon_textures(addon_path,foldername,crosshair_data.parts)
 									else
-										self:log("Error: LoadCrosshairAddons() megapack " .. addon_lua_path .. " contains invalid parts data: " .. tostring(addon_data.parts) .. " (table expected, got " .. type(addon_data.parts) .. ").")
+										self:log("Error: LoadCrosshairAddons() megapack " .. addon_lua_file_path .. " contains invalid parts data: " .. tostring(addon_data.parts) .. " (table expected, got " .. type(addon_data.parts) .. ").")
 										break
 									end
 									self:AddCustomCrosshair(crosshair_id,crosshair_data)
@@ -1190,20 +1245,20 @@ function AdvancedCrosshair:LoadCrosshairAddons()
 								if type(addon_data.parts) == "table" then 
 									load_addon_textures(addon_path,foldername,addon_data.parts)
 								else
-									self:log("Error: LoadCrosshairAddons() " .. addon_lua_path .. " contains invalid parts data: " .. tostring(addon_data.parts) .. " (table expected, got " .. type(addon_data.parts) .. ").")
+									self:log("Error: LoadCrosshairAddons() " .. addon_lua_file_path .. " contains invalid parts data: " .. tostring(addon_data.parts) .. " (table expected, got " .. type(addon_data.parts) .. ").")
 									break
 								end
 								self:AddCustomCrosshair(addon_id,addon_data)
 							end
 						else
-							self:log("Error: LoadCrosshairAddons() " .. addon_lua_path .. " returned invalid data. Expected results: [string],[table]. Got: [" .. type(id) .. "] " .. tostring(id) .. ", [" .. type(addon_data) .. "] " .. tostring(addon_data) .. ".")
+							self:log("Error: LoadCrosshairAddons() " .. addon_lua_file_path .. " returned invalid data. Expected results: [string],[table]. Got: [" .. type(id) .. "] " .. tostring(id) .. ", [" .. type(addon_data) .. "] " .. tostring(addon_data) .. ".")
 						end
 					end
 				end
-				if is_advanced then 
-				elseif not is_advanced then 
-					for _,filename in pairs(file_util:GetFiles(path_util:Combine(addon_path,foldername))) do 
-						local raw_path = path_util:Combine(addon_path,foldername,filename)
+				if not is_advanced then 
+					for _,filename in pairs(file_util:GetFiles(full_addon_path)) do 
+						local raw_path = path_util:Combine(full_addon_path,filename)
+						
 						local file_extension = path_util:GetFileExtension(filename)
 						if file_extension and self.ALLOWED_TEXTURE_EXTENSIONS[utf8.to_lower(file_extension)] then 
 							local texture_path = string.gsub(raw_path,"%." .. file_extension,"")
@@ -1284,9 +1339,12 @@ function AdvancedCrosshair:AddCustomHitmarker(id,data)
 	end
 end
 
-function AdvancedCrosshair:LoadHitmarkerAddons()
+function AdvancedCrosshair:LoadHitmarkerAddons(addons_dir)
 	local path_util = BeardLib.Utils.Path
 	local file_util = _G.FileIO
+	local bl_framework_base = BeardLib.Frameworks.Base
+	local bl_framework_base_class = FrameworkBase
+	local bl_menus_mods = BeardLib.Menus.Mods
 	
 	local function load_addon_textures(addon_path,foldername,parts)
 		for part_index,part in ipairs(parts) do 
@@ -1297,12 +1355,18 @@ function AdvancedCrosshair:LoadHitmarkerAddons()
 		end
 	end
 	
-	for _,addon_path in pairs(self.ADDON_PATHS.hitmarkers) do 
+	for _,addon_path in pairs(addons_dir) do 
 		if file_util:DirectoryExists(Application:nice_path(addon_path,true)) then 
 			for _,foldername in pairs(file_util:GetFolders(addon_path)) do 
+				local full_addon_path = path_util:Combine(addon_path,foldername)
+				
 				local parts = {}
 				local is_advanced
-				local addon_lua_path = path_util:Combine(addon_path,foldername,"addon.lua")
+				local addon_lua_path = path_util:Combine(full_addon_path,self.addon_lua_file_name)
+				
+				--load the addon xml file as if it were a beardlib mod (if xml file is present)
+				self:LoadAddonXML(foldername,full_addon_path)
+					
 				if file_util:FileExists(addon_lua_path) then 
 					is_advanced = true
 					local addon_lua = blt.vm.loadfile(addon_lua_path)
@@ -1338,8 +1402,8 @@ function AdvancedCrosshair:LoadHitmarkerAddons()
 					end
 				end
 				if not is_advanced then 
-					for _,filename in pairs(file_util:GetFiles(path_util:Combine(addon_path,foldername))) do 
-						local raw_path = path_util:Combine(addon_path,foldername,filename)
+					for _,filename in pairs(file_util:GetFiles(full_addon_path)) do 
+						local raw_path = path_util:Combine(full_addon_path,filename)
 						local file_extension = path_util:GetFileExtension(filename)
 						if file_extension and self.ALLOWED_TEXTURE_EXTENSIONS[utf8.to_lower(file_extension)] then 
 							local texture_path = string.gsub(raw_path,"%." .. file_extension,"")
@@ -1392,57 +1456,63 @@ function AdvancedCrosshair:AddCustomHitsound(id,data)
 	end
 end
 
-function AdvancedCrosshair:LoadHitsoundAddons()
-	local extension = "ogg"
+function AdvancedCrosshair:LoadHitsoundAddons(addons_dir)
 	local path_util = BeardLib.Utils.Path
 	local file_util = _G.FileIO
-	for _,addon_path in pairs(self.ADDON_PATHS.hitsounds) do 
+	
+	for _,addon_path in pairs(addons_dir) do
 		if file_util:DirectoryExists(Application:nice_path(addon_path,true)) then 
 			for _,foldername in pairs(file_util:GetFolders(addon_path)) do 
-				local is_randomized = file_util:FileExists(Application:nice_path(path_util:Combine(addon_path,foldername,"random.txt")))
+				local full_addon_path = path_util:Combine(addon_path,foldername)
+				
 				local variations = {}
 				local is_advanced
-				for _,filename in pairs(file_util:GetFiles(path_util:Combine(addon_path,foldername))) do 
-					--check for advanced hitsound addon
-					if filename == "addon.lua" then
-						is_advanced = true
-						local raw_path = path_util:Combine(addon_path,foldername,filename)
-						local addon_lua,s_error = blt.vm.loadfile(raw_path)
-						if s_error then 
-							self:log("FATAL ERROR: LoadHitsoundAddons(): " .. tostring(s_error),{color=Color.red})
-						elseif addon_lua then 
-							local addon_id,addon_data = addon_lua()
-							if addon_id == true then 
-								--assume loading is handled by the addon
-							elseif addon_id and type(addon_data) == "table" then 
-								if type(addon_data.variations_paths) == "table" then 
-									addon_data.variations = addon_data.variations or {}
-									for i,variation in pairs(addon_data.variations_paths) do
-										--write full path to soundfile which includes addon path
-										addon_data.variations[#addon_data.variations + 1] = path_util:Combine(addon_path,foldername,variation)
-									end
+				
+				local addon_lua_file_path = path_util:Combine(full_addon_path,self.addon_lua_file_name)
+				if file_util:FileExists(Application:nice_path(addon_lua_file_path)) then
+					is_advanced = true
+					
+					--load the addon xml file as if it were a beardlib mod (if xml file is present)
+					self:LoadAddonXML(foldername,full_addon_path)
+					
+					local addon_lua,s_error = blt.vm.loadfile(addon_lua_file_path)
+					if s_error then 
+--					self:log("Error: LoadHitsoundAddons() Chunk " .. tostring(addon_lua_file_path) .. " could not compile!")
+						self:log("FATAL ERROR: LoadHitsoundAddons(): " .. tostring(s_error),{color=Color.red})
+					elseif addon_lua then 
+						local addon_id,addon_data = addon_lua()
+						if addon_id == true then 
+							--assume loading is handled by the addon
+						elseif addon_id and type(addon_data) == "table" then 
+							if type(addon_data.variations_paths) == "table" then 
+								addon_data.variations = addon_data.variations or {}
+								for i,variation in pairs(addon_data.variations_paths) do
+									--write full path to soundfile which includes addon path
+									addon_data.variations[#addon_data.variations + 1] = path_util:Combine(full_addon_path,variation)
 								end
-								if addon_data.path_local then 
-									addon_data.path = path_util:Combine(addon_path,foldername,addon_data.path_local)
-								end
-								self:AddCustomHitsound(addon_id,addon_data)
-								break
-							else
-								self:log("Error: LoadHitsoundAddons() " .. raw_path .. " returned invalid data. Expected results: [string],[table]. Got: [" .. type(id) .. "] " .. tostring(id) .. ", [" .. type(addon_data) .. "] " .. tostring(addon_data) .. ".")
 							end
+							if addon_data.path_local then 
+								addon_data.path = path_util:Combine(full_addon_path,addon_data.path_local)
+							end
+							self:AddCustomHitsound(addon_id,addon_data)
+--							break
+						else
+							self:log("Error: LoadHitsoundAddons() " .. addon_lua_file_path .. " returned invalid data. Expected results: [string],[table]. Got: [" .. type(id) .. "] " .. tostring(id) .. ", [" .. type(addon_data) .. "] " .. tostring(addon_data) .. ".")
 						end
-						self:log("Error: LoadHitsoundAddons() Chunk " .. tostring(raw_path) .. " could not compile!")
 					end
 				end
 				if not is_advanced then
-					for _,filename in pairs(file_util:GetFiles(path_util:Combine(addon_path,foldername))) do 
-						if path_util:GetFileExtension(filename) == extension then 
-							local raw_path = path_util:Combine(addon_path,foldername,filename)
+					local is_randomized = file_util:FileExists(Application:nice_path(path_util:Combine(full_addon_path,"random.txt")))
+					
+					for _,filename in pairs(file_util:GetFiles(full_addon_path)) do 
+						local file_extension = path_util:GetFileExtension(filename)
+						if self.ALLOWED_SOUND_EXTENSIONS[utf8.to_lower(file_extension)] then
+							local raw_path = path_util:Combine(full_addon_path,filename)
 							
 							if is_randomized then
 								table.insert(variations,#variations + 1,raw_path)
 							else
-								local clean_filename = string.sub(filename,1,string.len(filename) - string.len("." .. extension))
+								local clean_filename = string.sub(filename,1,string.len(filename) - string.len("." .. file_extension))
 								local clean_filename_no_spaces = string.gsub(clean_filename,"%s","_")
 								local string_id = "menu_hitsound_addon_" .. clean_filename_no_spaces
 								managers.localization:add_localized_strings({
@@ -1469,11 +1539,9 @@ function AdvancedCrosshair:LoadHitsoundAddons()
 					end
 				end
 			end
-			
 		end
 	end
 end
-
 
 
 Hooks:Register("ACH_LoadAddon_Crosshair") 
@@ -3652,6 +3720,8 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 	AdvancedCrosshair:LoadAllAddons() --load custom crosshairs, hitmarkers, and hitsounds
 
 	Hooks:Call("ACH_LoadAllAddons")
+
+	
 	AdvancedCrosshair:log("Addon loading complete.")
 	for category,category_data in pairs(AdvancedCrosshair.settings.crosshairs) do 
 		for firemode,firemode_data in pairs(category_data) do 
@@ -5886,6 +5956,12 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 			nil,
 			true
 		)
+	end
+	
+	MenuCallbackHandler.callback_ach_menu_misc_enable_logs = function(self,item)
+		local enabled = item:value() == "on"
+		AdvancedCrosshair.settings.logs_enabled = enabled
+		AdvancedCrosshair:Save()
 	end
 	
 	MenuCallbackHandler.callback_ach_menu_misc_can_check_melee_headshots = function(self,item)

@@ -2,6 +2,7 @@
 	"menu_id" : "ach_menu_reset",
 	"parent_menu_id" : "ach_menu_misc",
 	"title" : "menu_ach_menu_reset_title",
+	"description" : "menu_ach_menu_reset_desc",
 	"back_callback" : "callback_ach_reset_close",
 	"focus_changed_callback" : "callback_ach_reset_focus",
 	"items" : [

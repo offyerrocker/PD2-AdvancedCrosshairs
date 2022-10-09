@@ -199,11 +199,14 @@
 	
 	"menu_ach_menu_misc_title" : "Прочее...",
 	
+	"menu_ach_menu_misc_enable_logs_title" : "Debug Logs Enabled",
+	"menu_ach_menu_misc_enable_logs_desc" : "Allows writing debug info to the BLT console.",
 	"menu_ach_menu_misc_can_check_melee_headshots_title" : "Попадания в голову холодным оружием",
 	"menu_ach_menu_misc_can_check_melee_headshots_desc" : "Хитмаркеры и звуки будут показывать, что оружие ближнего боя попало в голову.\nНе влияет на урон.",
 	"menu_ach_menu_misc_easter_eggs_enabled_title" : "Enable Easter Eggs",
 	"menu_ach_menu_misc_easter_eggs_enabled_desc" : "Enables some fun little easter eggs.",
 	"menu_ach_menu_reset_title" : "Обнулить настройки...",
+	"menu_ach_menu_reset_desc" : "Choose ACH settings to reset.",
 	"menu_ach_reset_crosshair_settings_title" : "Обнулить настройки прицела",
 	"menu_ach_reset_crosshair_settings_desc" : "Возвращает все настройки прицела на стандартные",
 	"menu_ach_reset_hitmarker_settings_title" : "Обнулить настройки хитмаркера",
