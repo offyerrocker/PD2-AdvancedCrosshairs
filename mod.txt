@@ -3,7 +3,7 @@
 	"description" : "This isn't your average everyday crosshair!",
 	"author" : "Offyerrocker",
 	"contact" : "Discord: Offyerrocker#3878",
-	"version" : "32",
+	"version" : "33",
 	"blt_version" : 2,
 	"priority" : 7,
 	"color" : "0 128 255",
@@ -31,18 +31,6 @@
 		{
 			"hook_id" : "lib/managers/hud/hudhitconfirm",
 			"script_path" : "lua/hudhitconfirm.lua"
-		},
-		{
-			"hook_id" : "lib/units/beings/player/states/playerstandard",
-			"script_path" : "lua/playerstandard.lua"
-		},
-		{
-			"hook_id" : "lib/units/beings/player/states/playermovementstate",
-			"script_path" : "lua/playermovementstate.lua"
-		},
-		{
-			"hook_id" : "lib/units/weapons/newraycastweaponbase",
-			"script_path" : "lua/newraycastweaponbase.lua"
 		},
 		{
 			"hook_id" : "lib/units/enemies/cop/copdamage",

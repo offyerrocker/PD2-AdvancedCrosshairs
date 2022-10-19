@@ -76,9 +76,9 @@ AdvancedCrosshair._panel = nil
 AdvancedCrosshair._hitmarker_panel = nil
 AdvancedCrosshair._crosshair_panel = nil
 
-AdvancedCrosshair.url_colorpicker = "https://modwork.shop/29641"
+AdvancedCrosshair.url_colorpicker = "https://modworkshop.net/mod/29641"
 AdvancedCrosshair.url_ach_github = "https://github.com/offyerrocker/PD2-AdvancedCrosshairs"
-AdvancedCrosshair.url_ach_mws = "https://modwork.shop/29585"
+AdvancedCrosshair.url_ach_mws = "https://modworkshop.net/mod/29585"
 
 AdvancedCrosshair.addon_xml_file_name = "mod.xml"
 AdvancedCrosshair.addon_lua_file_name = "addon.lua"
@@ -214,13 +214,13 @@ AdvancedCrosshair.default_settings = {
 	easter_eggs_enabled = true, --enables hitmarker rain (currently the only easter egg)
 	compatibility_auto_detection = true,
 	compatibility_hook_playermanager_checkskill = false,
-	compatibility_hook_playerstandard_onsteelsight = false,
-	compatibility_hook_playerstandard_startactionequipweapon = false,
-	compatibility_hook_playermovementstate_enter = false,
+	compatibility_hook_playerstandard_onsteelsight = false, --deprecated in v33
+	compatibility_hook_playerstandard_startactionequipweapon = false, --deprecated in v33
+	compatibility_hook_playermovementstate_enter = false, --deprecated in v33
 	compatibility_hook_copdamage_damagemelee = false,
 	compatibility_hook_copdamage_rollcriticalhit = false,
-	compatibility_hook_newraycastweaponbase_togglefiremode = false,
-	compatibility_hook_newraycastweaponbase_resetcachedgadget = false,
+	compatibility_hook_newraycastweaponbase_togglefiremode = false, --deprecated in v33
+	compatibility_hook_newraycastweaponbase_resetcachedgadget = false, --deprecated in v33
 	can_check_melee_headshots = false,
 	allow_messages = 1, -- (unused) 1: yes; 2: yes but no compatibility messages; 3: do not. none. never. get out of my house. die.
 	palettes = { --for colorpicker
@@ -263,6 +263,11 @@ AdvancedCrosshair.default_settings = {
 	crosshair_misc_color = "f51b83",
 	crosshair_global = table.deep_map_copy(AdvancedCrosshair.DEFAULT_CROSSHAIR_OPTIONS),
 	crosshairs = {},
+	crosshair_hide_while_interacting = false,
+	crosshair_hide_while_meleeing = false,
+	crosshair_hide_while_grenading = false,
+	crosshair_hide_while_reloading = false,
+	crosshair_hide_while_running = false,
 	crosshair_weapon_id_overrides = { --no menu yet
 	--EG:
 --		deagle = {
@@ -445,8 +450,6 @@ AdvancedCrosshair.ADDON_PATHS = {
 --holds some instance-specific stuff to save time + cycles
 AdvancedCrosshair._cache = {
 	current_crosshair_data = nil, --holds table reference to self._cache.weapons [...] .firemode
-	underbarrel = {}, --deprecated
-	weapon = {}, --deprecated
 	weapons = {},
 	bloom = 0,
 	bloom_t = -69,
@@ -455,8 +458,6 @@ AdvancedCrosshair._cache = {
 	sound_sources = {},
 	is_in_steelsight = false --only set/used when compatibility mode for "playerstandard on steelsight" is enabled
 }
-
-_G.queued_delay_advanced_crosshair_data = {}
 
 --do not change this. refer to the github wiki if you want to add custom crosshairs to this mod (see: AdvancedCrosshair.url_ach_github)
 AdvancedCrosshair._crosshair_data = {
@@ -1130,9 +1131,9 @@ function AdvancedCrosshair:LoadAddonXML(foldername,full_addon_path)
 				--visually add the new beardlib mod to the menu list
 				if bl_menus_mods then
 					--temporarily disabled because it inexplicably broke as soon as i pushed the branch live i guess
---					if not game_state_machine or GameStateFilters.menu[game_state_machine:current_state_name()] then
+					if not game_state_machine or GameStateFilters.menu[game_state_machine:current_state_name()] then
 --						bl_menus_mods:AddMod(mod,bl_framework_base)
---					end
+					end
 				end
 			end
 		else
@@ -1598,28 +1599,13 @@ function AdvancedCrosshair:UseCompatibility_PlayerManagerCheckSkill()
 	return autodetect_compatibility_override or self.settings.compatibility_hook_playermanager_checkskill
 end
 
-function AdvancedCrosshair:UseCompatibility_PlayerStandardOnSteelsight()
-	local autodetect_compatibility_override
-	if self:UseCompatibilityAutoDetection() then 
-		autodetect_compatibility_override = self.auto_compatibility_settings.compatibility_hook_playerstandard_onsteelsight
-	end
-	return autodetect_compatibility_override or self.settings.compatibility_hook_playerstandard_onsteelsight
+function AdvancedCrosshair:UseCompatibility_PlayerStandardOnSteelsight() --deprecated in v33
 end
 
-function AdvancedCrosshair:UseCompatibility_PlayerStandardStartEquipWeapon()
-	local autodetect_compatibility_override
-	if self:UseCompatibilityAutoDetection() then 
-		autodetect_compatibility_override = self.auto_compatibility_settings.compatibility_hook_playerstandard_startactionequipweapon
-	end
-	return autodetect_compatibility_override or self.settings.compatibility_hook_playerstandard_startactionequipweapon
+function AdvancedCrosshair:UseCompatibility_PlayerStandardStartEquipWeapon() --deprecated in v33
 end
 
-function AdvancedCrosshair:UseCompatibility_PlayerMovementStateEnter()
-	local autodetect_compatibility_override
-	if self:UseCompatibilityAutoDetection() then 
-		autodetect_compatibility_override = self.auto_compatibility_settings.compatibility_hook_playermovementstate_enter
-	end
-	return autodetect_compatibility_override or self.settings.compatibility_hook_playermovementstate_enter
+function AdvancedCrosshair:UseCompatibility_PlayerMovementStateEnter() --deprecated in v33
 end
 
 function AdvancedCrosshair:UseCompatibility_CopDamageMelee()
@@ -1638,20 +1624,10 @@ function AdvancedCrosshair:UseCompatibility_CopDamageRollCrit()
 	return autodetect_compatibility_override or self.settings.compatibility_hook_copdamage_rollcriticalhit
 end
 
-function AdvancedCrosshair:UseCompatibility_NewRaycastWeaponBaseToggleFiremode()
-	local autodetect_compatibility_override
-	if self:UseCompatibilityAutoDetection() then 
-		autodetect_compatibility_override = self.auto_compatibility_settings.compatibility_hook_newraycastweaponbase_togglefiremode
-	end
-	return autodetect_compatibility_override or self.settings.compatibility_hook_newraycastweaponbase_togglefiremode
+function AdvancedCrosshair:UseCompatibility_NewRaycastWeaponBaseToggleFiremode() --deprecated in v33
 end
 
-function AdvancedCrosshair:UseCompatibility_NewRaycastWeaponBaseResetCachedGadget()
-	local autodetect_compatibility_override
-	if self:UseCompatibilityAutoDetection() then 
-		autodetect_compatibility_override = self.auto_compatibility_settings.compatibility_hook_newraycastweaponbase_resetcachedgadget
-	end
-	return autodetect_compatibility_override or self.settings.compatibility_hook_newraycastweaponbase_resetcachedgadget
+function AdvancedCrosshair:UseCompatibility_NewRaycastWeaponBaseResetCachedGadget() --deprecated in v33
 end
 
 function AdvancedCrosshair:IsEasterEggsEnabled()
@@ -1913,55 +1889,18 @@ function AdvancedCrosshair:ApplyCompatibilityFixes()
 		self:OnPlayerManagerCheckSkills(managers.player)
 	end
 	
-	self:ApplyCompatibility_PlayerMovementStateEnter(self:UseCompatibility_PlayerMovementStateEnter())
-	self:ApplyCompatibility_PlayerStandardStartEquipWeapon(self:UseCompatibility_PlayerStandardStartEquipWeapon())
 	self:ApplyCompatibility_CopDamage_RollCriticalHit(self:UseCompatibility_CopDamageRollCrit())
 	self:ApplyCompatibility_CopDamage_DamageMelee(self:UseCompatibility_CopDamageMelee())
-	self:ApplyCompatibility_NewRaycastWeaponBaseToggleFiremode(self:UseCompatibility_NewRaycastWeaponBaseToggleFiremode())
 	self:ApplyCompatibility_NewRaycastWeaponBaseResetCachedGadget(self:UseCompatibility_NewRaycastWeaponBaseResetCachedGadget())
 end
 
+function AdvancedCrosshair:ApplyCompatibility_PlayerMovementStateEnter(enabled) --deprecated in v33
+end
+
+function AdvancedCrosshair:ApplyCompatibility_PlayerStandardStartEquipWeapon(enabled) --deprecated in v33
+end
+
 	--we'll make our own hooks! with blackjack! and hooks! wait no
-function AdvancedCrosshair:ApplyCompatibility_PlayerMovementStateEnter(enabled)
-	if PlayerMovementState then 
-		local orig_enter = PlayerMovementState._ach_orig_enter
-		if not (orig_enter and type(orig_enter) == "function") then 
-			orig_enter = PlayerMovementState.enter
-			PlayerMovementState._ach_orig_enter = orig_enter
-		end
-		
-		if enabled then 
-			function PlayerMovementState.enter(state,state_data,enter_data,...)
-				local result = {orig_enter(state,state_data,enter_data,...)}
-				AdvancedCrosshair.hook_PlayerMovementState_enter(state,state_data,enter_data,...)
-				return unpack(result)
-			end
-		else
-			PlayerMovementState.enter = orig_enter
-		end
-	end
-end
-
-function AdvancedCrosshair:ApplyCompatibility_PlayerStandardStartEquipWeapon(enabled)
-	if PlayerStandard then 
-		local orig_start_equip = PlayerStandard._ach_orig_start_action_equip_weapon
-		if not (orig_start_equip and type(orig_start_equip) == "function") then 
-			orig_start_equip = PlayerStandard._start_action_equip_weapon
-			PlayerStandard._ach_orig_start_action_equip_weapon = orig_start_equip
-		end
-		
-		if enabled then 
-			function PlayerStandard._start_action_equip_weapon(state,t,...)
-				local result = {orig_start_equip(state,t,...)}
-				AdvancedCrosshair.hook_PlayerStandard_start_action_equip_weapon(state,t,...)
-				return unpack(result)
-			end
-		else
-			PlayerStandard._start_action_equip_weapon = orig_start_equip
-		end
-	end
-end
-
 function AdvancedCrosshair:ApplyCompatibility_CopDamage_DamageMelee(enabled)
 
 	--remove prior posthook just in case since this is a case where running twice could be annoying for the user
@@ -2011,54 +1950,16 @@ function AdvancedCrosshair:ApplyCompatibility_CopDamage_RollCriticalHit(enabled)
 	end
 end
 
-function AdvancedCrosshair:ApplyCompatibility_NewRaycastWeaponBaseToggleFiremode(enabled)
-	if NewRaycastWeaponBase then 
-		local orig_toggle_firemode = NewRaycastWeaponBase._ach_orig_toggle_firemode
-		if not (orig_toggle_firemode and type(orig_toggle_firemode) == "function") then 
-			orig_toggle_firemode = NewRaycastWeaponBase.toggle_firemode
-			NewRaycastWeaponBase._ach_orig_toggle_firemode = orig_toggle_firemode
-		end
-		
-		if enabled then 
-			function NewRaycastWeaponBase.toggle_firemode(wpn_base,skip_post_event,...)
-				local result = {orig_toggle_firemode(wpn_base,skip_post_event,...)}
-				AdvancedCrosshair.hook_NewRaycastWeaponBase_toggle_firemode(wpn_base,skip_post_event)
-				return unpack(result)
-			end
-		else
-			NewRaycastWeaponBase.toggle_firemode = orig_toggle_firemode
-		end
-	end
+function AdvancedCrosshair:ApplyCompatibility_NewRaycastWeaponBaseToggleFiremode(enabled) --deprecated in v33
 end
 
-function AdvancedCrosshair:ApplyCompatibility_NewRaycastWeaponBaseResetCachedGadget(enabled)
-	if NewRaycastWeaponBase then 
-		local orig_reset_cached_gadget = NewRaycastWeaponBase._ach_orig_reset_cached_gadget
-		if not (orig_reset_cached_gadget and type(orig_reset_cached_gadget) == "function") then 
-			orig_reset_cached_gadget = NewRaycastWeaponBase.reset_cached_gadget
-			NewRaycastWeaponBase._ach_orig_reset_cached_gadget = orig_reset_cached_gadget
-		end
-		
-		if enabled then 
-			function NewRaycastWeaponBase.reset_cached_gadget(wpn_base,...)
-				local result = {orig_reset_cached_gadget(wpn_base,...)}
-				AdvancedCrosshair.hook_NewRaycastWeaponBase_reset_cached_gadget(wpn_base)
-				return unpack(result)
-			end
-		else
-			NewRaycastWeaponBase.reset_cached_gadget = orig_reset_cached_gadget
-		end
-	end
+function AdvancedCrosshair:ApplyCompatibility_NewRaycastWeaponBaseResetCachedGadget(enabled) --deprecated in v33
 end
 
-function AdvancedCrosshair.hook_PlayerMovementState_enter(...)
-	AdvancedCrosshair:CheckCrosshair()
+function AdvancedCrosshair.hook_PlayerMovementState_enter(...) --deprecated in v33
 end
 
-function AdvancedCrosshair.hook_PlayerStandard_start_action_equip_weapon(state,t)
-	AdvancedCrosshair:CheckCrosshair()
-	AdvancedCrosshair:SetCrosshairBloom(0)
-	--Message.OnSwitchWeapon is called on UNEQUIP, not on weapon equip. so hooking this is what we gotta do.
+function AdvancedCrosshair.hook_PlayerStandard_start_action_equip_weapon(state,t) --deprecated in v33
 end
 
 function AdvancedCrosshair.hook_CopDamage_damage_melee(dmg_ext,attack_data)
@@ -2093,20 +1994,10 @@ function AdvancedCrosshair.hook_CopDamage_damage_melee(dmg_ext,attack_data)
 	end
 end
 
-function AdvancedCrosshair.hook_NewRaycastWeaponBase_toggle_firemode(wpnbase,skip_post_event)
-	AdvancedCrosshair:CheckCrosshair()
+function AdvancedCrosshair.hook_NewRaycastWeaponBase_toggle_firemode(wpnbase,skip_post_event) --deprecated in v33
 end
 
-function AdvancedCrosshair.hook_NewRaycastWeaponBase_reset_cached_gadget(wpnbase)
-	local recorded_firemode = wpnbase:get_recorded_fire_mode()
-	for _,firemode in pairs(AdvancedCrosshair.VALID_WEAPON_FIREMODES) do 
-		if recorded_firemode == Idstring(firemode) then 
-			AdvancedCrosshair:CheckCrosshair({
-				firemode = firemode
-			})
-			break
-		end
-	end
+function AdvancedCrosshair.hook_NewRaycastWeaponBase_reset_cached_gadget(wpnbase) --deprecated in v33
 end
 
 --this doesn't need an ApplyCompatibility function since its contents are run manually at the same time as the other ApplyCompatibility functions
@@ -2401,6 +2292,8 @@ function AdvancedCrosshair:CreateHUD(t,dt) --try to create hud each run until bo
 --		managers.hud:add_updator("advancedcrosshairs_update",callback(AdvancedCrosshair,AdvancedCrosshair,"Update"))
 		self:CreateCrosshairPanel(hud.panel)
 		self:CreateCrosshairs()
+		
+		BeardLib:AddUpdater("ach_update_crosshair",callback(self,self,"UpdateCrosshair"))
 	end
 end
 
@@ -2441,7 +2334,6 @@ function AdvancedCrosshair:CreateCrosshairs()
 			self._cache.current_crosshair_data = self._cache.weapons[tostring(equipped_unit:key())].firemodes[equipped_unit:base():fire_mode()]
 		end
 	end
-	self:CheckCrosshair()
 end
 
 function AdvancedCrosshair:RemoveCrosshairByWeapon(unit)
@@ -3196,9 +3088,10 @@ function AdvancedCrosshair:ClearCache(skip_destroy)
 	cache.num_hitmarkers = 0
 end
 
---sets the correct crosshair visible according to current weapon data
---ideally, should only be called on certain events, not in update
-function AdvancedCrosshair:CheckCrosshair(override_params)
+function AdvancedCrosshair:CheckCrosshair(override_params) --deprecated in v33; use UpdateCrosshair() instead from now on
+end
+
+function AdvancedCrosshair:UpdateCrosshair(t,dt,override_params)
 	if not self:IsCrosshairEnabled() then 
 		return
 	end
@@ -3234,14 +3127,12 @@ function AdvancedCrosshair:CheckCrosshair(override_params)
 --this can happen at the start of the heist when the playerstate is changed for the first time, before AdvancedCrosshair is initialized
 				return
 			end
-			
+			--fire_mode
 			local underbarrel_base = weapon_base:gadget_overrides_weapon_functions()
 			if underbarrel_base then 
 				local underbarrel = weapon_data.underbarrels[tostring(underbarrel_base)]
-				if underbarrel and underbarrel_base and underbarrel_base._tweak_data then
-					current_firemode = underbarrel_base._tweak_data.FIRE_MODE
-					--currently no other way to get the firemode of an underbarrel, since i don't believe switching firemodes independently of parent weapon is possible?
-					
+				if underbarrel then 
+					current_firemode = underbarrel_base:fire_mode()
 					new_current_data = underbarrel.firemodes[current_firemode]
 				end
 			end
@@ -3254,15 +3145,32 @@ function AdvancedCrosshair:CheckCrosshair(override_params)
 				self._cache.current_crosshair_data = new_current_data
 				
 			end
+			local is_changing_weapon = current_state:_changing_weapon()
+			if is_changing_weapon then 
+				self:SetCrosshairBloom(0)
+			end
+			
 			local ads_behavior = self._cache.current_crosshair_data.settings.ads_behavior
 			if ads_behavior == 2 and is_in_steelsight then 
 				hidden = true
 			elseif ads_behavior == 3 and not is_in_steelsight then
 				hidden = true
+			elseif self.settings.crosshair_hide_while_interacting and (current_state:_interacting() or current_state._use_item_expire_t) then
+				hidden = true
+			elseif self.settings.crosshair_hide_while_meleeing and current_state:_is_meleeing() then
+				hidden = true
+			elseif self.settings.crosshair_hide_while_grenading and current_state:_is_throwing_projectile() then
+				hidden = true
+--			elseif is_changing_weapon then 
+--				hidden = true
+			elseif self.settings.crosshair_hide_while_reloading and current_state:_is_reloading() then
+				hidden = true
+			elseif self.settings.crosshair_hide_while_running and current_state:running() and not weapon_base:run_and_shoot_allowed() then 
+				hidden = true
 			end
+			
 --			hidden = hidden or current_state:_is_reloading() or current_state:_changing_weapon() or current_state:_is_meleeing() or current_state._use_item_expire_t or current_state:_interacting() or current_state:_is_throwing_projectile() or current_state:_is_deploying_bipod() or current_state._menu_closed_fire_cooldown > 0 or current_state:is_switching_stances()
---hides the crosshair when the weapon is not ready to fire
---requires either too many separate hooks, or running every frame inside of update(), which i do not want to do 
+
 			local state_allowed = self:CrosshairAllowedInState(state_name)
 			if state_allowed ~= nil then 
 				hidden = hidden or not state_allowed
@@ -3272,14 +3180,6 @@ function AdvancedCrosshair:CheckCrosshair(override_params)
 		
 		
 		self._cache.current_crosshair_data.panel:set_visible(not hidden)
-
-		
---[[		
-		local state_allowed = self:CrosshairAllowedInState(state_name)
-		if state_allowed ~= nil then 
-			self._crosshair_panel:set_visible(state_allowed)
-		end
---]]		
 		
 	end
 end
@@ -3422,14 +3322,6 @@ function AdvancedCrosshair:Update(t,dt)
 						panel_w = current_crosshair_panel:w(),
 						panel_h = current_crosshair_panel:h()
 					})
-				end
-				
-				if self:UseCompatibility_PlayerStandardOnSteelsight() then 
-					local is_in_steelsight = state:in_steelsight()
-					if self._cache.is_in_steelsight ~= is_in_steelsight then
-						self._cache.is_in_steelsight = is_in_steelsight
-						self:CheckCrosshair()
-					end
 				end
 				
 				local outofrange_display_mode = self:GetCrosshairRangeMode()
@@ -4532,7 +4424,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		id = "ach_crosshairs_general_divider_1",
 		size = 16,
 		menu_id = AdvancedCrosshair.crosshairs_menu_id,
-		priority = 9
+		priority = 15
 	})
 	MenuHelper:AddToggle({
 		id = "ach_crosshairs_general_master_enable",
@@ -4541,7 +4433,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		callback = "callback_ach_crosshairs_general_master_enable",
 		value = AdvancedCrosshair.settings.crosshair_enabled,
 		menu_id = AdvancedCrosshair.crosshairs_menu_id,
-		priority = 8
+		priority = 14
 	})
 	
 	MenuHelper:AddMultipleChoice({
@@ -4557,7 +4449,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		},
 		value = AdvancedCrosshair.settings.crosshair_outofrange_mode,
 		menu_id = AdvancedCrosshair.crosshairs_menu_id,
-		priority = 7
+		priority = 13
 	})
 	
 	
@@ -4568,7 +4460,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		callback = "callback_ach_crosshairs_general_enable_shake",
 		value = AdvancedCrosshair.settings.use_shake,
 		menu_id = AdvancedCrosshair.crosshairs_menu_id,
-		priority = 6
+		priority = 12
 	})
 	MenuHelper:AddToggle({
 		id = "ach_crosshairs_general_enable_dynamic_color",
@@ -4577,7 +4469,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		callback = "callback_ach_crosshairs_general_enable_dynamic_color",
 		value = AdvancedCrosshair.settings.use_color,
 		menu_id = AdvancedCrosshair.crosshairs_menu_id,
-		priority = 5
+		priority = 11
 	})
 	MenuHelper:AddButton({
 		id = "ach_crosshairs_general_set_dynamic_color_enemy",
@@ -4585,7 +4477,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		desc = "menu_ach_crosshairs_general_set_dynamic_color_enemy_desc",
 		callback = "callback_ach_crosshairs_general_set_dynamic_color_enemy",
 		menu_id = AdvancedCrosshair.crosshairs_menu_id,
-		priority = 4
+		priority = 10
 	})
 	MenuHelper:AddButton({
 		id = "ach_crosshairs_general_set_dynamic_color_civilian",
@@ -4593,7 +4485,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		desc = "menu_ach_crosshairs_general_set_dynamic_color_civilian_desc",
 		callback = "callback_ach_crosshairs_general_set_dynamic_color_civilian",
 		menu_id = AdvancedCrosshair.crosshairs_menu_id,
-		priority = 3
+		priority = 9
 	})
 	MenuHelper:AddButton({
 		id = "ach_crosshairs_general_set_dynamic_color_teammate",
@@ -4601,7 +4493,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		desc = "menu_ach_crosshairs_general_set_dynamic_color_teammate_desc",
 		callback = "callback_ach_crosshairs_general_set_dynamic_color_teammate",
 		menu_id = AdvancedCrosshair.crosshairs_menu_id,
-		priority = 2
+		priority = 8
 	})
 	MenuHelper:AddButton({
 		id = "ach_crosshairs_general_set_dynamic_color_misc",
@@ -4609,9 +4501,69 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		desc = "menu_ach_crosshairs_general_set_dynamic_color_misc_desc",
 		callback = "callback_ach_crosshairs_general_set_dynamic_color_misc",
 		menu_id = AdvancedCrosshair.crosshairs_menu_id,
+		priority = 7
+	})
+	
+	
+	MenuHelper:AddDivider({
+		id = "ach_crosshairs_general_divider_2",
+		size = 16,
+		menu_id = AdvancedCrosshair.crosshairs_menu_id,
+		priority = 6
+	})
+	
+	MenuHelper:AddToggle({
+		id = "ach_crosshair_general_hide_when_interacting",
+		title = "menu_ach_crosshair_general_hide_when_interacting_title",
+		desc = "menu_ach_crosshair_general_hide_when_interacting_desc",
+		callback = "callback_ach_crosshairs_general_hide_while_interacting",
+		value = AdvancedCrosshair.settings.crosshair_hide_while_interacting,
+		menu_id = AdvancedCrosshair.crosshairs_menu_id,
+		priority = 5
+	})
+	MenuHelper:AddToggle({
+		id = "ach_crosshair_general_hide_when_meleeing",
+		title = "menu_ach_crosshair_general_hide_when_meleeing_title",
+		desc = "menu_ach_crosshair_general_hide_when_meleeing_desc",
+		callback = "callback_ach_crosshairs_general_hide_while_meleeing",
+		value = AdvancedCrosshair.settings.crosshair_hide_while_meleeing,
+		menu_id = AdvancedCrosshair.crosshairs_menu_id,
+		priority = 4
+	})
+	MenuHelper:AddToggle({
+		id = "ach_crosshair_general_hide_when_grenading",
+		title = "menu_ach_crosshair_general_hide_when_grenading_title",
+		desc = "menu_ach_crosshair_general_hide_when_grenading_desc",
+		callback = "callback_ach_crosshairs_general_hide_while_grenading",
+		value = AdvancedCrosshair.settings.crosshair_hide_while_grenading,
+		menu_id = AdvancedCrosshair.crosshairs_menu_id,
+		priority = 3
+	})
+	MenuHelper:AddToggle({
+		id = "ach_crosshair_general_hide_when_reloading",
+		title = "menu_ach_crosshair_general_hide_when_reloading_title",
+		desc = "menu_ach_crosshair_general_hide_when_reloading_desc",
+		callback = "callback_ach_crosshairs_general_hide_while_reloading",
+		value = AdvancedCrosshair.settings.crosshair_hide_while_reloading,
+		menu_id = AdvancedCrosshair.crosshairs_menu_id,
+		priority = 2
+	})
+	MenuHelper:AddToggle({
+		id = "ach_crosshair_general_hide_when_running",
+		title = "menu_ach_crosshair_general_hide_when_running_title",
+		desc = "menu_ach_crosshair_general_hide_when_running_desc",
+		callback = "callback_ach_crosshairs_general_hide_while_running",
+		value = AdvancedCrosshair.settings.crosshair_hide_while_running,
+		menu_id = AdvancedCrosshair.crosshairs_menu_id,
 		priority = 1
 	})
-		
+	
+	
+	
+	
+	
+	
+	
 	--all custom keybinds, except for those specified in a mod.txt, or those whose parent menus are a direct child of the blt mod options menu, will cause a crash when binding the key (reason unknown)
 	--the calback does not seem to activate even when defined in the ach main menu
 	--so this keybind will be defined in mod.txt until this issue is fixed
@@ -5130,7 +5082,7 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 	MenuCallbackHandler.callback_ach_crosshairs_general_master_enable = function(self,item)
 		local state = item:value() == "on"
 		AdvancedCrosshair.settings.crosshair_enabled = state
-		if alive (AdvancedCrosshair._crosshair_panel) then 
+		if alive(AdvancedCrosshair._crosshair_panel) then 
 			AdvancedCrosshair._crosshair_panel:set_visible(state)
 		end
 		AdvancedCrosshair:Save()
@@ -5138,9 +5090,8 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 	MenuCallbackHandler.callback_ach_toggle_crosshair_visibility = function(self)
 		local state = not AdvancedCrosshair:IsCrosshairEnabled()
 		AdvancedCrosshair.settings.crosshair_enabled = state
-		if alive (AdvancedCrosshair._crosshair_panel) then 
+		if alive(AdvancedCrosshair._crosshair_panel) then 
 			AdvancedCrosshair._crosshair_panel:set_visible(state)
-			AdvancedCrosshair:CheckCrosshair()
 		end
 		AdvancedCrosshair:Save()
 	end
@@ -5153,7 +5104,6 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 		AdvancedCrosshair.settings.use_shake = item:value() == "on"
 		if alive(AdvancedCrosshair._crosshair_panel) then 
 			AdvancedCrosshair:SetCrosshairCenter(AdvancedCrosshair._panel:center())
-			AdvancedCrosshair:CheckCrosshair()
 		end
 		AdvancedCrosshair:Save()
 	end
@@ -5304,8 +5254,6 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 			
 			AdvancedCrosshair.clbk_show_colorpicker_with_callbacks(Color(AdvancedCrosshair.settings.crosshair_misc_color),clbk_colorpicker,clbk_colorpicker)
 			
---			AdvancedCrosshair:CheckCrosshair()
-			
 		elseif not _G.ColorPicker then
 			AdvancedCrosshair.clbk_missing_colorpicker_prompt()
 		end	
@@ -5313,6 +5261,32 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 	MenuCallbackHandler.callback_ach_crosshairs_categories_global_ads_behavior = function(self,item)
 		local value = tonumber(item:value())
 		AdvancedCrosshair.settings.crosshair_global.ads_behavior = value
+		AdvancedCrosshair:Save()
+	end
+	
+	MenuCallbackHandler.callback_ach_crosshairs_general_hide_while_interacting = function(self,item)
+		local value = item:value() == "on"
+		AdvancedCrosshair.settings.crosshair_hide_while_interacting = value
+		AdvancedCrosshair:Save()
+	end
+	MenuCallbackHandler.callback_ach_crosshairs_general_hide_while_running = function(self,item)
+		local value = item:value() == "on"
+		AdvancedCrosshair.settings.crosshair_hide_while_running = value
+		AdvancedCrosshair:Save()
+	end
+	MenuCallbackHandler.callback_ach_crosshairs_general_hide_while_meleeing = function(self,item)
+		local value = item:value() == "on"
+		AdvancedCrosshair.settings.crosshair_hide_while_meleeing = value
+		AdvancedCrosshair:Save()
+	end
+	MenuCallbackHandler.callback_ach_crosshairs_general_hide_while_grenading = function(self,item)
+		local value = item:value() == "on"
+		AdvancedCrosshair.settings.crosshair_hide_while_grenading = value
+		AdvancedCrosshair:Save()
+	end
+	MenuCallbackHandler.callback_ach_crosshairs_general_hide_while_reloading = function(self,item)
+		local value = item:value() == "on"
+		AdvancedCrosshair.settings.crosshair_hide_while_reloading = value
 		AdvancedCrosshair:Save()
 	end
 	
@@ -6002,34 +5976,19 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 		AdvancedCrosshair:Save()
 	end
 	
-	MenuCallbackHandler.callback_ach_menu_compat_compatibility_playerstandard_startactionequipweapon = function(self,item)
-		local enabled = item:value() == "on"
-		AdvancedCrosshair.settings.compatibility_hook_playerstandard_startactionequipweapon = enabled
-		AdvancedCrosshair:Save()
+	MenuCallbackHandler.callback_ach_menu_compat_compatibility_playerstandard_startactionequipweapon = function(self,item) --deprecated in v33
 	end
 	
-	MenuCallbackHandler.callback_ach_menu_compat_compatibility_playerstandard_onsteelsight = function(self,item)
-		local enabled = item:value() == "on"
-		AdvancedCrosshair.settings.compatibility_hook_playerstandard_onsteelsight = enabled
-		AdvancedCrosshair:Save()
+	MenuCallbackHandler.callback_ach_menu_compat_compatibility_playerstandard_onsteelsight = function(self,item) --deprecated in v33
 	end
 	
-	MenuCallbackHandler.callback_ach_menu_compat_compatibility_playermovementstate_enter = function(self,item)
-		local enabled = item:value() == "on"
-		AdvancedCrosshair.settings.compatibility_hook_playermovementstate_enter = enabled
-		AdvancedCrosshair:Save()
+	MenuCallbackHandler.callback_ach_menu_compat_compatibility_playermovementstate_enter = function(self,item) --deprecated in v33
 	end
 	
-	MenuCallbackHandler.callback_ach_menu_compat_compatibility_newraycastweaponbase_togglefiremode = function(self,item)
-		local enabled = item:value() == "on"
-		AdvancedCrosshair.settings.compatibility_hook_newraycastweaponbase_togglefiremode = enabled
-		AdvancedCrosshair:Save()
+	MenuCallbackHandler.callback_ach_menu_compat_compatibility_newraycastweaponbase_togglefiremode = function(self,item) --deprecated in v33
 	end
 	
-	MenuCallbackHandler.callback_ach_menu_compat_compatibility_newraycastweaponbase_resetcachedgadget = function(self,item)
-		local enabled = item:value() == "on"
-		AdvancedCrosshair.settings.compatibility_hook_newraycastweaponbase_resetcachedgadget = enabled
-		AdvancedCrosshair:Save()
+	MenuCallbackHandler.callback_ach_menu_compat_compatibility_newraycastweaponbase_resetcachedgadget = function(self,item) --deprecated in v33
 	end
 	
 	MenuCallbackHandler.callback_ach_menu_compat_compatibility_copdamage_damagemelee = function(self,item)

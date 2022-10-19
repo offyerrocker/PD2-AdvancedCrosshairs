@@ -64,7 +64,16 @@
 	"menu_ach_crosshair_ads_behavior_hide" : "Прятать",
 	"menu_ach_crosshair_ads_behavior_show" : "Отображать",
 	
-	
+	"menu_ach_crosshair_general_hide_when_interacting_title" :  "Hide when Interacting",
+	"menu_ach_crosshair_general_hide_when_interacting_desc" :  "If enabled, crosshair will be hidden when interacting with an object or placing deployables.",
+	"menu_ach_crosshair_general_hide_when_meleeing_title" :  "Hide when Meleeing",
+	"menu_ach_crosshair_general_hide_when_meleeing_desc" :  "If enabled, crosshair will be hidden when charging or executing a melee attack.",
+	"menu_ach_crosshair_general_hide_when_grenading_title" :  "Hide when using Throwables",
+	"menu_ach_crosshair_general_hide_when_grenading_desc" :  "If enabled, crosshair will be hidden when throwing a grenade or throwable projectile.",
+	"menu_ach_crosshair_general_hide_when_reloading_title" :  "Hide when Reloading",
+	"menu_ach_crosshair_general_hide_when_reloading_desc" :  "If enabled, crosshair will be hidden when reloading.",
+	"menu_ach_crosshair_general_hide_when_running_title" :  "Hide when Sprinting",
+	"menu_ach_crosshair_general_hide_when_running_desc" :  "If enabled, crosshair will be hidden when running, unless the player has the appropriate skill to fire while running.",
 	
 	"menu_ach_hitmarkers_master_enable_title" : "Включить хитмаркеры",
 	"menu_ach_hitmarkers_master_enable_desc" : "Хитмаркер - иконка, которая показывается при попадании",

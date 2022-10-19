@@ -28,46 +28,6 @@
 		},
 		{
 			"type" : "toggle",
-			"id" : "ach_menu_compat_compatibility_playerstandard_startactionequipweapon",
-			"title" : "menu_ach_menu_compat_compatibility_playerstandard_startactionequipweapon_title",
-			"description" : "menu_ach_menu_compat_compatibility_playerstandard_startactionequipweapon_desc",
-			"callback" : "callback_ach_menu_compat_compatibility_playerstandard_startactionequipweapon",
-			"value" : "compatibility_hook_playerstandard_startactionequipweapon"
-		},
-		{
-			"type" : "toggle",
-			"id" : "ach_menu_compat_compatibility_playerstandard_onsteelsight",
-			"title" : "menu_ach_menu_compat_compatibility_playerstandard_onsteelsight_title",
-			"description" : "menu_ach_menu_compat_compatibility_playerstandard_onsteelsight_desc",
-			"callback" : "callback_ach_menu_compat_compatibility_playerstandard_onsteelsight",
-			"value" : "compatibility_hook_playerstandard_onsteelsight"
-		},
-		{
-			"type" : "toggle",
-			"id" : "ach_menu_compat_compatibility_playermovementstate_enter",
-			"title" : "menu_ach_menu_compat_compatibility_playermovementstate_enter_title",
-			"description" : "menu_ach_menu_compat_compatibility_playermovementstate_enter_desc",
-			"callback" : "callback_ach_menu_compat_compatibility_playermovementstate_enter",
-			"value" : "compatibility_hook_playermovementstate_enter"
-		},
-		{
-			"type" : "toggle",
-			"id" : "ach_menu_compat_compatibility_newraycastweaponbase_togglefiremode",
-			"title" : "menu_ach_menu_compat_compatibility_newraycastweaponbase_togglefiremode_title",
-			"description" : "menu_ach_menu_compat_compatibility_newraycastweaponbase_togglefiremode_desc",
-			"callback" : "callback_ach_menu_compat_compatibility_newraycastweaponbase_togglefiremode",
-			"value" : "compatibility_hook_newraycastweaponbase_togglefiremode"
-		},
-		{
-			"type" : "toggle",
-			"id" : "ach_menu_compat_compatibility_newraycastweaponbase_resetcachedgadget",
-			"title" : "menu_ach_menu_compat_compatibility_newraycastweaponbase_resetcachedgadget_title",
-			"description" : "menu_ach_menu_compat_compatibility_newraycastweaponbase_resetcachedgadget_desc",
-			"callback" : "callback_ach_menu_compat_compatibility_newraycastweaponbase_resetcachedgadget",
-			"value" : "compatibility_hook_newraycastweaponbase_resetcachedgadget"
-		},
-		{
-			"type" : "toggle",
 			"id" : "ach_menu_compat_compatibility_copdamage_damagemelee",
 			"title" : "menu_ach_menu_compat_compatibility_copdamage_damagemelee_title",
 			"description" : "menu_ach_menu_compat_compatibility_copdamage_damagemelee_desc",
