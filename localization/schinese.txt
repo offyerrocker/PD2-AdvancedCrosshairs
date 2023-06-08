@@ -47,6 +47,8 @@
 	"menu_ach_crosshairs_general_outofrange_mode_desc" : "Choose how the crosshair displays when your target is out of range",
 	"menu_ach_crosshairs_general_enable_shake_title" : "启动抖动",
 	"menu_ach_crosshairs_general_enable_shake_desc" : "如开启，当移动时准星会移动以显示武器瞄准位置.",
+	"menu_ach_crosshairs_general_enable_movement_bloom_title" : "Show Movement Inaccuracy",
+	"menu_ach_crosshairs_general_enable_movement_bloom_desc" : "If enabled, widen crosshair when moving. Does not reflect true accuracy.",
 	"menu_ach_crosshairs_general_enable_dynamic_color_title" : "启用动态颜色",
 	"menu_ach_crosshairs_general_enable_dynamic_color_desc" : "开启指向不同目标时改变十字准星颜色.",
 	"menu_ach_crosshairs_general_set_dynamic_color_enemy_title" : "设置敌人颜色",

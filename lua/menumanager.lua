@@ -132,6 +132,20 @@ AdvancedCrosshair.STATES_CROSSHAIR_ALLOWED = {
 	jerry1 = false
 }
 
+AdvancedCrosshair.CROSSHAIR_BLOOM_STATE_VALUES = {
+	BLOOM_SPEED = 3,
+	STEELSIGHT_ADD = -0.15,
+	
+	WALKING_AIR_MAX = 1, --cap on the penalty from this state
+	WALKING_STANDARD_MAX = 0.66,
+	WALKING_CROUCH_MAX = 0.2,
+	RUNNING_AIR_MAX = 1.33,
+	RUNNING_STANDARD_MAX = 1,
+	STATION_STANDARD_MAX = 0,
+	STATION_CROUCH_MAX = -0.1,
+	ZIPLINING_STANDARD_MAX = 2
+}
+
 AdvancedCrosshair.BLEND_MODES = { --for getting the blend mode from the number index returned by menu setting callback
 	"normal",
 	"add",
@@ -254,6 +268,7 @@ AdvancedCrosshair.default_settings = {
 	use_color = true,
 	use_hitpos = true,
 	use_hitsound_pos = false,
+	use_movement_bloom = true,
 	crosshair_outofrange_mode = 1,
 	crosshair_all_override = false,
 	crosshair_stability = 1,
@@ -451,6 +466,7 @@ AdvancedCrosshair.ADDON_PATHS = {
 AdvancedCrosshair._cache = {
 	current_crosshair_data = nil, --holds table reference to self._cache.weapons [...] .firemode
 	weapons = {},
+	stance_bloom = 0, --bloom from moving, tracked separately from normal bloom
 	bloom = 0,
 	bloom_t = -69,
 	hitmarkers = {},
@@ -2046,6 +2062,9 @@ end
 function AdvancedCrosshair:UseCrosshairShake()
 	return self.settings.use_shake
 end
+function AdvancedCrosshair:UseCrosshairMovementBloom()
+	return self.settings.use_movement_bloom
+end
 function AdvancedCrosshair:UseDynamicColor()
 	return self.settings.use_color
 end
@@ -3145,10 +3164,6 @@ function AdvancedCrosshair:UpdateCrosshair(t,dt,override_params)
 				self._cache.current_crosshair_data = new_current_data
 				
 			end
-			local is_changing_weapon = current_state:_changing_weapon()
-			if is_changing_weapon then 
-				self:SetCrosshairBloom(0)
-			end
 			
 			local ads_behavior = self._cache.current_crosshair_data.settings.ads_behavior
 			if ads_behavior == 2 and is_in_steelsight then 
@@ -3416,15 +3431,89 @@ function AdvancedCrosshair:Update(t,dt)
 					self:SetCrosshairCenter(c_w,c_h)
 				end
 
-				--bloom
+				--crosshair bloom
+				local recoil_bloom = 0
+				local stance_bloom = 0
+				local bloom_any
 				if current_crosshair_data.settings.use_bloom then 
+					bloom_any = true
+					
+					recoil_bloom = self._cache.bloom
 					if self._cache.bloom > 0 then 
-						self._cache.bloom = self:DecayBloom(self._cache.bloom,t,dt)
-						self:SetCrosshairBloom(self._cache.bloom)
+						recoil_bloom = self:DecayBloom(recoil_bloom,t,dt)
+						self._cache.bloom = recoil_bloom
+					end
+					
+					if state:_changing_weapon() then
+						recoil_bloom = 0
 					end
 				end
+				if self:UseCrosshairMovementBloom() then
+					bloom_any = true
+					
+					stance_bloom = self._cache.stance_bloom
+					
+					local BLOOM_STATE_VALUES = self.CROSSHAIR_BLOOM_STATE_VALUES
+					local state_data = state._state_data
+					local is_moving = state._moving
+					
+					local bloom_rate
+					local bloom_max = 0
+					if state:running() then
+						if state._is_jumping then
+							bloom_max = BLOOM_STATE_VALUES.RUNNING_AIR_MAX
+						else
+							bloom_max = BLOOM_STATE_VALUES.RUNNING_STANDARD_MAX
+						end
+					elseif state_data.on_zipline then
+						is_moving = true
+						bloom_rate = 100
+						bloom_max = BLOOM_STATE_VALUES.ZIPLINING_STANDARD_MAX
+					else
+						if is_moving then
+							if state._is_jumping then
+								bloom_max = BLOOM_STATE_VALUES.WALKING_AIR_MAX
+							elseif state_data.ducking then
+								bloom_max = BLOOM_STATE_VALUES.WALKING_CROUCH_MAX
+							else
+								bloom_max = BLOOM_STATE_VALUES.WALKING_STANDARD_MAX
+							end
+						else
+							if state._is_jumping then
+								bloom_max = BLOOM_STATE_VALUES.WALKING_AIR_MAX
+							elseif state_data.ducking then
+								bloom_max = BLOOM_STATE_VALUES.STATION_CROUCH_MAX
+							else
+								bloom_max = BLOOM_STATE_VALUES.STATION_STANDARD_MAX
+							end
+						end
+					end
+					if state:in_steelsight() then
+						bloom_max = bloom_max + BLOOM_STATE_VALUES.STEELSIGHT_ADD
+					end
+					
+					local delta_bloom = bloom_max - stance_bloom
+					local delta_abs = math.abs(delta_bloom)
+					bloom_rate = bloom_rate or (BLOOM_STATE_VALUES.BLOOM_SPEED * dt * math.sign(delta_bloom))
+					
+					if delta_abs > 0 then
+						--not at target state bloom
+						if math.abs(bloom_rate) > delta_abs then
+							stance_bloom = bloom_max
+						else
+							stance_bloom = stance_bloom + bloom_rate
+						end
+					else
+						--at target state bloom
+					end
+					self._cache.stance_bloom = stance_bloom
+				end
 				
+				if bloom_any then
+					self:SetCrosshairBloom(recoil_bloom + stance_bloom)
+				end
 			end
+			
 		end
 	else
 	--[[
@@ -4424,7 +4513,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		id = "ach_crosshairs_general_divider_1",
 		size = 16,
 		menu_id = AdvancedCrosshair.crosshairs_menu_id,
-		priority = 15
+		priority = 16
 	})
 	MenuHelper:AddToggle({
 		id = "ach_crosshairs_general_master_enable",
@@ -4433,7 +4522,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		callback = "callback_ach_crosshairs_general_master_enable",
 		value = AdvancedCrosshair.settings.crosshair_enabled,
 		menu_id = AdvancedCrosshair.crosshairs_menu_id,
-		priority = 14
+		priority = 15
 	})
 	
 	MenuHelper:AddMultipleChoice({
@@ -4449,7 +4538,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		},
 		value = AdvancedCrosshair.settings.crosshair_outofrange_mode,
 		menu_id = AdvancedCrosshair.crosshairs_menu_id,
-		priority = 13
+		priority = 14
 	})
 	
 	
@@ -4459,6 +4548,15 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		desc = "menu_ach_crosshairs_general_enable_shake_desc",
 		callback = "callback_ach_crosshairs_general_enable_shake",
 		value = AdvancedCrosshair.settings.use_shake,
+		menu_id = AdvancedCrosshair.crosshairs_menu_id,
+		priority = 13
+	})
+	MenuHelper:AddToggle({
+		id = "ach_crosshairs_general_enable_use_movement_bloom",
+		title = "menu_ach_crosshairs_general_enable_movement_bloom_title",
+		desc = "menu_ach_crosshairs_general_enable_movement_bloom_desc",
+		callback = "callback_ach_crosshairs_general_enable_movement_bloom",
+		value = AdvancedCrosshair.settings.use_movement_bloom,
 		menu_id = AdvancedCrosshair.crosshairs_menu_id,
 		priority = 12
 	})
@@ -5105,6 +5203,10 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 		if alive(AdvancedCrosshair._crosshair_panel) then 
 			AdvancedCrosshair:SetCrosshairCenter(AdvancedCrosshair._panel:center())
 		end
+		AdvancedCrosshair:Save()
+	end
+	MenuCallbackHandler.callback_ach_crosshairs_general_enable_movement_bloom = function(self,item)
+		AdvancedCrosshair.settings.use_movement_bloom = item:value() == "on"
 		AdvancedCrosshair:Save()
 	end
 	MenuCallbackHandler.callback_ach_crosshairs_general_enable_dynamic_color = function(self,item)

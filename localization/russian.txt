@@ -47,6 +47,8 @@
 	"menu_ach_crosshairs_general_outofrange_mode_desc" : "Что прицел будет менять, если цель слишком далеко",
 	"menu_ach_crosshairs_general_enable_shake_title" : "Тряска",
 	"menu_ach_crosshairs_general_enable_shake_desc" : "Прицел будет двигаться вместе со стволом оружия.",
+	"menu_ach_crosshairs_general_enable_movement_bloom_title" : "Show Movement Inaccuracy",
+	"menu_ach_crosshairs_general_enable_movement_bloom_desc" : "If enabled, widen crosshair when moving. Does not reflect true accuracy.",
 	"menu_ach_crosshairs_general_enable_dynamic_color_title" : "Динамичный цвет",
 	"menu_ach_crosshairs_general_enable_dynamic_color_desc" : "Цвет прицела будет меняться в зависимости от цели.",
 	"menu_ach_crosshairs_general_set_dynamic_color_enemy_title" : "Цвет врагов",
