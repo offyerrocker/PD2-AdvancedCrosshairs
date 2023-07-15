@@ -1,8 +1,24 @@
-log("[Advanced Crosshairs] Loading menumanager.lua")
-
 		--todo list, loosely sorted by descending priority:
 
+-- option to allow hitsounds for sentries
+-- more hitsound options 
+	--separate option for sentries/non-player damage
+	-- crits
+	-- melee
+
+
+-- override by slot (needs menu options)
+-- override by weapon id (needs menu options)
+	-- ranc_heavy_machine_gun 
+
 --migrate the more obscure options to "Advanced Settings" menus
+
+--selection parity for hitmarkers
+
+
+
+--"force check validity" button to manually call CheckSaveDataForDeprecatedValues()
+
 --fadeout for tf2 crit
 
 -- the division crosshairs?
@@ -27,25 +43,14 @@ log("[Advanced Crosshairs] Loading menumanager.lua")
 -- better workaround for copmelee + integrate suppressdoublesound to cop melee damage
 
 -- hitmarker data overrides for some settings such as force worldposition hitmarkers
--- fullscreen/halfscreen/none bg menus for all preview-related menus
-
--- option to add tf2 crit indicators? (must mesh with current settings to avoid menu fatigue)
--- option for separate melee hitsound? (must mesh with current settings to avoid menu fatigue)
 
 -- halo reach head aim crosshair dot
 -- import special halo reach crosshair + add option to pass relevant data to all crosshairs
 -- bloom delay/add values per crosshair
 
 --toggle hitmarker scaling with world distance at world position?
-	--would require updating size at every frame and updating during animate function
-	
--- test burstfire support
--- hide character + bg menu like how blt mods menu does (and fails to restore after hitting back lol)
---vehicle crosshair
 
--- akimbo crosshair support
--- override by slot (needs menu options)
--- override by weapon id (needs menu options)
+-- hide character + bg menu like how blt mods menu does (and fails to restore after hitting back lol)
 
 
 
@@ -63,15 +68,17 @@ local mvector3_y = mvector3.y
 		--init mod data
 --************************************************--
 _G.AdvancedCrosshair = {}
-AdvancedCrosshair._animate_targets = {}
+--AdvancedCrosshair._animate_targets = {}
 AdvancedCrosshair._panel = nil
 AdvancedCrosshair._hitmarker_panel = nil
 AdvancedCrosshair._crosshair_panel = nil
 
-AdvancedCrosshair.url_colorpicker = "https://modwork.shop/29641"
+AdvancedCrosshair.url_colorpicker = "https://modworkshop.net/mod/29641"
 AdvancedCrosshair.url_ach_github = "https://github.com/offyerrocker/PD2-AdvancedCrosshairs"
-AdvancedCrosshair.url_ach_mws = "https://modwork.shop/29585"
+AdvancedCrosshair.url_ach_mws = "https://modworkshop.net/mod/29585"
 
+AdvancedCrosshair.addon_xml_file_name = "mod.xml"
+AdvancedCrosshair.addon_lua_file_name = "addon.lua"
 AdvancedCrosshair.addons_readme_txt = "README - generated from AdvancedCrosshair v2 - \n\nThis directory is where you can install add-on folders for Crosshairs, Hitmarkers, or Hitsounds.\nThese must be folders, no archives or files- .texture, .zip, .7zip, .tar, etc. will not be read!\nTo install add-ons, place the add-on folder(s) in one of the three subfolders according to the type of add-on- NOT directly in the same folder as this file.\n\nPlease refer to the documentation for more information: \n$LINK\n\nP.S. You can safely delete this readme file if you wish. It will only be re-generated on launch if ACH is installed and the ACH Addons folder is removed.\nHave a nice day!"
 AdvancedCrosshair.HITMARKER_RAIN_SPAWN_DELAY_INTERVAL_MIN = 0.01 --seconds
 AdvancedCrosshair.HITMARKER_RAIN_SPAWN_DELAY_INTERVAL_MAX = 0.1 --seconds
@@ -98,13 +105,12 @@ AdvancedCrosshair.OUTOFRANGE_DISPLAY_MODES = {
 	}
 }
 --todo menu options for these
-AdvancedCrosshair.OUTOFRANGE_CROSSHAIR_SCALE = 2/3
-AdvancedCrosshair.OUTOFRANGE_HITMARKER_SCALE = 2/3
-AdvancedCrosshair.OUTOFRANGE_CROSSHAIR_ALPHA = 1/3
-AdvancedCrosshair.OUTOFRANGE_HITMARKER_ALPHA = 1/3
+AdvancedCrosshair.OUTOFRANGE_CROSSHAIR_SCALE = 0.66
+AdvancedCrosshair.OUTOFRANGE_HITMARKER_SCALE = 0.66
+AdvancedCrosshair.OUTOFRANGE_CROSSHAIR_ALPHA = 0.33
+AdvancedCrosshair.OUTOFRANGE_HITMARKER_ALPHA = 0.33
 AdvancedCrosshair.OUTOFRANGE_CROSSHAIR_COLOR = Color(0.3,0.3,0.3)
 AdvancedCrosshair.OUTOFRANGE_HITMARKER_COLOR = Color(0.3,0.3,0.3)
-
 AdvancedCrosshair.STATES_CROSSHAIR_ALLOWED = {
 	empty = false,
 	standard = true,
@@ -121,6 +127,20 @@ AdvancedCrosshair.STATES_CROSSHAIR_ALLOWED = {
 	driving = false,
 	jerry2 = false,
 	jerry1 = false
+}
+
+AdvancedCrosshair.CROSSHAIR_BLOOM_STATE_VALUES = {
+	BLOOM_SPEED = 3,
+	STEELSIGHT_ADD = -0.15,
+	
+	WALKING_AIR_MAX = 1, --cap on the penalty from this state
+	WALKING_STANDARD_MAX = 0.66,
+	WALKING_CROUCH_MAX = 0.2,
+	RUNNING_AIR_MAX = 1.33,
+	RUNNING_STANDARD_MAX = 1,
+	STATION_STANDARD_MAX = 0,
+	STATION_CROUCH_MAX = -0.1,
+	ZIPLINING_STANDARD_MAX = 2
 }
 
 AdvancedCrosshair.BLEND_MODES = { --for getting the blend mode from the number index returned by menu setting callback
@@ -146,10 +166,17 @@ AdvancedCrosshair.VALID_WEAPON_CATEGORIES = {
 	"crossbow"
 }
 
+--akimbo compatibility, by duplicating all weapon categories as akimbos
+for i=#AdvancedCrosshair.VALID_WEAPON_CATEGORIES,1,-1 do 
+	local category = AdvancedCrosshair.VALID_WEAPON_CATEGORIES[i]
+	table.insert(AdvancedCrosshair.VALID_WEAPON_CATEGORIES,#AdvancedCrosshair.VALID_WEAPON_CATEGORIES + 1,"akimbo_" .. category)
+end
+
 AdvancedCrosshair.VALID_WEAPON_FIREMODES = {
 	"single",
 	"auto",
-	"burst"
+	"burst",
+	"volley"
 }
 --revolver and akimbo are subtypes; akimbo is checked but revolver is ignored
 
@@ -159,7 +186,8 @@ AdvancedCrosshair.DEFAULT_CROSSHAIR_OPTIONS = {
 	color = "ffffff",
 	alpha = 1,
 	overrides_global = false,
-	hide_on_ads = false, --since this was added post-1.0, be aware that this value can be nil in some users' settings
+	--hide_on_ads = false, --added in v2, deprecated in v21
+	ads_behavior = 1, --1: no special behavior. 2: hide on ads. 3: only show on ads. added in v21
 	scale = 1
 }
 AdvancedCrosshair.DEFAULT_HITMARKER_OPTIONS = {
@@ -179,22 +207,34 @@ AdvancedCrosshair.auto_compatibility_settings = {}
 --init default settings values
 --these are later overwritten by values read from save data, if present
 AdvancedCrosshair.default_settings = {
-	ach_save_version = 1, --this is the save version, not to be confused with the mod version. this is here to identify which save version the mod was created with
+	ach_save_version = 4,
+	--[[
+		this is the save version, not to be confused with the mod version. this is here to identify which save version the mod was created with/
+			[version lookup]
+			ACH version	range	:	save version (reason for change)
+						<19		: 	nil/0
+						19-20	:	1
+						21-25	:	2	(Hide on ADS behavior change)
+						26-		:	3	(U228, Volley firemode)
+						
+	--]]
 	logs_enabled = false,
 	crosshair_enabled = true,
 	hitmarker_enabled = true,
 	hitsound_enabled = false,
+	easter_eggs_enabled = true, --enables hitmarker rain (currently the only easter egg)
+	assets_always_loaded_enabled = false,
 	compatibility_auto_detection = true,
 	compatibility_hook_playermanager_checkskill = false,
-	compatibility_hook_playerstandard_onsteelsight = false,
-	compatibility_hook_playerstandard_startactionequipweapon = false,
-	compatibility_hook_playermovementstate_enter = false,
+	compatibility_hook_playerstandard_onsteelsight = false, --deprecated in v33
+	compatibility_hook_playerstandard_startactionequipweapon = false, --deprecated in v33
+	compatibility_hook_playermovementstate_enter = false, --deprecated in v33
 	compatibility_hook_copdamage_damagemelee = false,
 	compatibility_hook_copdamage_rollcriticalhit = false,
-	compatibility_hook_newraycastweaponbase_togglefiremode = false,
-	compatibility_hook_newraycastweaponbase_resetcachedgadget = false,
+	compatibility_hook_newraycastweaponbase_togglefiremode = false, --deprecated in v33
+	compatibility_hook_newraycastweaponbase_resetcachedgadget = false, --deprecated in v33
 	can_check_melee_headshots = false,
-	allow_messages = 1, --1: yes; 2: yes but no compatibility messages; 3: do not. none. never. get out of my house. die.
+	allow_messages = 1, -- (unused) 1: yes; 2: yes but no compatibility messages; 3: do not. none. never. get out of my house. die.
 	palettes = { --for colorpicker
 		"ff0000",
 		"ffff00",
@@ -226,6 +266,7 @@ AdvancedCrosshair.default_settings = {
 	use_color = true,
 	use_hitpos = true,
 	use_hitsound_pos = false,
+	use_movement_bloom = true,
 	crosshair_outofrange_mode = 1,
 	crosshair_all_override = false,
 	crosshair_stability = 1,
@@ -235,6 +276,11 @@ AdvancedCrosshair.default_settings = {
 	crosshair_misc_color = "f51b83",
 	crosshair_global = table.deep_map_copy(AdvancedCrosshair.DEFAULT_CROSSHAIR_OPTIONS),
 	crosshairs = {},
+	crosshair_hide_while_interacting = false,
+	crosshair_hide_while_meleeing = false,
+	crosshair_hide_while_grenading = false,
+	crosshair_hide_while_reloading = false,
+	crosshair_hide_while_running = false,
 	crosshair_weapon_id_overrides = { --no menu yet
 	--EG:
 --		deagle = {
@@ -263,7 +309,7 @@ AdvancedCrosshair.default_settings = {
 	hitmarker_hit_duration = 0.4,
 	hitmarker_hit_alpha = 1,
 	hitmarker_hit_scale = 1,
-	hitmarker_hit_blend_mode = "normal",
+	hitmarker_hit_blend_mode = 1,
 	hitmarker_hit_bodyshot_color = "ffffff",
 	hitmarker_hit_bodyshot_crit_color = "00ffff",
 	hitmarker_hit_headshot_color = "ff0000",
@@ -272,7 +318,7 @@ AdvancedCrosshair.default_settings = {
 	hitmarker_kill_duration = 0.4,
 	hitmarker_kill_alpha = 1,
 	hitmarker_kill_scale = 1,
-	hitmarker_kill_blend_mode = "normal",
+	hitmarker_kill_blend_mode = 1, --normal
 	hitmarker_kill_bodyshot_color = "ffffff",
 	hitmarker_kill_bodyshot_crit_color = "00ffff",
 	hitmarker_kill_headshot_color = "ff0000",
@@ -383,13 +429,16 @@ AdvancedCrosshair.path = ModPath
 AdvancedCrosshair.hitsound_path = AdvancedCrosshair.path .. "assets/snd/hitsounds/"
 AdvancedCrosshair.save_path = SavePath
 AdvancedCrosshair.save_data_path = AdvancedCrosshair.save_path .. "AdvancedCrosshair.txt"
-AdvancedCrosshair.TEXTURE_PATH = "guis/textures/advanced_crosshairs/"
+AdvancedCrosshair.TEXTURE_PATH = "guis/textures/advanced_crosshairs/" --this is the internal asset path that is prefixed to addons' assets
 AdvancedCrosshair.mod_overrides_path = "PAYDAY 2/assets/mod_overrides/"
 
 --init QuickAnimate util
 dofile(AdvancedCrosshair.path .. "classes/QuickAnimate.lua")
 AdvancedCrosshair.animator = QuickAnimate:new("ACH_Animator",{parent = AdvancedCrosshair,updater_type = QuickAnimate.updater_types.BeardLib,paused = true})
 
+AdvancedCrosshair.ALLOWED_SOUND_EXTENSIONS = {
+	ogg = true
+}
 AdvancedCrosshair.ALLOWED_TEXTURE_EXTENSIONS = {
 	texture = true,
 	png = true
@@ -414,9 +463,8 @@ AdvancedCrosshair.ADDON_PATHS = {
 --holds some instance-specific stuff to save time + cycles
 AdvancedCrosshair._cache = {
 	current_crosshair_data = nil, --holds table reference to self._cache.weapons [...] .firemode
-	underbarrel = {}, --deprecated
-	weapon = {}, --deprecated
 	weapons = {},
+	stance_bloom = 0, --bloom from moving, tracked separately from normal bloom
 	bloom = 0,
 	bloom_t = -69,
 	hitmarkers = {},
@@ -424,8 +472,6 @@ AdvancedCrosshair._cache = {
 	sound_sources = {},
 	is_in_steelsight = false --only set/used when compatibility mode for "playerstandard on steelsight" is enabled
 }
-
-_G.queued_delay_advanced_crosshair_data = {}
 
 --do not change this. refer to the github wiki if you want to add custom crosshairs to this mod (see: AdvancedCrosshair.url_ach_github)
 AdvancedCrosshair._crosshair_data = {
@@ -1002,8 +1048,9 @@ function AdvancedCrosshair.concat(...)
 end
 
 function AdvancedCrosshair:GetWeaponCategory(categories)
-	AdvancedCrosshair:log("Executing " .. "GetWeaponCategory" .. "()")
-	local category,is_revolver,is_akimbo
+	local category = "assault_rifle"
+	local is_revolver = false
+	local is_akimbo = false
 	for _,cat in pairs(categories) do 
 		if cat == "revolver" then 
 			is_revolver = true
@@ -1063,10 +1110,57 @@ end
 --simple custom add-ons should simply be added inside the mods/saves/AdvancedCrosshairs folder, and this mod will take care of adding them
 
 function AdvancedCrosshair:LoadAllAddons()
-	AdvancedCrosshair:log("Executing " .. "LoadAllAddons" .. "()")
-	self:LoadCrosshairAddons()
-	self:LoadHitmarkerAddons()
-	self:LoadHitsoundAddons()
+	if not BeardLib.Frameworks.Base then 
+		self:log("Error loading addon xml: BeardLib AddFramework missing!")
+	end
+	
+	self:LoadCrosshairAddons(self.ADDON_PATHS.crosshairs)
+	self:LoadHitmarkerAddons(self.ADDON_PATHS.hitmarkers)
+	self:LoadHitsoundAddons(self.ADDON_PATHS.hitsounds)
+	
+	local modsmenu = BeardLib.Menus.Mods
+	if modsmenu then
+		--organize the list of beardlib mods now that any mods from ACH have been added
+		modsmenu._list:AlignItems(true)
+	end
+end
+
+function AdvancedCrosshair:LoadAddonXML(foldername,full_addon_path)
+	local path_util = BeardLib.Utils.Path
+	local bl_framework_base = BeardLib.Frameworks.Base
+	local bl_framework_base_class = FrameworkBase
+	local file_util = _G.FileIO
+	
+	local bl_menus_mods -- = BeardLib.Menus and BeardLib.Menus.Mods
+	--temporarily disabled because it inexplicably broke as soon as i pushed the branch live i guess
+	
+	local xml_file_path = path_util:Combine(full_addon_path,self.addon_xml_file_name)
+	if file_util:FileExists(Application:nice_path(xml_file_path)) then 
+		if bl_framework_base then
+			bl_framework_base:LoadMod(foldername,full_addon_path,xml_file_path)
+			local mod = bl_framework_base:GetModByDir(foldername)
+			if mod then
+				
+				--load modules (namely, assetupdates)
+				mod:PreInitModules(mod._auto_init_modules)
+				
+				--manually call version check
+				local assetsupdates = mod:GetModule("AssetUpdates")
+				if assetsupdates then
+					assetsupdates:CheckVersion()
+				end
+				
+				--visually add the new beardlib mod to the menu list
+				if bl_menus_mods then
+					if not game_state_machine or GameStateFilters.menu[game_state_machine:current_state_name()] then
+						bl_menus_mods:AddMod(mod,bl_framework_base)
+					end
+				end
+			end
+		else
+			self:log("Skipped loading " .. tostring(self.addon_xml_file_name) .. " for hitsound addon: [" .. tostring(foldername) .. "]")
+		end
+	end
 end
 
 function AdvancedCrosshair:AddCustomCrosshair(id,data)
@@ -1091,7 +1185,9 @@ function AdvancedCrosshair:AddCustomCrosshair(id,data)
 						local file_extension = part.file_extension or extension
 						part.texture = final_path
 						--and by that I mean pawn off the work of loading your addon textures to BeardLib, which will pawn off the work to SuperBLT, which w
-						BeardLib.managers.file:AddFile(Idstring(extension),Idstring(final_path),part.texture_path .. "." .. file_extension)
+						if self:ShouldAlwaysLoadAssets() then
+							BeardLib.managers.file:AddFile(Idstring(extension),Idstring(final_path),part.texture_path .. "." .. file_extension)
+						end
 					else
 						self:log("Error: Invalid texture/texture path when reading crosshair part data for part #" .. tostring(part_index) .. " in addon: " .. tostring(id).. ". Aborting addon.")
 						return
@@ -1127,10 +1223,12 @@ function AdvancedCrosshair:AddCustomCrosshair(id,data)
 	end
 end
 
-function AdvancedCrosshair:LoadCrosshairAddons()
-	AdvancedCrosshair:log("Executing " .. "LoadCrosshairAddons" .. "()")
+function AdvancedCrosshair:LoadCrosshairAddons(addons_dir)
 	local path_util = BeardLib.Utils.Path
 	local file_util = _G.FileIO
+	local bl_framework_base = BeardLib.Frameworks.Base
+	local bl_framework_base_class = FrameworkBase
+	--local bl_menus_mods = BeardLib.Menus.Mods
 	
 	local function load_addon_textures(addon_path,foldername,parts)
 		for part_index,part in ipairs(parts) do 
@@ -1141,15 +1239,21 @@ function AdvancedCrosshair:LoadCrosshairAddons()
 		end
 	end
 
-	for _,addon_path in pairs(self.ADDON_PATHS.crosshairs) do 
+	for _,addon_path in pairs(addons_dir) do 
 		if file_util:DirectoryExists(addon_path) then 
 			for _,foldername in pairs(file_util:GetFolders(addon_path)) do 
+				local full_addon_path = path_util:Combine(addon_path,foldername)
+				
 				local parts = {}
 				local is_advanced
-				if file_util:FileExists(Application:nice_path(path_util:Combine(addon_path,foldername,"addon.lua"),false)) then 
+				local addon_lua_file_path = path_util:Combine(full_addon_path,self.addon_lua_file_name)
+				
+				--load the addon xml file as if it were a beardlib mod (if xml file is present)
+				self:LoadAddonXML(foldername,full_addon_path)
+			
+				if file_util:FileExists(addon_lua_file_path) then
 					is_advanced = true
-					local addon_lua_path = path_util:Combine(addon_path,foldername,"addon.lua")
-					local addon_lua,s_error = blt.vm.loadfile(addon_lua_path) --thanks znix
+					local addon_lua,s_error = blt.vm.loadfile(addon_lua_file_path) --thanks znix (non-sarcastic)
 					if s_error then 
 						self:log("FATAL ERROR: LoadCrosshairAddons(): " .. tostring(s_error),{color=Color.red})
 					elseif addon_lua then 
@@ -1161,7 +1265,7 @@ function AdvancedCrosshair:LoadCrosshairAddons()
 									if type(crosshair_data.parts) == "table" then 
 										load_addon_textures(addon_path,foldername,crosshair_data.parts)
 									else
-										self:log("Error: LoadCrosshairAddons() megapack " .. addon_lua_path .. " contains invalid parts data: " .. tostring(addon_data.parts) .. " (table expected, got " .. type(addon_data.parts) .. ").")
+										self:log("Error: LoadCrosshairAddons() megapack " .. addon_lua_file_path .. " contains invalid parts data: " .. tostring(addon_data.parts) .. " (table expected, got " .. type(addon_data.parts) .. ").")
 										break
 									end
 									self:AddCustomCrosshair(crosshair_id,crosshair_data)
@@ -1171,20 +1275,20 @@ function AdvancedCrosshair:LoadCrosshairAddons()
 								if type(addon_data.parts) == "table" then 
 									load_addon_textures(addon_path,foldername,addon_data.parts)
 								else
-									self:log("Error: LoadCrosshairAddons() " .. addon_lua_path .. " contains invalid parts data: " .. tostring(addon_data.parts) .. " (table expected, got " .. type(addon_data.parts) .. ").")
+									self:log("Error: LoadCrosshairAddons() " .. addon_lua_file_path .. " contains invalid parts data: " .. tostring(addon_data.parts) .. " (table expected, got " .. type(addon_data.parts) .. ").")
 									break
 								end
 								self:AddCustomCrosshair(addon_id,addon_data)
 							end
 						else
-							self:log("Error: LoadCrosshairAddons() " .. addon_lua_path .. " returned invalid data. Expected results: [string],[table]. Got: [" .. type(id) .. "] " .. tostring(id) .. ", [" .. type(addon_data) .. "] " .. tostring(addon_data) .. ".")
+							self:log("Error: LoadCrosshairAddons() " .. addon_lua_file_path .. " returned invalid data. Expected results: [string],[table]. Got: [" .. type(id) .. "] " .. tostring(id) .. ", [" .. type(addon_data) .. "] " .. tostring(addon_data) .. ".")
 						end
 					end
 				end
-				if is_advanced then 
-				elseif not is_advanced then 
-					for _,filename in pairs(file_util:GetFiles(path_util:Combine(addon_path,foldername))) do 
-						local raw_path = path_util:Combine(addon_path,foldername,filename)
+				if not is_advanced then 
+					for _,filename in pairs(file_util:GetFiles(full_addon_path)) do 
+						local raw_path = path_util:Combine(full_addon_path,filename)
+						
 						local file_extension = path_util:GetFileExtension(filename)
 						if file_extension and self.ALLOWED_TEXTURE_EXTENSIONS[utf8.to_lower(file_extension)] then 
 							local texture_path = string.gsub(raw_path,"%." .. file_extension,"")
@@ -1231,14 +1335,16 @@ function AdvancedCrosshair:AddCustomHitmarker(id,data)
 						local final_path = path_util:Combine(self.TEXTURE_PATH,folder_name,filename)
 						part.texture = final_path
 						local file_extension = part.file_extension or extension
-						BeardLib.managers.file:AddFile(Idstring(extension),Idstring(final_path),part.texture_path .. "." .. file_extension)
+						if self:ShouldAlwaysLoadAssets() then
+							BeardLib.managers.file:AddFile(Idstring(extension),Idstring(final_path),part.texture_path .. "." .. file_extension)
+						end
 					else
 						self:log("Error: Invalid texture/texture path when reading hitmarker part data for part #" .. tostring(part_index) .. " in addon: " .. tostring(id).. ". Aborting addon.")
 						return
 					end
 				end
 			else
-				self:log("Error: Could not load crosshair add-on (" .. tostring(id) .. "). Reason: Invalid parts data type: " .. tostring(data.parts) .. " (table expected, got " .. type(data) .. ")") 
+				self:log("Error: Could not load hitmarker add-on (" .. tostring(id) .. "). Reason: Invalid parts data type: " .. tostring(data.parts) .. " (table expected, got " .. type(data) .. ")") 
 				return
 			end
 			if data.name_id then 
@@ -1267,10 +1373,16 @@ function AdvancedCrosshair:AddCustomHitmarker(id,data)
 	end
 end
 
-function AdvancedCrosshair:LoadHitmarkerAddons()
-	AdvancedCrosshair:log("Executing " .. "LoadHitmarkerAddons" .. "()")
+function AdvancedCrosshair:ShouldAlwaysLoadAssets()
+	return self.settings.assets_always_loaded_enabled
+end
+
+function AdvancedCrosshair:LoadHitmarkerAddons(addons_dir)
 	local path_util = BeardLib.Utils.Path
 	local file_util = _G.FileIO
+	local bl_framework_base = BeardLib.Frameworks.Base
+	local bl_framework_base_class = FrameworkBase
+	--local bl_menus_mods = BeardLib.Menus.Mods
 	
 	local function load_addon_textures(addon_path,foldername,parts)
 		for part_index,part in ipairs(parts) do 
@@ -1281,15 +1393,21 @@ function AdvancedCrosshair:LoadHitmarkerAddons()
 		end
 	end
 	
-	for _,addon_path in pairs(self.ADDON_PATHS.hitmarkers) do 
-		if file_util:DirectoryExists(Application:nice_path(addon_path,true)) then 
+	for _,addon_path in pairs(addons_dir) do 
+		if file_util:DirectoryExists(addon_path) then 
 			for _,foldername in pairs(file_util:GetFolders(addon_path)) do 
+				local full_addon_path = path_util:Combine(addon_path,foldername)
+				
 				local parts = {}
 				local is_advanced
-				local addon_lua_path = path_util:Combine(addon_path,foldername,"addon.lua")
-				if file_util:FileExists(addon_lua_path) then 
+				local addon_lua_file_path = path_util:Combine(full_addon_path,self.addon_lua_file_name)
+				
+				--load the addon xml file as if it were a beardlib mod (if xml file is present)
+				self:LoadAddonXML(foldername,full_addon_path)
+					
+				if file_util:FileExists(addon_lua_file_path) then 
 					is_advanced = true
-					local addon_lua = blt.vm.loadfile(addon_lua_path)
+					local addon_lua = blt.vm.loadfile(addon_lua_file_path)
 					if s_error then 
 						self:log("FATAL ERROR: LoadHitmarkerAddons(): " .. tostring(s_error),{color=Color.red})
 					elseif addon_lua then 
@@ -1301,7 +1419,7 @@ function AdvancedCrosshair:LoadHitmarkerAddons()
 									if type(hitmarker_data.parts) == "table" then 
 										load_addon_textures(addon_path,foldername,hitmarker_data.parts)
 									else
-										self:log("Error: LoadHitmarkerAddons() megapack " .. addon_lua_path .. " returned invalid data. Expected results: [string],[table]. Got: [" .. type(id) .. "] " .. tostring(id) .. ", [" .. type(addon_data) .. "] " .. tostring(addon_data) .. ".")
+										self:log("Error: LoadHitmarkerAddons() megapack " .. addon_lua_file_path .. " returned invalid data. Expected results: [string],[table]. Got: [" .. type(id) .. "] " .. tostring(id) .. ", [" .. type(addon_data) .. "] " .. tostring(addon_data) .. ".")
 										break
 									end
 									self:AddCustomHitmarker(hitmarker_id,hitmarker_data)
@@ -1311,19 +1429,19 @@ function AdvancedCrosshair:LoadHitmarkerAddons()
 								if type(addon_data.parts) == "table" then 
 									load_addon_textures(addon_path,foldername,addon_data.parts)
 								else
-									self:log("Error: LoadHitmarkerAddons() " .. addon_lua_path .. " contains invalid parts data: " .. tostring(addon_data.parts) .. " (table expected, got " .. type(addon_data.parts) .. ").")
+									self:log("Error: LoadHitmarkerAddons() " .. addon_lua_file_path .. " contains invalid parts data: " .. tostring(addon_data.parts) .. " (table expected, got " .. type(addon_data.parts) .. ").")
 									break
 								end
 								self:AddCustomHitmarker(addon_id,addon_data)
 							end
 						else
-							self:log("Error: LoadHitmarkerAddons() " .. addon_lua_path .. " returned invalid data. Expected results: [string],[table]. Got: [" .. type(id) .. "] " .. tostring(id) .. ", [" .. type(addon_data) .. "] " .. tostring(addon_data) .. ".")
+							self:log("Error: LoadHitmarkerAddons() " .. addon_lua_file_path .. " returned invalid data. Expected results: [string],[table]. Got: [" .. type(id) .. "] " .. tostring(id) .. ", [" .. type(addon_data) .. "] " .. tostring(addon_data) .. ".")
 						end
 					end
 				end
 				if not is_advanced then 
-					for _,filename in pairs(file_util:GetFiles(path_util:Combine(addon_path,foldername))) do 
-						local raw_path = path_util:Combine(addon_path,foldername,filename)
+					for _,filename in pairs(file_util:GetFiles(full_addon_path)) do 
+						local raw_path = path_util:Combine(full_addon_path,filename)
 						local file_extension = path_util:GetFileExtension(filename)
 						if file_extension and self.ALLOWED_TEXTURE_EXTENSIONS[utf8.to_lower(file_extension)] then 
 							local texture_path = string.gsub(raw_path,"%." .. file_extension,"")
@@ -1377,58 +1495,60 @@ function AdvancedCrosshair:AddCustomHitsound(id,data)
 	end
 end
 
-function AdvancedCrosshair:LoadHitsoundAddons()
-	AdvancedCrosshair:log("Executing " .. "LoadHitsoundAddons" .. "()")
-	local extension = "ogg"
+function AdvancedCrosshair:LoadHitsoundAddons(addons_dir)
 	local path_util = BeardLib.Utils.Path
 	local file_util = _G.FileIO
-	for _,addon_path in pairs(self.ADDON_PATHS.hitsounds) do 
+	
+	for _,addon_path in pairs(addons_dir) do
 		if file_util:DirectoryExists(Application:nice_path(addon_path,true)) then 
 			for _,foldername in pairs(file_util:GetFolders(addon_path)) do 
-				local is_randomized = file_util:FileExists(Application:nice_path(path_util:Combine(addon_path,foldername,"random.txt")))
+				local full_addon_path = path_util:Combine(addon_path,foldername)
+				
 				local variations = {}
 				local is_advanced
-				for _,filename in pairs(file_util:GetFiles(path_util:Combine(addon_path,foldername))) do 
-					--check for advanced hitsound addon
-					if filename == "addon.lua" then
-						is_advanced = true
-						local raw_path = path_util:Combine(addon_path,foldername,filename)
-						local addon_lua,s_error = blt.vm.loadfile(raw_path)
-						if s_error then 
-							self:log("FATAL ERROR: LoadHitsoundAddons(): " .. tostring(s_error),{color=Color.red})
-						elseif addon_lua then 
-							local addon_id,addon_data = addon_lua()
-							if addon_id == true then 
-								--assume loading is handled by the addon
-							elseif addon_id and type(addon_data) == "table" then 
-								if type(addon_data.variations_paths) == "table" then 
-									addon_data.variations = addon_data.variations or {}
-									for i,variation in pairs(addon_data.variations_paths) do
-										--write full path to soundfile which includes addon path
-										addon_data.variations[#addon_data.variations + 1] = path_util:Combine(addon_path,foldername,variation)
-									end
+				local addon_lua_file_path = path_util:Combine(full_addon_path,self.addon_lua_file_name)
+				
+				--load the addon xml file as if it were a beardlib mod (if xml file is present)
+				self:LoadAddonXML(foldername,full_addon_path)
+				
+				if file_util:FileExists(Application:nice_path(addon_lua_file_path)) then
+					is_advanced = true
+					local addon_lua,s_error = blt.vm.loadfile(addon_lua_file_path)
+					if s_error then 
+						self:log("FATAL ERROR: LoadHitsoundAddons(): " .. tostring(s_error),{color=Color.red})
+					elseif addon_lua then 
+						local addon_id,addon_data = addon_lua()
+						if addon_id == true then 
+							--assume loading is handled by the addon
+						elseif addon_id and type(addon_data) == "table" then 
+							if type(addon_data.variations_paths) == "table" then 
+								addon_data.variations = addon_data.variations or {}
+								for i,variation in pairs(addon_data.variations_paths) do
+									--write full path to soundfile which includes addon path
+									addon_data.variations[#addon_data.variations + 1] = path_util:Combine(full_addon_path,variation)
 								end
-								if addon_data.path_local then 
-									addon_data.path = path_util:Combine(addon_path,foldername,addon_data.path_local)
-								end
-								self:AddCustomHitsound(addon_id,addon_data)
-								break
-							else
-								self:log("Error: LoadHitsoundAddons() " .. raw_path .. " returned invalid data. Expected results: [string],[table]. Got: [" .. type(id) .. "] " .. tostring(id) .. ", [" .. type(addon_data) .. "] " .. tostring(addon_data) .. ".")
 							end
+							if addon_data.path_local then 
+								addon_data.path = path_util:Combine(full_addon_path,addon_data.path_local)
+							end
+							self:AddCustomHitsound(addon_id,addon_data)
+						else
+							self:log("Error: LoadHitsoundAddons() " .. addon_lua_file_path .. " returned invalid data. Expected results: [string],[table]. Got: [" .. type(id) .. "] " .. tostring(id) .. ", [" .. type(addon_data) .. "] " .. tostring(addon_data) .. ".")
 						end
-						self:log("Error: LoadHitsoundAddons() Chunk " .. tostring(raw_path) .. " could not compile!")
 					end
 				end
 				if not is_advanced then
-					for _,filename in pairs(file_util:GetFiles(path_util:Combine(addon_path,foldername))) do 
-						if path_util:GetFileExtension(filename) == extension then 
-							local raw_path = path_util:Combine(addon_path,foldername,filename)
+					local is_randomized = file_util:FileExists(Application:nice_path(path_util:Combine(full_addon_path,"random.txt")))
+					
+					for _,filename in pairs(file_util:GetFiles(full_addon_path)) do 
+						local file_extension = path_util:GetFileExtension(filename)
+						if self.ALLOWED_SOUND_EXTENSIONS[utf8.to_lower(file_extension)] then
+							local raw_path = path_util:Combine(full_addon_path,filename)
 							
 							if is_randomized then
 								table.insert(variations,#variations + 1,raw_path)
 							else
-								local clean_filename = string.sub(filename,1,string.len(filename) - string.len("." .. extension))
+								local clean_filename = string.sub(filename,1,string.len(filename) - string.len("." .. file_extension))
 								local clean_filename_no_spaces = string.gsub(clean_filename,"%s","_")
 								local string_id = "menu_hitsound_addon_" .. clean_filename_no_spaces
 								managers.localization:add_localized_strings({
@@ -1455,12 +1575,58 @@ function AdvancedCrosshair:LoadHitsoundAddons()
 					end
 				end
 			end
-			
 		end
 	end
 end
 
 
+function AdvancedCrosshair:UnloadHitmarkers()
+
+end
+
+function AdvancedCrosshair:UnloadCrosshairs()
+	--[[ todo
+	collect all used crosshair ids
+	
+	for all registered crosshairs:
+		if crosshair is not used,
+			if crosshair is loaded,
+				unload crosshair
+	
+	for all used crosshairs:
+		if crosshair is not loaded,
+			load crosshair
+	
+	
+	--]]
+end
+
+
+function AdvancedCrosshair:LoadPartsAssets(parts)
+	-- for each part,
+	-- if not loaded, load it
+	
+	local bl_filemgr = BeardLib.managers.file
+	local pending_parts = {}
+	local file_extension = "texture"
+	local texture_ids = Idstring(file_extension)
+	for part_index,part in pairs(parts) do 
+		local texture_path = part.texture_path
+		if texture_path then
+			if bl_filemgr:Has(texture_ids,part.texture) then
+				-- already loaded
+			elseif pending_parts[texture_path] then
+				-- already loading
+			else
+				-- load it
+				pending_parts[texture_path] = true
+				bl_filemgr:AddFile(texture_ids,Idstring(part.texture),texture_path .. "." .. file_extension)
+			end
+		else
+			-- does not require load
+		end
+	end
+end
 
 Hooks:Register("ACH_LoadAddon_Crosshair") 
 Hooks:Register("ACH_LoadAddon_Hitmarker") 
@@ -1514,28 +1680,13 @@ function AdvancedCrosshair:UseCompatibility_PlayerManagerCheckSkill()
 	return autodetect_compatibility_override or self.settings.compatibility_hook_playermanager_checkskill
 end
 
-function AdvancedCrosshair:UseCompatibility_PlayerStandardOnSteelsight()
-	local autodetect_compatibility_override
-	if self:UseCompatibilityAutoDetection() then 
-		autodetect_compatibility_override = self.auto_compatibility_settings.compatibility_hook_playerstandard_onsteelsight
-	end
-	return autodetect_compatibility_override or self.settings.compatibility_hook_playerstandard_onsteelsight
+function AdvancedCrosshair:UseCompatibility_PlayerStandardOnSteelsight() --deprecated in v33
 end
 
-function AdvancedCrosshair:UseCompatibility_PlayerStandardStartEquipWeapon()
-	local autodetect_compatibility_override
-	if self:UseCompatibilityAutoDetection() then 
-		autodetect_compatibility_override = self.auto_compatibility_settings.compatibility_hook_playerstandard_startactionequipweapon
-	end
-	return autodetect_compatibility_override or self.settings.compatibility_hook_playerstandard_startactionequipweapon
+function AdvancedCrosshair:UseCompatibility_PlayerStandardStartEquipWeapon() --deprecated in v33
 end
 
-function AdvancedCrosshair:UseCompatibility_PlayerMovementStateEnter()
-	local autodetect_compatibility_override
-	if self:UseCompatibilityAutoDetection() then 
-		autodetect_compatibility_override = self.auto_compatibility_settings.compatibility_hook_playermovementstate_enter
-	end
-	return autodetect_compatibility_override or self.settings.compatibility_hook_playermovementstate_enter
+function AdvancedCrosshair:UseCompatibility_PlayerMovementStateEnter() --deprecated in v33
 end
 
 function AdvancedCrosshair:UseCompatibility_CopDamageMelee()
@@ -1554,22 +1705,15 @@ function AdvancedCrosshair:UseCompatibility_CopDamageRollCrit()
 	return autodetect_compatibility_override or self.settings.compatibility_hook_copdamage_rollcriticalhit
 end
 
-function AdvancedCrosshair:UseCompatibility_NewRaycastWeaponBaseToggleFiremode()
-	local autodetect_compatibility_override
-	if self:UseCompatibilityAutoDetection() then 
-		autodetect_compatibility_override = self.auto_compatibility_settings.compatibility_hook_newraycastweaponbase_togglefiremode
-	end
-	return autodetect_compatibility_override or self.settings.compatibility_hook_newraycastweaponbase_togglefiremode
+function AdvancedCrosshair:UseCompatibility_NewRaycastWeaponBaseToggleFiremode() --deprecated in v33
 end
 
-function AdvancedCrosshair:UseCompatibility_NewRaycastWeaponBaseResetCachedGadget()
-	local autodetect_compatibility_override
-	if self:UseCompatibilityAutoDetection() then 
-		autodetect_compatibility_override = self.auto_compatibility_settings.compatibility_hook_newraycastweaponbase_resetcachedgadget
-	end
-	return autodetect_compatibility_override or self.settings.compatibility_hook_newraycastweaponbase_resetcachedgadget
+function AdvancedCrosshair:UseCompatibility_NewRaycastWeaponBaseResetCachedGadget() --deprecated in v33
 end
 
+function AdvancedCrosshair:IsEasterEggsEnabled()
+	return self.settings.easter_eggs_enabled
+end
 
 function AdvancedCrosshair:CanCheckMeleeHeadshots()
 	return self.settings.can_check_melee_headshots
@@ -1650,8 +1794,8 @@ end
 
 --Compatibility Checking and Resolution
 
-AdvancedCrosshair.blt_hooks_source = "mods/base/req/core/Hooks.lua"
-AdvancedCrosshair.ach_hooks_source = AdvancedCrosshair.path .. "lua/menumanager.lua"
+AdvancedCrosshair.blt_hooks_source = "@mods/base/req/core/Hooks.lua"
+AdvancedCrosshair.ach_hooks_source = AdvancedCrosshair.path .. "lua/menumanager.lua" 
 
 AdvancedCrosshair.compatibility_checks = {
 	compatibility_hook_playermanager_checkskill = {
@@ -1665,13 +1809,13 @@ AdvancedCrosshair.compatibility_checks = {
 			
 			--then perform actual source checking
 			if managers.player then 
-				local debuginfo = debug and debug.getinfo and debug.getinfo(managers.player.check_skills)
+				local debuginfo = debug and debug.getinfo and debug.getinfo(PlayerManager.check_skills)
 					--you're not supposed to use this for anything but debugging your own software locally,
 					--since lua environments/installations are not guaranteed to have the debug library shipped with release version software.
 					--i gotta tho
 				if type(debuginfo) == "table" then 
-					local short_src = debuginfo.short_src
-					if (short_src ~= AdvancedCrosshair.blt_hooks_source) and (short_src ~= AdvancedCrosshair.ach_hooks_source) then 
+					local source = debuginfo.source
+					if (source ~= AdvancedCrosshair.blt_hooks_source) and (source ~= AdvancedCrosshair.ach_hooks_source) then 
 						return true
 					end
 				end
@@ -1691,8 +1835,8 @@ AdvancedCrosshair.compatibility_checks = {
 				do 
 					local debuginfo = debug and debug.getinfo and debug.getinfo(PlayerStandard._start_action_steelsight)
 					if type(debuginfo) == "table" then 
-						local short_src = debuginfo.short_src
-						if (short_src ~= AdvancedCrosshair.blt_hooks_source) and (short_src ~= AdvancedCrosshair.ach_hooks_source) then 
+						local source = debuginfo.source
+						if (source ~= AdvancedCrosshair.blt_hooks_source) and (source ~= AdvancedCrosshair.ach_hooks_source) then 
 							return true
 						end
 					end
@@ -1701,8 +1845,7 @@ AdvancedCrosshair.compatibility_checks = {
 				do 
 					local debuginfo = debug and debug.getinfo and debug.getinfo(PlayerStandard._end_action_steelsight)
 					if type(debuginfo) == "table" then 
-						local short_src = debuginfo.short_src
-						if (short_src ~= AdvancedCrosshair.blt_hooks_source) and (short_src ~= AdvancedCrosshair.ach_hooks_source) then 
+						if (source ~= AdvancedCrosshair.blt_hooks_source) and (source ~= AdvancedCrosshair.ach_hooks_source) then 
 							return true
 						end
 					end
@@ -1717,8 +1860,8 @@ AdvancedCrosshair.compatibility_checks = {
 			if NewRaycastWeaponBase then 
 				local debuginfo = debug and debug.getinfo and debug.getinfo(NewRaycastWeaponBase.reset_cached_gadget)
 				if type(debuginfo) == "table" then 
-					local short_src = debuginfo.short_src
-					if (short_src ~= AdvancedCrosshair.blt_hooks_source) and (short_src ~= AdvancedCrosshair.ach_hooks_source) then 
+					local source = debuginfo.source
+					if (source ~= AdvancedCrosshair.blt_hooks_source) and (source ~= AdvancedCrosshair.ach_hooks_source) then 
 						return true
 					end
 				end
@@ -1732,8 +1875,8 @@ AdvancedCrosshair.compatibility_checks = {
 			if PlayerMovementState then 
 				local debuginfo = debug and debug.getinfo and debug.getinfo(PlayerMovementState.enter)
 				if type(debuginfo) == "table" then 
-					local short_src = debuginfo.short_src
-					if (short_src ~= AdvancedCrosshair.blt_hooks_source) and (short_src ~= AdvancedCrosshair.ach_hooks_source) then 
+					local source = debuginfo.source
+					if (source ~= AdvancedCrosshair.blt_hooks_source) and (source ~= AdvancedCrosshair.ach_hooks_source) then 
 						return true
 					end
 				end
@@ -1751,8 +1894,8 @@ AdvancedCrosshair.compatibility_checks = {
 			if CopDamage then 
 				local debuginfo = debug and debug.getinfo and debug.getinfo(CopDamage.damage_melee)
 				if type(debuginfo) == "table" then 
-					local short_src = debuginfo.short_src
-					if (short_src ~= AdvancedCrosshair.blt_hooks_source) and (short_src ~= AdvancedCrosshair.ach_hooks_source) then 
+					local source = debuginfo.source
+					if (source ~= AdvancedCrosshair.blt_hooks_source) and (source ~= AdvancedCrosshair.ach_hooks_source) then 
 						return true
 					end
 				end
@@ -1770,8 +1913,8 @@ AdvancedCrosshair.compatibility_checks = {
 			if CopDamage then 
 				local debuginfo = debug and debug.getinfo and debug.getinfo(CopDamage.roll_critical_hit)
 				if type(debuginfo) == "table" then 
-					local short_src = debuginfo.short_src
-					if (short_src ~= AdvancedCrosshair.blt_hooks_source) and (short_src ~= AdvancedCrosshair.ach_hooks_source) then 
+					local source = debuginfo.source
+					if (source ~= AdvancedCrosshair.blt_hooks_source) and (source ~= AdvancedCrosshair.ach_hooks_source) then 
 						return true
 					end
 				end
@@ -1785,8 +1928,8 @@ AdvancedCrosshair.compatibility_checks = {
 			if NewRaycastWeaponBase then 
 				local debuginfo = debug and debug.getinfo and debug.getinfo(NewRaycastWeaponBase.toggle_firemode)
 				if type(debuginfo) == "table" then 
-					local short_src = debuginfo.short_src
-					if (short_src ~= AdvancedCrosshair.blt_hooks_source) and (short_src ~= AdvancedCrosshair.ach_hooks_source) then 
+					local source = debuginfo.source
+					if (source ~= AdvancedCrosshair.blt_hooks_source) and (source ~= AdvancedCrosshair.ach_hooks_source) then 
 						return true
 					end
 				end
@@ -1800,8 +1943,8 @@ AdvancedCrosshair.compatibility_checks = {
 			if NewRaycastWeaponBase then 
 				local debuginfo = debug and debug.getinfo and debug.getinfo(NewRaycastWeaponBase.toggle_firemode)
 				if type(debuginfo) == "table" then 
-					local short_src = debuginfo.short_src
-					if (short_src ~= AdvancedCrosshair.blt_hooks_source) and (short_src ~= AdvancedCrosshair.ach_hooks_source) then 
+					local source = debuginfo.source
+					if (source ~= AdvancedCrosshair.blt_hooks_source) and (source ~= AdvancedCrosshair.ach_hooks_source) then 
 						return true
 					end
 				end
@@ -1818,9 +1961,9 @@ function AdvancedCrosshair:CheckCompatibilityIssues()
 		if not compatibility_data.disabled then 
 			local check_result = compatibility_data.check_func and compatibility_data.check_func()
 			if check_result and setting_name and (self.settings[setting_name] ~= nil) then 
-				self.auto_compatibility_settings[setting_name] = check_result
 				any_found = any_found or check_result
 			end
+			self.auto_compatibility_settings[setting_name] = check_result
 		end
 	end
 	return any_found
@@ -1832,57 +1975,18 @@ function AdvancedCrosshair:ApplyCompatibilityFixes()
 		self:OnPlayerManagerCheckSkills(managers.player)
 	end
 	
-	self:ApplyCompatibility_PlayerMovementStateEnter(self:UseCompatibility_PlayerMovementStateEnter())
-	self:ApplyCompatibility_PlayerStandardStartEquipWeapon(self:UseCompatibility_PlayerStandardStartEquipWeapon())
 	self:ApplyCompatibility_CopDamage_RollCriticalHit(self:UseCompatibility_CopDamageRollCrit())
 	self:ApplyCompatibility_CopDamage_DamageMelee(self:UseCompatibility_CopDamageMelee())
-	self:ApplyCompatibility_NewRaycastWeaponBaseToggleFiremode(self:UseCompatibility_NewRaycastWeaponBaseToggleFiremode())
 	self:ApplyCompatibility_NewRaycastWeaponBaseResetCachedGadget(self:UseCompatibility_NewRaycastWeaponBaseResetCachedGadget())
 end
 
+function AdvancedCrosshair:ApplyCompatibility_PlayerMovementStateEnter(enabled) --deprecated in v33
+end
+
+function AdvancedCrosshair:ApplyCompatibility_PlayerStandardStartEquipWeapon(enabled) --deprecated in v33
+end
+
 	--we'll make our own hooks! with blackjack! and hooks! wait no
-function AdvancedCrosshair:ApplyCompatibility_PlayerMovementStateEnter(enabled)
-	AdvancedCrosshair:log("Executing " .. "ApplyCompatibility_PlayerMovementStateEnter" .. "()")
-	if PlayerMovementState then 
-		local orig_enter = PlayerMovementState._ach_orig_enter
-		if not (orig_enter and type(orig_enter) == "function") then 
-			orig_enter = PlayerMovementState.enter
-			PlayerMovementState._ach_orig_enter = orig_enter
-		end
-		
-		if enabled then 
-			function PlayerMovementState.enter(state,state_data,enter_data,...)
-				local result = {orig_enter(state,state_data,enter_data,...)}
-				AdvancedCrosshair.hook_PlayerMovementState_enter(state,state_data,enter_data,...)
-				return unpack(result)
-			end
-		else
-			PlayerMovementState.enter = orig_enter
-		end
-	end
-end
-
-function AdvancedCrosshair:ApplyCompatibility_PlayerStandardStartEquipWeapon(enabled)
-	AdvancedCrosshair:log("Executing " .. "ApplyCompatibility_PlayerStandardStartEquipWeapon" .. "()")
-	if PlayerStandard then 
-		local orig_start_equip = PlayerStandard._ach_orig_start_action_equip_weapon
-		if not (orig_start_equip and type(orig_start_equip) == "function") then 
-			orig_start_equip = PlayerStandard._start_action_equip_weapon
-			PlayerStandard._ach_orig_start_action_equip_weapon = orig_start_equip
-		end
-		
-		if enabled then 
-			function PlayerStandard._start_action_equip_weapon(state,t,...)
-				local result = {orig_start_equip(state,t,...)}
-				AdvancedCrosshair.hook_PlayerStandard_start_action_equip_weapon(state,t,...)
-				return unpack(result)
-			end
-		else
-			PlayerStandard._start_action_equip_weapon = orig_start_equip
-		end
-	end
-end
-
 function AdvancedCrosshair:ApplyCompatibility_CopDamage_DamageMelee(enabled)
 	AdvancedCrosshair:log("Executing " .. "ApplyCompatibility_CopDamage_DamageMelee" .. "()")
 
@@ -1934,58 +2038,16 @@ function AdvancedCrosshair:ApplyCompatibility_CopDamage_RollCriticalHit(enabled)
 	end
 end
 
-function AdvancedCrosshair:ApplyCompatibility_NewRaycastWeaponBaseToggleFiremode(enabled)
-	AdvancedCrosshair:log("Executing " .. "ApplyCompatibility_NewRaycastWeaponBaseToggleFiremode" .. "()")
-	if NewRaycastWeaponBase then 
-		local orig_toggle_firemode = NewRaycastWeaponBase._ach_orig_toggle_firemode
-		if not (orig_toggle_firemode and type(orig_toggle_firemode) == "function") then 
-			orig_toggle_firemode = NewRaycastWeaponBase.toggle_firemode
-			NewRaycastWeaponBase._ach_orig_toggle_firemode = orig_toggle_firemode
-		end
-		
-		if enabled then 
-			function NewRaycastWeaponBase.toggle_firemode(wpn_base,skip_post_event,...)
-				local result = {orig_toggle_firemode(wpn_base,skip_post_event,...)}
-				AdvancedCrosshair.hook_NewRaycastWeaponBase_toggle_firemode(wpn_base,skip_post_event)
-				return unpack(result)
-			end
-		else
-			NewRaycastWeaponBase.toggle_firemode = orig_toggle_firemode
-		end
-	end
+function AdvancedCrosshair:ApplyCompatibility_NewRaycastWeaponBaseToggleFiremode(enabled) --deprecated in v33
 end
 
-function AdvancedCrosshair:ApplyCompatibility_NewRaycastWeaponBaseResetCachedGadget(enabled)
-	AdvancedCrosshair:log("Executing " .. "ApplyCompatibility_NewRaycastWeaponBaseResetCachedGadget" .. "()")
-	if NewRaycastWeaponBase then 
-		local orig_reset_cached_gadget = NewRaycastWeaponBase._ach_orig_reset_cached_gadget
-		if not (orig_reset_cached_gadget and type(orig_reset_cached_gadget) == "function") then 
-			orig_reset_cached_gadget = NewRaycastWeaponBase.reset_cached_gadget
-			NewRaycastWeaponBase._ach_orig_reset_cached_gadget = orig_reset_cached_gadget
-		end
-		
-		if enabled then 
-			function NewRaycastWeaponBase.reset_cached_gadget(wpn_base,...)
-				local result = {orig_reset_cached_gadget(wpn_base,...)}
-				AdvancedCrosshair.hook_NewRaycastWeaponBase_reset_cached_gadget(wpn_base)
-				return unpack(result)
-			end
-		else
-			NewRaycastWeaponBase.reset_cached_gadget = orig_reset_cached_gadget
-		end
-	end
+function AdvancedCrosshair:ApplyCompatibility_NewRaycastWeaponBaseResetCachedGadget(enabled) --deprecated in v33
 end
 
-function AdvancedCrosshair.hook_PlayerMovementState_enter(...)
-	AdvancedCrosshair:log("Executing " .. "hook_PlayerMovementState_enter" .. "()")
-	AdvancedCrosshair:CheckCrosshair()
+function AdvancedCrosshair.hook_PlayerMovementState_enter(...) --deprecated in v33
 end
 
-function AdvancedCrosshair.hook_PlayerStandard_start_action_equip_weapon(state,t)
-	AdvancedCrosshair:log("Executing " .. "hook_PlayerStandard_start_action_equip_weapon" .. "()")
-	AdvancedCrosshair:CheckCrosshair()
-	AdvancedCrosshair:SetCrosshairBloom(0)
-	--Message.OnSwitchWeapon is called on UNEQUIP, not on weapon equip. so hooking this is what we gotta do.
+function AdvancedCrosshair.hook_PlayerStandard_start_action_equip_weapon(state,t) --deprecated in v33
 end
 
 function AdvancedCrosshair.hook_CopDamage_damage_melee(dmg_ext,attack_data)
@@ -2021,28 +2083,13 @@ function AdvancedCrosshair.hook_CopDamage_damage_melee(dmg_ext,attack_data)
 	end
 end
 
-function AdvancedCrosshair.hook_NewRaycastWeaponBase_toggle_firemode(wpnbase,skip_post_event)
-	AdvancedCrosshair:log("Executing " .. "hook_NewRaycastWeaponBase_toggle_firemode" .. "()")
-	AdvancedCrosshair:CheckCrosshair()
+function AdvancedCrosshair.hook_NewRaycastWeaponBase_toggle_firemode(wpnbase,skip_post_event) --deprecated in v33
 end
 
-local ids_auto = Idstring("auto")
-local ids_single = Idstring("single")
-function AdvancedCrosshair.hook_NewRaycastWeaponBase_reset_cached_gadget(wpnbase)
-	AdvancedCrosshair:log("Executing " .. "hook_NewRaycastWeaponBase_reset_cached_gadget" .. "()")
-	local firemode
-	local recorded_firemode = wpnbase:get_recorded_fire_mode()
-	if recorded_firemode == ids_single then 
-		firemode = "single"
-	elseif recorded_firemode == ids_auto then 
-		firemode = "auto"
-	end
-
-	AdvancedCrosshair:CheckCrosshair({
-		firemode = firemode
-	})
+function AdvancedCrosshair.hook_NewRaycastWeaponBase_reset_cached_gadget(wpnbase) --deprecated in v33
 end
 
+--this doesn't need an ApplyCompatibility function since its contents are run manually at the same time as the other ApplyCompatibility functions
 function AdvancedCrosshair:OnPlayerManagerCheckSkills(pm,...)
 	AdvancedCrosshair:log("Executing " .. "OnPlayerManagerCheckSkills" .. "()")
 	if pm then 
@@ -2088,6 +2135,9 @@ function AdvancedCrosshair:GetCrosshairStability()
 end
 function AdvancedCrosshair:UseCrosshairShake()
 	return self.settings.use_shake
+end
+function AdvancedCrosshair:UseCrosshairMovementBloom()
+	return self.settings.use_movement_bloom
 end
 function AdvancedCrosshair:UseDynamicColor()
 	return self.settings.use_color
@@ -2303,9 +2353,16 @@ end
 	--**********************--
 --these should only run once, when the player spawns
 function AdvancedCrosshair:Init()
-	self:log("Init()...")
-	BeardLib:AddUpdater("advancedcrosshairs_update",callback(AdvancedCrosshair,AdvancedCrosshair,"Update"),true)
-	BeardLib:AddUpdater("advc_create_hud_delayed",callback(AdvancedCrosshair,AdvancedCrosshair,"CreateHUD"))
+	if BeardLib then
+		BeardLib:AddUpdater("advancedcrosshairs_update",callback(AdvancedCrosshair,AdvancedCrosshair,"Update"),true)
+		BeardLib:AddUpdater("advc_create_hud_delayed",callback(AdvancedCrosshair,AdvancedCrosshair,"CreateHUD"))
+	else
+		managers.hud:remove_updator("advancedcrosshairs_update")
+		managers.hud:remove_updator("advc_create_hud_delayed")
+		managers.hud:add_updator("advancedcrosshairs_update",callback(AdvancedCrosshair,AdvancedCrosshair,"Update"))
+		managers.hud:add_updator("advc_create_hud_delayed",callback(AdvancedCrosshair,AdvancedCrosshair,"CreateHUD"))
+	end
+	
 	if blt.xaudio then
 		self:log("Setting up blt xaudio...")
         blt.xaudio.setup()
@@ -2313,22 +2370,17 @@ function AdvancedCrosshair:Init()
 	else
 		self:log("sblt xaudio does not exist")
 	end
-	
-	self:log("Checking os.date()")
-	local d -- = os.date("%d/%m")
-	if d == "1/4" then 
-		self:log("April Fool's!")
-		self._cache.HITMARKER_RAIN_ENABLED = true
+	if self:IsEasterEggsEnabled() then
+		if os.date("%d/%m") == "1/4" then 
+			self._cache.HITMARKER_RAIN_ENABLED = true
+		end
 	end
 	 self:log("Init done")
 end
 
 function AdvancedCrosshair:OnPlayerManagerOnEnterCustody(player_unit)
-	AdvancedCrosshair:log("Executing " .. "OnPlayerManagerOnEnterCustody" .. "()")
-	if (player_unit == nil) or (player_unit == managers.player:local_player()) then 
-		AdvancedCrosshair:ClearCache()
-		AdvancedCrosshair:RemoveAllCrosshairs(true)
-	end
+	AdvancedCrosshair:ClearCache()
+	AdvancedCrosshair:RemoveAllCrosshairs(true)
 end
 
 function AdvancedCrosshair:CreateHUD(t,dt) --try to create hud each run until both required elements are initiated.
@@ -2361,6 +2413,18 @@ function AdvancedCrosshair:CreateHUD(t,dt) --try to create hud each run until bo
 			
 			AdvancedCrosshair:log("CreateHUD() done")
 		end
+		self:ApplyCompatibilityFixes()
+		
+		self:CreateCrosshairPanel(hud.panel)
+		self:CreateCrosshairs()
+		
+		if BeardLib then
+			BeardLib:RemoveUpdater("advc_create_hud_delayed")
+			BeardLib:AddUpdater("ach_update_crosshair",callback(self,self,"UpdateCrosshair"))
+		else
+			managers.hud:remove_updator("advancedcrosshairs_update",callback(AdvancedCrosshair,AdvancedCrosshair,"Update"))
+			managers.hud:add_updator("advancedcrosshairs_update",callback(AdvancedCrosshair,AdvancedCrosshair,"Update"))
+		end
 	end
 end
 
@@ -2392,7 +2456,7 @@ function AdvancedCrosshair:CreateCrosshairPanel(parent_panel)
 end
 
 function AdvancedCrosshair:CreateCrosshairs()
-	AdvancedCrosshair:log("Executing " .. "CreateCrosshairs" .. "()")
+	self:RemoveAllCrosshairs(false)
 	local player = managers.player:local_player()
 	local inventory = player:inventory()
 	local equipped_unit = inventory:equipped_unit()
@@ -2402,7 +2466,6 @@ function AdvancedCrosshair:CreateCrosshairs()
 			self._cache.current_crosshair_data = self._cache.weapons[tostring(equipped_unit:key())].firemodes[equipped_unit:base():fire_mode()]
 		end
 	end
-	self:CheckCrosshair()
 end
 
 function AdvancedCrosshair:RemoveCrosshairByWeapon(unit)
@@ -2462,10 +2525,13 @@ function AdvancedCrosshair:CreateCrosshairByWeapon(unit,weapon_index)
 	local weapon_id = weapon_base:get_name_id()
 	local firemodes_data = {}
 	local weapon_category,is_revolver,is_akimbo = self:GetWeaponCategory(weapon_base:categories())
+	if is_akimbo then 
+		weapon_category = "akimbo_" .. weapon_category
+	end
 	for _,firemode in pairs(self.VALID_WEAPON_FIREMODES) do
 		local crosshair_id = self:GetCrosshairType(weapon_index,weapon_id,weapon_category,firemode,is_revolver,is_akimbo)
 		local crosshair_tweakdata = self._crosshair_data[crosshair_id]
-		local crosshair_setting = self.settings.crosshairs[weapon_category][firemode]
+		local crosshair_setting = weapon_category and self.settings.crosshairs[weapon_category] and self.settings.crosshairs[weapon_category][firemode]
 		if crosshair_setting then 
 			if crosshair_setting.overrides_global then 
 				--crosshair_setting = crosshair_setting --boy i sure hope it do
@@ -2481,7 +2547,7 @@ function AdvancedCrosshair:CreateCrosshairByWeapon(unit,weapon_index)
 			visible = false,
 			alpha = crosshair_setting.alpha
 		})
-		local parts = self:CreateCrosshair(firemode_panel,crosshair_tweakdata,crosshair_setting.scale)
+		local parts = self:CreateCrosshair(firemode_panel,crosshair_tweakdata,crosshair_setting)
 		firemodes_data[firemode] = {
 			base = weapon_base,
 			crosshair_id = crosshair_id,
@@ -2512,6 +2578,9 @@ function AdvancedCrosshair:CreateCrosshairByWeapon(unit,weapon_index)
 			}
 			for _,firemode in pairs(self.VALID_WEAPON_FIREMODES) do
 				local underbarrel_category,underbarrel_is_revolver,underbarrel_is_akimbo = self:GetWeaponCategory(underbarrel_tweakdata.categories)
+				if underbarrel_is_akimbo then 
+					underbarrel_category = "akimbo_" .. underbarrel_category 
+				end
 				local underbarrel_crosshair_id = self:GetCrosshairType(nil,underbarrel_id,underbarrel_category,firemode,underbarrel_is_revolver,underbarrel_is_akimbo)
 				local crosshair_setting = self.settings.crosshairs[underbarrel_category][firemode]
 				if crosshair_setting then 
@@ -2528,15 +2597,15 @@ function AdvancedCrosshair:CreateCrosshairByWeapon(unit,weapon_index)
 					visible = false,
 					alpha = crosshair_setting.alpha
 				})
-local _crosshair_data = self._crosshair_data[underbarrel_crosshair_id]
-_crosshair_data = _crosshair_data or self._crosshair_data.pdth_classic
+				local _crosshair_data = self._crosshair_data[underbarrel_crosshair_id]
+				_crosshair_data = _crosshair_data or self._crosshair_data.pdth_classic
 
-				underbarrels_data[tostring(underbarrel)].firemodes[firemode] = { --using a tostring(table) as an index is gross but i gotta
+				underbarrels_data[tostring(underbarrel)].firemodes[firemode] = { --using a table as an index is gross but i gotta
 					underbarrel_index = underbarrel_index,
 					crosshair_id = underbarrel_crosshair_id,
 					base = underbarrel,
 					panel = underbarrel_firemode_panel,
-					parts = self:CreateCrosshair(underbarrel_firemode_panel,_crosshair_data,crosshair_setting.scale),
+					parts = self:CreateCrosshair(underbarrel_firemode_panel,_crosshair_data,crosshair_setting),
 --					settings = self.DEFAULT_CROSSHAIR_OPTIONS
 					color = Color(crosshair_setting.color),
 					settings = crosshair_setting,
@@ -2554,13 +2623,17 @@ _crosshair_data = _crosshair_data or self._crosshair_data.pdth_classic
 	}
 end
 
-function AdvancedCrosshair:CreateCrosshair(panel,data,scale_setting)
-	AdvancedCrosshair:log("Executing " .. "CreateCrosshair" .. "()")
+function AdvancedCrosshair:CreateCrosshair(panel,data,user_settings)
 	--if data.special_crosshair then 
 	--	do stuff here
 	--end
 	local results = {}
-	local scale_setting = (scale_setting or 1)
+	user_settings = user_settings or {}
+	local scale_setting = (user_settings.scale or 1)
+	local color = data.color or (user_settings.color and Color(user_settings.color))
+	if not self:ShouldAlwaysLoadAssets() then
+		self:LoadPartsAssets(data.parts)
+	end
 	for i,part_data in ipairs(data.parts) do 
 		local scale = scale_setting * (data.scale or 1)
 		local x = (part_data.x or 0) * scale
@@ -2591,7 +2664,7 @@ function AdvancedCrosshair:CreateCrosshair(panel,data,scale_setting)
 			halign = part_data.halign,
 			alpha = part_data.alpha or data.alpha,
 			blend_mode = part_data.blend_mode or data.blend_mode,
-			color = part_data.color or data.color,
+			color = color,
 			render_template = part_data.render_template or data.render_template,
 			layer = (part_data.layer or data.layer or 0)
 		})
@@ -2766,6 +2839,9 @@ function AdvancedCrosshair:CreateHitmarker(panel,data)
 	AdvancedCrosshair:log("Executing " .. "CreateHitmarker" .. "()")
 	local results = {}
 	local scale_setting = data.scale or 1
+	if not self:ShouldAlwaysLoadAssets() then
+		self:LoadPartsAssets(data.parts)
+	end
 	for i,part_data in ipairs(data.parts) do 
 		local scale = scale_setting * (part_data.scale or 1)
 		local x = (part_data.x or 0) * scale
@@ -3167,10 +3243,10 @@ function AdvancedCrosshair:ClearCache(skip_destroy)
 	cache.num_hitmarkers = 0
 end
 
---sets the correct crosshair visible according to current weapon data
---ideally, should only be called on certain events, not in update
-function AdvancedCrosshair:CheckCrosshair(override_params)
-	AdvancedCrosshair:log("Executing " .. "CheckCrosshair" .. "()")
+function AdvancedCrosshair:CheckCrosshair(override_params) --deprecated in v33; use UpdateCrosshair() instead from now on
+end
+
+function AdvancedCrosshair:UpdateCrosshair(t,dt,override_params)
 	if not self:IsCrosshairEnabled() then 
 		return
 	end
@@ -3182,6 +3258,7 @@ function AdvancedCrosshair:CheckCrosshair(override_params)
 		
 		local current_state = override_params.current_state or player:movement():current_state()
 		local state_name = override_params.state_name or player:movement():current_state_name()
+		local is_in_steelsight = current_state:in_steelsight() 
 		
 		local inventory = player:inventory()
 		local equipped_index = inventory:equipped_selection()
@@ -3191,6 +3268,8 @@ function AdvancedCrosshair:CheckCrosshair(override_params)
 			local current_firemode = equipped_unit:base():fire_mode()
 			local weapon_base = equipped_unit:base()
 						
+			--for the burstfire mod
+			--probably obsolete now that burstfire is a game feature
 			if weapon_base.in_burst_mode and weapon_base:in_burst_mode() then
 				current_firemode = "burst"
 			end
@@ -3203,14 +3282,12 @@ function AdvancedCrosshair:CheckCrosshair(override_params)
 --this can happen at the start of the heist when the playerstate is changed for the first time, before AdvancedCrosshair is initialized
 				return
 			end
-			
+			--fire_mode
 			local underbarrel_base = weapon_base:gadget_overrides_weapon_functions()
 			if underbarrel_base then 
 				local underbarrel = weapon_data.underbarrels[tostring(underbarrel_base)]
-				if underbarrel and underbarrel_base and underbarrel_base._tweak_data then
-					current_firemode = underbarrel_base._tweak_data.FIRE_MODE
-					--currently no other way to get the firemode of an underbarrel, since i don't believe switching firemodes independently of parent weapon is possible?
-					
+				if underbarrel then 
+					current_firemode = underbarrel_base:fire_mode()
 					new_current_data = underbarrel.firemodes[current_firemode]
 				end
 			end
@@ -3224,12 +3301,27 @@ function AdvancedCrosshair:CheckCrosshair(override_params)
 				
 			end
 			
-			if self._cache.current_crosshair_data.settings.hide_on_ads and current_state:in_steelsight() then 
+			local ads_behavior = self._cache.current_crosshair_data.settings.ads_behavior
+			if ads_behavior == 2 and is_in_steelsight then 
+				hidden = true
+			elseif ads_behavior == 3 and not is_in_steelsight then
+				hidden = true
+			elseif self.settings.crosshair_hide_while_interacting and (current_state:_interacting() or current_state._use_item_expire_t) then
+				hidden = true
+			elseif self.settings.crosshair_hide_while_meleeing and current_state:_is_meleeing() then
+				hidden = true
+			elseif self.settings.crosshair_hide_while_grenading and current_state:_is_throwing_projectile() then
+				hidden = true
+--			elseif is_changing_weapon then 
+--				hidden = true
+			elseif self.settings.crosshair_hide_while_reloading and current_state:_is_reloading() then
+				hidden = true
+			elseif self.settings.crosshair_hide_while_running and current_state:running() and not weapon_base:run_and_shoot_allowed() then 
 				hidden = true
 			end
+			
 --			hidden = hidden or current_state:_is_reloading() or current_state:_changing_weapon() or current_state:_is_meleeing() or current_state._use_item_expire_t or current_state:_interacting() or current_state:_is_throwing_projectile() or current_state:_is_deploying_bipod() or current_state._menu_closed_fire_cooldown > 0 or current_state:is_switching_stances()
---hides the crosshair when the weapon is not ready to fire
---requires either too many separate hooks, or running every frame inside of update(), which i do not want to do 
+
 			local state_allowed = self:CrosshairAllowedInState(state_name)
 			if state_allowed ~= nil then 
 				hidden = hidden or not state_allowed
@@ -3239,14 +3331,6 @@ function AdvancedCrosshair:CheckCrosshair(override_params)
 		
 		
 		self._cache.current_crosshair_data.panel:set_visible(not hidden)
-
-		
---[[		
-		local state_allowed = self:CrosshairAllowedInState(state_name)
-		if state_allowed ~= nil then 
-			self._crosshair_panel:set_visible(state_allowed)
-		end
---]]		
 		
 	end
 end
@@ -3393,14 +3477,6 @@ function AdvancedCrosshair:Update(t,dt)
 					})
 				end
 				
-				if self:UseCompatibility_PlayerStandardOnSteelsight() then 
-					local is_in_steelsight = state:in_steelsight()
-					if self._cache.is_in_steelsight ~= is_in_steelsight then
-						self._cache.is_in_steelsight = is_in_steelsight
-						self:CheckCrosshair()
-					end
-				end
-				
 				local outofrange_display_mode = self:GetCrosshairRangeMode()
 				local use_dynamic_color = self:UseDynamicColor()
 				local fwd_ray = state._fwd_ray	
@@ -3493,16 +3569,96 @@ function AdvancedCrosshair:Update(t,dt)
 					self:SetCrosshairCenter(c_w,c_h)
 				end
 
-				--bloom
+				--crosshair bloom
+				local recoil_bloom = 0
+				local stance_bloom = 0
+				local bloom_any
 				if current_crosshair_data.settings.use_bloom then 
+					bloom_any = true
+					
+					recoil_bloom = self._cache.bloom
 					if self._cache.bloom > 0 then 
-						self._cache.bloom = self:DecayBloom(self._cache.bloom,t,dt)
-						self:SetCrosshairBloom(self._cache.bloom)
+						recoil_bloom = self:DecayBloom(recoil_bloom,t,dt)
+						self._cache.bloom = recoil_bloom
+					end
+					
+					if state:_changing_weapon() then
+						recoil_bloom = 0
 					end
 				end
+				if self:UseCrosshairMovementBloom() then
+					bloom_any = true
+					
+					stance_bloom = self._cache.stance_bloom
+					
+					local BLOOM_STATE_VALUES = self.CROSSHAIR_BLOOM_STATE_VALUES
+					local state_data = state._state_data
+					local is_moving = state._moving
+					
+					local bloom_rate
+					local bloom_max = 0
+					if state:running() then
+						if state._is_jumping then
+							bloom_max = BLOOM_STATE_VALUES.RUNNING_AIR_MAX
+						else
+							bloom_max = BLOOM_STATE_VALUES.RUNNING_STANDARD_MAX
+						end
+					elseif state_data.on_zipline then
+						is_moving = true
+						bloom_rate = 100
+						bloom_max = BLOOM_STATE_VALUES.ZIPLINING_STANDARD_MAX
+					else
+						if is_moving then
+							if state._is_jumping then
+								bloom_max = BLOOM_STATE_VALUES.WALKING_AIR_MAX
+							elseif state_data.ducking then
+								bloom_max = BLOOM_STATE_VALUES.WALKING_CROUCH_MAX
+							else
+								bloom_max = BLOOM_STATE_VALUES.WALKING_STANDARD_MAX
+							end
+						else
+							if state._is_jumping then
+								bloom_max = BLOOM_STATE_VALUES.WALKING_AIR_MAX
+							elseif state_data.ducking then
+								bloom_max = BLOOM_STATE_VALUES.STATION_CROUCH_MAX
+							else
+								bloom_max = BLOOM_STATE_VALUES.STATION_STANDARD_MAX
+							end
+						end
+					end
+					if state:in_steelsight() then
+						bloom_max = bloom_max + BLOOM_STATE_VALUES.STEELSIGHT_ADD
+					end
+					
+					local delta_bloom = bloom_max - stance_bloom
+					local delta_abs = math.abs(delta_bloom)
+					bloom_rate = bloom_rate or (BLOOM_STATE_VALUES.BLOOM_SPEED * dt * math.sign(delta_bloom))
+					
+					if delta_abs > 0 then
+						--not at target state bloom
+						if math.abs(bloom_rate) > delta_abs then
+							stance_bloom = bloom_max
+						else
+							stance_bloom = stance_bloom + bloom_rate
+						end
+					else
+						--at target state bloom
+					end
+					self._cache.stance_bloom = stance_bloom
+				end
 				
+				if bloom_any then
+					self:SetCrosshairBloom(recoil_bloom + stance_bloom)
+				end
 			end
+			
 		end
+	else
+	--[[
+		if self:IsCrosshairEnabled() then 
+			self:OnPlayerManagerOnEnterCustody()
+		end
+		--]]
 	end
 	self._cache.player_unit = managers.player:local_player()
 end
@@ -3520,11 +3676,8 @@ function AdvancedCrosshair:GetCrosshairType(slot,weapon_id,category,firemode,is_
 
 	if not result then 
 		if category then 
-			if is_akimbo then 
-				--todo akimbo check [category .. "_akimbo"]
-			end
 			if not (self.settings.crosshairs[category] and self.settings.crosshairs[category][firemode]) then 
-				self:log("ERROR: GetCrosshairType() Bad category " .. tostring(category) .. "/firemode " .. tostring(firemode))
+				self:log("ERROR: GetCrosshairType() Bad category [" .. tostring(category) .. "] / firemode [" .. tostring(firemode) .. "]")
 				return self.DEFAULT_CROSSHAIR_OPTIONS.crosshair_id
 			end
 			
@@ -3558,16 +3711,18 @@ end
 function AdvancedCrosshair:Load()
 	self:log("Loading settings from file")
 	local file = io.open(self.save_data_path, "r")
-	local prev_version = 1
+	local prev_version = 0
 	local new_version = self.default_settings.ach_save_version
 	if file then
 		local settings_from_file = json.decode(file:read("*all"))
 		prev_version = settings_from_file.ach_save_version or prev_version
+		
+		self:CheckSaveDataForDeprecatedValues(prev_version,new_version,settings_from_file)
+		
 		for k, v in pairs(settings_from_file) do
 			self.settings[k] = v
 		end
 		
---		self:CheckSaveDataForDeprecatedValues(prev_version,new_version)
 	else
 		self:Save()
 	end
@@ -3575,11 +3730,70 @@ function AdvancedCrosshair:Load()
 end
 
 --if i ever need to make changes to ACH save data, here is where i'll do it
-function AdvancedCrosshair:CheckSaveDataForDeprecatedValues(prev_version,new_version)
+function AdvancedCrosshair:CheckSaveDataForDeprecatedValues(prev_version,new_version,save_data)
+
+	--version-to-version specific changes are also possible
 	if prev_version ~= new_version then 
-		--do changes here
-		--self:Save()
+	
+		--check for missing categories (namely akimbos, in ACH v27)
+		if prev_version < 4 then 
+			for _,category in ipairs(AdvancedCrosshair.VALID_WEAPON_CATEGORIES) do 
+				if not save_data.crosshairs[category] then 
+					save_data.crosshairs[category] = {}
+					for _,firemode in pairs(self.VALID_WEAPON_FIREMODES) do 
+						save_data.crosshairs[category][firemode] = table.deep_map_copy(self.DEFAULT_CROSSHAIR_OPTIONS)
+					end
+				end
+			end
+		end
+		if save_data.crosshairs then 
+			for category,category_data in pairs(save_data.crosshairs) do
+				
+				if prev_version < 3 then
+					for _,firemode in pairs(self.VALID_WEAPON_FIREMODES) do 
+						--add firemode-specific preferences for any missing firemodes pre-v26 (specifically volley from U228)
+						if not category_data[firemode] then 
+							category_data[firemode] = table.deep_map_copy(self.DEFAULT_CROSSHAIR_OPTIONS)
+						end
+					end
+				end
+				
+				if prev_version < 2 then
+					for firemode,firemode_data in pairs(category_data) do 
+						--transfer "hide on ads" settings for users with save data pre-v21
+						local hide_on_ads = firemode_data.hide_on_ads
+						if hide_on_ads then 
+							firemode_data.hide_on_ads = nil
+							firemode_data.ads_behavior = 2 --hide when ads
+						else
+							firemode_data.ads_behavior = 1 --no special ads behavior
+						end
+					end
+				end
+			end
+		end
+		
+		--transfer "hide on ads" settings for users with save data pre-v21
+		--(for global crosshair, which is stored at a different depth)
+		if prev_version < 2 then 
+			local global_crosshair_data = save_data.crosshair_global
+			if global_crosshair_data then 
+				local hide_on_ads = global_crosshair_data.hide_on_ads
+				if hide_on_ads then 
+					global_crosshair_data.hide_on_ads = nil
+					global_crosshair_data.ads_behavior = 2 --hide when ads
+				else
+					global_crosshair_data.ads_behavior = 1 --no special ads behavior
+				end
+			end
+		end
+		
+		
+		
+		
+		save_data.ach_save_version = new_version
 	end
+	
 end
 
 --************************************************--
@@ -3609,8 +3823,7 @@ Hooks:Add("MenuManagerSetupCustomMenus", "ach_MenuManagerSetupCustomMenus", func
 	MenuHelper:NewMenu(AdvancedCrosshair.main_menu_id)
 	MenuHelper:NewMenu(AdvancedCrosshair.crosshairs_menu_id)
 	MenuHelper:NewMenu(AdvancedCrosshair.hitmarkers_menu_id)
-	MenuHelper:NewMenu(AdvancedCrosshair.compat_menu_id)
-	MenuHelper:NewMenu(AdvancedCrosshair.misc_menu_id)
+	MenuHelper:NewMenu(AdvancedCrosshair.hitsounds_menu_id)
 	MenuHelper:NewMenu(AdvancedCrosshair.crosshairs_categories_submenu_id)
 	MenuHelper:NewMenu(AdvancedCrosshair.crosshairs_categories_global_id)
 	for _,cat in ipairs(AdvancedCrosshair.VALID_WEAPON_CATEGORIES) do 
@@ -3635,9 +3848,11 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 	AdvancedCrosshair:log("MenuManagerPopulateCustomMenus begin")
 	
 	AdvancedCrosshair:log("Loading addons...")
+	Hooks:Call("ACH_LoadAllAddons")
 	AdvancedCrosshair:LoadAllAddons() --load custom crosshairs, hitmarkers, and hitsounds
 
-	Hooks:Call("ACH_LoadAllAddons")
+
+	
 	AdvancedCrosshair:log("Addon loading complete.")
 	for category,category_data in pairs(AdvancedCrosshair.settings.crosshairs) do 
 		for firemode,firemode_data in pairs(category_data) do 
@@ -3679,21 +3894,12 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 	local crosshair_items
 	AdvancedCrosshair.crosshair_id_by_index,crosshair_items = AdvancedCrosshair:SortAddons(AdvancedCrosshair._crosshair_data,"alphabetical")
 	
---	local crosshair_items = {}
---	local i = 1
---	for id,crosshair_data in pairs(AdvancedCrosshair._crosshair_data) do 
---		table.insert(crosshair_items,i,crosshair_data.name_id)
---		table.insert(AdvancedCrosshair.crosshair_id_by_index,i,id)
---		i = i + 1
---	end
-	
 --for hitmarkers:
 	local hitmarker_kill_bitmap_index = 1
 	local hitmarker_hit_bitmap_index = 1
 	local hitmarker_items
 	AdvancedCrosshair.hitmarker_id_by_index,hitmarker_items = AdvancedCrosshair:SortAddons(AdvancedCrosshair._hitmarker_data,"alphabetical")
 	
---	local h_i = 1
 	for h_i,id in ipairs(AdvancedCrosshair.hitmarker_id_by_index) do 
 		if id == AdvancedCrosshair.settings.hitmarker_kill_id then
 			hitmarker_kill_bitmap_index = h_i
@@ -3701,9 +3907,6 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		if id == AdvancedCrosshair.settings.hitmarker_hit_id then 
 			hitmarker_hit_bitmap_index = h_i
 		end
---		table.insert(hitmarker_items,h_i,hitmarker_data.name_id)
---		table.insert(AdvancedCrosshair.hitmarker_id_by_index,h_i,id)
---		h_i = h_i + 1
 	end
 	
 	local hs_i = 1
@@ -3742,9 +3945,6 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		if id == AdvancedCrosshair.settings.hitsound_kill_headshot_crit_id then 
 			hitsound_kill_headshot_crit_index = hs_i
 		end
---		table.insert(hitsound_items,hs_i,hitsound_data.name_id)
---		table.insert(AdvancedCrosshair.hitsound_id_by_index,hs_i,id)
---		hs_i = hs_i + 1
 	end
 	
 	AdvancedCrosshair:log("Populating hitmarker menus...")
@@ -4204,10 +4404,10 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 				AdvancedCrosshair:Save()
 			end
 			
-			--set hide on ads
-			local set_hide_on_ads_callback_name = firemode_menu_name .. "_set_hide_on_ads"
-			MenuCallbackHandler[set_hide_on_ads_callback_name] = function(self,item)
-				crosshair_setting.hide_on_ads = item:value() == "on"
+			--set ads behavior
+			local set_ads_behavior_callback_name = firemode_menu_name .. "_set_ads_behavior"
+			MenuCallbackHandler[set_ads_behavior_callback_name] = function(self,item)
+				crosshair_setting.ads_behavior = tonumber(item:value())
 				AdvancedCrosshair:Save()
 			end
 			
@@ -4225,6 +4425,24 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 					break
 				end
 			end
+			
+			MenuHelper:AddButton({
+				id = "id_header_empty_button_" .. firemode_menu_name,
+				title = managers.localization:text("menu_weapon_category_" .. category) .. ": " .. managers.localization:text("menu_weapon_firemode_" .. firemode),
+				desc = managers.localization:text("menu_ach_crosshair_generic_header_desc"),
+				localized = false,
+				callback = "callback_ach_empty_button",
+				menu_id = firemode_menu_name,
+				disabled = true,
+				priority = 12
+			})
+			
+			MenuHelper:AddDivider({
+				id = "divider_1_" .. firemode_menu_name,
+				size = 8,
+				menu_id = firemode_menu_name,
+				priority = 11
+			})
 			
 			MenuHelper:AddToggle({
 				id = "id_" .. set_crosshair_override_global_callback_name,
@@ -4294,18 +4512,23 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 				priority = 5
 			})
 			
-			MenuHelper:AddToggle({
-				id = "id_" .. set_hide_on_ads_callback_name,
-				title = "menu_ach_set_hide_on_ads_title",
-				desc = "menu_ach_set_hide_on_ads_desc",
-				callback = set_hide_on_ads_callback_name,
-				value = crosshair_setting.hide_on_ads,
+			MenuHelper:AddMultipleChoice({
+				id = "id_" .. set_ads_behavior_callback_name,
+				title = "menu_ach_set_ads_behavior_title",
+				desc = "menu_ach_set_ads_behavior_desc",
+				callback = set_ads_behavior_callback_name,
+				items = {
+					"menu_ach_crosshair_ads_behavior_none",
+					"menu_ach_crosshair_ads_behavior_hide",
+					"menu_ach_crosshair_ads_behavior_show"
+				},
+				value = crosshair_setting.ads_behavior,
 				menu_id = firemode_menu_name,
 				priority = 4
 			})
 			
 			MenuHelper:AddDivider({
-				id = "divider_1_" .. firemode_menu_name,
+				id = "divider_2_" .. firemode_menu_name,
 				size = 24,
 				menu_id = firemode_menu_name,
 				priority = 3
@@ -4330,7 +4553,22 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		end
 	end
 	
-	AdvancedCrosshair:log("Populating crosshair menus...")
+	MenuHelper:AddButton({
+		id = "id_header_empty_button_global",
+		title = "menu_ach_crosshair_global_header_title",
+		desc = "menu_ach_crosshair_global_header_desc",
+		callback = "callback_ach_empty_button",
+		menu_id = AdvancedCrosshair.crosshairs_categories_global_id,
+		disabled = true,
+		priority = 10
+	})
+	
+	MenuHelper:AddDivider({
+		id = "divider_1_ach_menu_crosshairs_categories_global",
+		size = 8,
+		menu_id = AdvancedCrosshair.crosshairs_categories_global_id,
+		priority = 9
+	})
 	
 	MenuHelper:AddMultipleChoice({
 		id = "id_ach_menu_crosshairs_categories_global_type",
@@ -4390,18 +4628,23 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		priority = 4
 	})
 
-	MenuHelper:AddToggle({
-		id = "id_ach_menu_crosshairs_categories_global_set_ads_hides_crosshair",
-		title = "menu_ach_set_hide_on_ads_title",
-		desc = "menu_ach_set_hide_on_ads_desc",
-		callback = "callback_ach_crosshairs_categories_global_ads_hides_crosshair",
-		value = AdvancedCrosshair.settings.crosshair_global.hide_on_ads,
+	MenuHelper:AddMultipleChoice({
+		id = "id_ach_menu_crosshairs_categories_global_set_ads_behavior",
+		title = "menu_ach_set_ads_behavior_title",
+		desc = "menu_ach_set_ads_behavior_desc",
+		callback = "callback_ach_crosshairs_categories_global_ads_behavior",
+		items = {
+			"menu_ach_crosshair_ads_behavior_none",
+			"menu_ach_crosshair_ads_behavior_hide",
+			"menu_ach_crosshair_ads_behavior_show"
+		},
+		value = AdvancedCrosshair.settings.crosshair_global.ads_behavior,
 		menu_id = AdvancedCrosshair.crosshairs_categories_global_id,
 		priority = 3
 	})
 	
 	MenuHelper:AddDivider({
-		id = "divider_1_ach_menu_crosshairs_categories_global",
+		id = "divider_2_ach_menu_crosshairs_categories_global",
 		size = 24,
 		menu_id = AdvancedCrosshair.crosshairs_categories_global_id,
 		priority = 2
@@ -4423,7 +4666,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		id = "ach_crosshairs_general_divider_1",
 		size = 16,
 		menu_id = AdvancedCrosshair.crosshairs_menu_id,
-		priority = 9
+		priority = 16
 	})
 	MenuHelper:AddToggle({
 		id = "ach_crosshairs_general_master_enable",
@@ -4432,7 +4675,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		callback = "callback_ach_crosshairs_general_master_enable",
 		value = AdvancedCrosshair.settings.crosshair_enabled,
 		menu_id = AdvancedCrosshair.crosshairs_menu_id,
-		priority = 8
+		priority = 15
 	})
 	
 	MenuHelper:AddMultipleChoice({
@@ -4448,7 +4691,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		},
 		value = AdvancedCrosshair.settings.crosshair_outofrange_mode,
 		menu_id = AdvancedCrosshair.crosshairs_menu_id,
-		priority = 7
+		priority = 14
 	})
 	
 	
@@ -4459,7 +4702,16 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		callback = "callback_ach_crosshairs_general_enable_shake",
 		value = AdvancedCrosshair.settings.use_shake,
 		menu_id = AdvancedCrosshair.crosshairs_menu_id,
-		priority = 6
+		priority = 13
+	})
+	MenuHelper:AddToggle({
+		id = "ach_crosshairs_general_enable_use_movement_bloom",
+		title = "menu_ach_crosshairs_general_enable_movement_bloom_title",
+		desc = "menu_ach_crosshairs_general_enable_movement_bloom_desc",
+		callback = "callback_ach_crosshairs_general_enable_movement_bloom",
+		value = AdvancedCrosshair.settings.use_movement_bloom,
+		menu_id = AdvancedCrosshair.crosshairs_menu_id,
+		priority = 12
 	})
 	MenuHelper:AddToggle({
 		id = "ach_crosshairs_general_enable_dynamic_color",
@@ -4468,7 +4720,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		callback = "callback_ach_crosshairs_general_enable_dynamic_color",
 		value = AdvancedCrosshair.settings.use_color,
 		menu_id = AdvancedCrosshair.crosshairs_menu_id,
-		priority = 5
+		priority = 11
 	})
 	MenuHelper:AddButton({
 		id = "ach_crosshairs_general_set_dynamic_color_enemy",
@@ -4476,7 +4728,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		desc = "menu_ach_crosshairs_general_set_dynamic_color_enemy_desc",
 		callback = "callback_ach_crosshairs_general_set_dynamic_color_enemy",
 		menu_id = AdvancedCrosshair.crosshairs_menu_id,
-		priority = 4
+		priority = 10
 	})
 	MenuHelper:AddButton({
 		id = "ach_crosshairs_general_set_dynamic_color_civilian",
@@ -4484,7 +4736,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		desc = "menu_ach_crosshairs_general_set_dynamic_color_civilian_desc",
 		callback = "callback_ach_crosshairs_general_set_dynamic_color_civilian",
 		menu_id = AdvancedCrosshair.crosshairs_menu_id,
-		priority = 3
+		priority = 9
 	})
 	MenuHelper:AddButton({
 		id = "ach_crosshairs_general_set_dynamic_color_teammate",
@@ -4492,7 +4744,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		desc = "menu_ach_crosshairs_general_set_dynamic_color_teammate_desc",
 		callback = "callback_ach_crosshairs_general_set_dynamic_color_teammate",
 		menu_id = AdvancedCrosshair.crosshairs_menu_id,
-		priority = 2
+		priority = 8
 	})
 	MenuHelper:AddButton({
 		id = "ach_crosshairs_general_set_dynamic_color_misc",
@@ -4500,9 +4752,85 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		desc = "menu_ach_crosshairs_general_set_dynamic_color_misc_desc",
 		callback = "callback_ach_crosshairs_general_set_dynamic_color_misc",
 		menu_id = AdvancedCrosshair.crosshairs_menu_id,
+		priority = 7
+	})
+	
+	
+	MenuHelper:AddDivider({
+		id = "ach_crosshairs_general_divider_2",
+		size = 16,
+		menu_id = AdvancedCrosshair.crosshairs_menu_id,
+		priority = 6
+	})
+	
+	MenuHelper:AddToggle({
+		id = "ach_crosshair_general_hide_when_interacting",
+		title = "menu_ach_crosshair_general_hide_when_interacting_title",
+		desc = "menu_ach_crosshair_general_hide_when_interacting_desc",
+		callback = "callback_ach_crosshairs_general_hide_while_interacting",
+		value = AdvancedCrosshair.settings.crosshair_hide_while_interacting,
+		menu_id = AdvancedCrosshair.crosshairs_menu_id,
+		priority = 5
+	})
+	MenuHelper:AddToggle({
+		id = "ach_crosshair_general_hide_when_meleeing",
+		title = "menu_ach_crosshair_general_hide_when_meleeing_title",
+		desc = "menu_ach_crosshair_general_hide_when_meleeing_desc",
+		callback = "callback_ach_crosshairs_general_hide_while_meleeing",
+		value = AdvancedCrosshair.settings.crosshair_hide_while_meleeing,
+		menu_id = AdvancedCrosshair.crosshairs_menu_id,
+		priority = 4
+	})
+	MenuHelper:AddToggle({
+		id = "ach_crosshair_general_hide_when_grenading",
+		title = "menu_ach_crosshair_general_hide_when_grenading_title",
+		desc = "menu_ach_crosshair_general_hide_when_grenading_desc",
+		callback = "callback_ach_crosshairs_general_hide_while_grenading",
+		value = AdvancedCrosshair.settings.crosshair_hide_while_grenading,
+		menu_id = AdvancedCrosshair.crosshairs_menu_id,
+		priority = 3
+	})
+	MenuHelper:AddToggle({
+		id = "ach_crosshair_general_hide_when_reloading",
+		title = "menu_ach_crosshair_general_hide_when_reloading_title",
+		desc = "menu_ach_crosshair_general_hide_when_reloading_desc",
+		callback = "callback_ach_crosshairs_general_hide_while_reloading",
+		value = AdvancedCrosshair.settings.crosshair_hide_while_reloading,
+		menu_id = AdvancedCrosshair.crosshairs_menu_id,
+		priority = 2
+	})
+	MenuHelper:AddToggle({
+		id = "ach_crosshair_general_hide_when_running",
+		title = "menu_ach_crosshair_general_hide_when_running_title",
+		desc = "menu_ach_crosshair_general_hide_when_running_desc",
+		callback = "callback_ach_crosshairs_general_hide_while_running",
+		value = AdvancedCrosshair.settings.crosshair_hide_while_running,
+		menu_id = AdvancedCrosshair.crosshairs_menu_id,
 		priority = 1
 	})
 	
+	
+	
+	
+	
+	
+	
+	--all custom keybinds, except for those specified in a mod.txt, or those whose parent menus are a direct child of the blt mod options menu, will cause a crash when binding the key (reason unknown)
+	--the calback does not seem to activate even when defined in the ach main menu
+	--so this keybind will be defined in mod.txt until this issue is fixed
+	--[[
+	MenuHelper:AddKeybinding({
+		id = "ach_crosshairs_toggle_crosshair_visibility",
+		title = "menu_ach_toggle_crosshair_visibility_title",
+		desc = "menu_ach_toggle_crosshair_visibility_desc",
+		callback = "callback_ach_toggle_crosshair_visibility",
+		connection_name = "ach_keybind_toggle_crosshair",
+		binding = "num *",
+		button = "num *",
+		menu_id = AdvancedCrosshair.hitsounds_menu_id
+		priority = 1
+	})
+	--]]
 	
 	
 	--hitsounds	
@@ -4829,13 +5157,48 @@ Hooks:Add("MenuManagerBuildCustomMenus", "ach_MenuManagerBuildCustomMenus", func
 	AdvancedCrosshair:log("MenuManagerBuildCustomMenus begin")
 	
 	local crosshairs_menu = MenuHelper:GetMenu(AdvancedCrosshair.crosshairs_menu_id)
-	nodes[AdvancedCrosshair.main_menu_id] = MenuHelper:BuildMenu(
+	
+	--create main menu
+	local ach_main_menu = MenuHelper:BuildMenu(
 		AdvancedCrosshair.main_menu_id,{
 			area_bg = "none",
 			back_callback = "callback_ach_main_close",
 			focus_changed_callback = "callback_ach_main_focus"
 		}
 	)
+	nodes[AdvancedCrosshair.main_menu_id] = ach_main_menu
+	MenuHelper:AddMenuItem(nodes.blt_options,AdvancedCrosshair.main_menu_id,"menu_ach_menu_main_title","menu_ach_menu_main_desc")
+	
+	--create crosshairs menu
+	nodes[AdvancedCrosshair.crosshairs_menu_id] = MenuHelper:BuildMenu(
+		AdvancedCrosshair.crosshairs_menu_id,{
+			area_bg = "none",
+			back_callback = "callback_ach_crosshairs_close",
+			focus_changed_callback = "callback_ach_crosshairs_focus"
+		}
+	)
+	MenuHelper:AddMenuItem(ach_main_menu,AdvancedCrosshair.crosshairs_menu_id,"menu_ach_crosshairs_menu_title","menu_ach_crosshairs_menu_desc")
+	
+	--create hitmarkers menu
+	nodes[AdvancedCrosshair.hitmarkers_menu_id] = MenuHelper:BuildMenu(
+		AdvancedCrosshair.hitmarkers_menu_id,{
+			area_bg = "none",
+			back_callback = "callback_ach_hitmarkers_close",
+			focus_changed_callback = "callback_ach_hitmarkers_focus"
+		}
+	)
+	MenuHelper:AddMenuItem(ach_main_menu,AdvancedCrosshair.hitmarkers_menu_id,"menu_ach_hitmarkers_menu_title","menu_ach_hitmarkers_menu_desc")
+	
+	--create hitsounds menu
+	nodes[AdvancedCrosshair.hitsounds_menu_id] = MenuHelper:BuildMenu(
+		AdvancedCrosshair.hitsounds_menu_id,{
+			area_bg = "none",
+			back_callback = "callback_ach_hitsounds_close",
+			focus_changed_callback = "callback_ach_hitsounds_focus"
+		}
+	)
+	MenuHelper:AddMenuItem(ach_main_menu,AdvancedCrosshair.hitsounds_menu_id,"menu_ach_hitsounds_menu_title","menu_ach_hitsounds_menu_desc")
+	
 	
 	nodes[AdvancedCrosshair.crosshairs_categories_global_id] = MenuHelper:BuildMenu(AdvancedCrosshair.crosshairs_categories_global_id,
 		{
@@ -4844,18 +5207,59 @@ Hooks:Add("MenuManagerBuildCustomMenus", "ach_MenuManagerBuildCustomMenus", func
 			focus_changed_callback = "callback_ach_crosshairs_categories_global_focus"
 		}
 	)
-	
-	AdvancedCrosshair:log("Building customization menu...")
-	
 	MenuHelper:AddMenuItem(crosshairs_menu,AdvancedCrosshair.crosshairs_categories_global_id,"menu_ach_crosshairs_global_menu_title","menu_ach_crosshairs_global_menu_desc",2)
+	
+	
+	nodes[AdvancedCrosshair.crosshairs_categories_submenu_id] = MenuHelper:BuildMenu(AdvancedCrosshair.crosshairs_categories_submenu_id,
+		{
+			area_bg = "none",
+			back_callback = MenuCallbackHandler.callback_ach_crosshairs_categories_close,
+			focus_changed_callback = "callback_ach_crosshairs_categories_focus"
+		}
+	)
 	MenuHelper:AddMenuItem(crosshairs_menu,AdvancedCrosshair.crosshairs_categories_submenu_id,"menu_ach_crosshairs_categories_menu_title","menu_ach_crosshairs_categories_menu_desc",1)
+	
+	--alphabetically sort firemode and weapon categories 
+	local sorted_customization_menus = {} 
 	for cat_menu_name,cat_menu_data in pairs(AdvancedCrosshair.customization_menus) do 
+		table.insert(sorted_customization_menus,cat_menu_name)
+	end
+	local function get_category_name_id(cat_menu_name)
+		local cat_menu_data = AdvancedCrosshair.customization_menus[cat_menu_name]
+		local category = tostring(cat_menu_data.category_name)
+		local cat_name_id = "menu_weapon_category_" .. category
+		return cat_name_id
+	end
+	table.sort(sorted_customization_menus,function(a,b)
+		return managers.localization:text(get_category_name_id(a)) < managers.localization:text(get_category_name_id(b))
+	end)
+	
+	local function get_firemode(cat_menu_data,firemode_menu_name)
+		local firemode_menu = cat_menu_data.child_menus[firemode_menu_name]
+		local firemode = tostring(firemode_menu.firemode)
+		return firemode
+	end
+	
+	for _,cat_menu_name in ipairs(sorted_customization_menus) do 
+		local cat_menu_data = AdvancedCrosshair.customization_menus[cat_menu_name]
+		
 		local cat_menu = MenuHelper:GetMenu(cat_menu_name)
 		local category = tostring(cat_menu_data.category_name)
 		local cat_name_id = "menu_weapon_category_" .. category
 		local cat_name_desc = "menu_ach_change_crosshair_weapon_category_desc"
-		local i = 1
-		for firemode_menu_name,firemode_menu in pairs(cat_menu_data.child_menus) do
+		
+		--sort firemode menus according to the order of VALID_WEAPON_FIREMODES
+		local sorted_firemode_menus = {}
+		for firemode_menu_name,firemode_menu in pairs(cat_menu_data.child_menus) do 
+			table.insert(sorted_firemode_menus,firemode_menu_name)
+		end
+		table.sort(sorted_firemode_menus,function(a,b)
+			return (table.index_of(AdvancedCrosshair.VALID_WEAPON_FIREMODES,get_firemode(cat_menu_data,a)) or 0) < (table.index_of(AdvancedCrosshair.VALID_WEAPON_FIREMODES,get_firemode(cat_menu_data,b)) or 0)
+		end)
+		
+		for i,firemode_menu_name in ipairs(sorted_firemode_menus) do
+			local firemode_menu = cat_menu_data.child_menus[firemode_menu_name]
+			
 			local firemode = tostring(firemode_menu.firemode)
 			local name_id = "menu_weapon_firemode_" .. firemode
 			local desc_id = cat_name_id
@@ -4883,7 +5287,7 @@ Hooks:Add("MenuManagerBuildCustomMenus", "ach_MenuManagerBuildCustomMenus", func
 				}
 			)
 			MenuHelper:AddMenuItem(cat_menu,firemode_menu_name,name_id,desc_id,i) --add each firemode menu to its weaponcategory parent menu
-			i = i + 1
+			
 		end
 		nodes[cat_menu_name] = MenuHelper:BuildMenu(cat_menu_name,
 			{
@@ -4894,15 +5298,7 @@ Hooks:Add("MenuManagerBuildCustomMenus", "ach_MenuManagerBuildCustomMenus", func
 		)
 		MenuHelper:AddMenuItem(MenuHelper:GetMenu(AdvancedCrosshair.crosshairs_categories_submenu_id),cat_menu_name,cat_name_id,cat_name_desc)
 	end
-	nodes[AdvancedCrosshair.crosshairs_categories_submenu_id] = MenuHelper:BuildMenu(AdvancedCrosshair.crosshairs_categories_submenu_id,
-		{
-			area_bg = "none",
-			back_callback = MenuCallbackHandler.callback_ach_crosshairs_categories_close,
-			focus_changed_callback = "callback_ach_crosshairs_categories_focus"
-		}
-	)
-	
-	AdvancedCrosshair:log("MenuManagerBuildCustomMenus complete")
+--	MenuHelper:AddMenuItem(MenuHelper:GetMenu(crosshairs_menu),AdvancedCrosshair.crosshairs_categories_submenu_id,title,desc]
 end)
 
 Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
@@ -4914,12 +5310,15 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 	MenuCallbackHandler.callback_ach_main_focus = function(self,item)
 	end
 	
-	
+	MenuCallbackHandler.callback_ach_empty_button = function(self)
+		--this is an empty callback for the "header" buttons
+	end
 	--**************** crosshairs options ****************
 	
 	
 	MenuCallbackHandler.callback_ach_crosshairs_close = function(self)
 		AdvancedCrosshair.clbk_remove_crosshair_preview()
+		AdvancedCrosshair:UnloadCrosshairs()
 	end
 	MenuCallbackHandler.callback_ach_crosshairs_categories_close = function(self)
 	end
@@ -4943,7 +5342,15 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 	MenuCallbackHandler.callback_ach_crosshairs_general_master_enable = function(self,item)
 		local state = item:value() == "on"
 		AdvancedCrosshair.settings.crosshair_enabled = state
-		if alive (AdvancedCrosshair._crosshair_panel) then 
+		if alive(AdvancedCrosshair._crosshair_panel) then 
+			AdvancedCrosshair._crosshair_panel:set_visible(state)
+		end
+		AdvancedCrosshair:Save()
+	end
+	MenuCallbackHandler.callback_ach_toggle_crosshair_visibility = function(self)
+		local state = not AdvancedCrosshair:IsCrosshairEnabled()
+		AdvancedCrosshair.settings.crosshair_enabled = state
+		if alive(AdvancedCrosshair._crosshair_panel) then 
 			AdvancedCrosshair._crosshair_panel:set_visible(state)
 		end
 		AdvancedCrosshair:Save()
@@ -4957,8 +5364,11 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 		AdvancedCrosshair.settings.use_shake = item:value() == "on"
 		if alive(AdvancedCrosshair._crosshair_panel) then 
 			AdvancedCrosshair:SetCrosshairCenter(AdvancedCrosshair._panel:center())
-			AdvancedCrosshair:CheckCrosshair()
 		end
+		AdvancedCrosshair:Save()
+	end
+	MenuCallbackHandler.callback_ach_crosshairs_general_enable_movement_bloom = function(self,item)
+		AdvancedCrosshair.settings.use_movement_bloom = item:value() == "on"
 		AdvancedCrosshair:Save()
 	end
 	MenuCallbackHandler.callback_ach_crosshairs_general_enable_dynamic_color = function(self,item)
@@ -5108,14 +5518,39 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 			
 			AdvancedCrosshair.clbk_show_colorpicker_with_callbacks(Color(AdvancedCrosshair.settings.crosshair_misc_color),clbk_colorpicker,clbk_colorpicker)
 			
---			AdvancedCrosshair:CheckCrosshair()
-			
 		elseif not _G.ColorPicker then
 			AdvancedCrosshair.clbk_missing_colorpicker_prompt()
 		end	
 	end
-	MenuCallbackHandler.callback_ach_crosshairs_categories_global_ads_hides_crosshair = function(self,item)
-		AdvancedCrosshair.settings.crosshair_global.hide_on_ads = item:value() == "on"
+	MenuCallbackHandler.callback_ach_crosshairs_categories_global_ads_behavior = function(self,item)
+		local value = tonumber(item:value())
+		AdvancedCrosshair.settings.crosshair_global.ads_behavior = value
+		AdvancedCrosshair:Save()
+	end
+	
+	MenuCallbackHandler.callback_ach_crosshairs_general_hide_while_interacting = function(self,item)
+		local value = item:value() == "on"
+		AdvancedCrosshair.settings.crosshair_hide_while_interacting = value
+		AdvancedCrosshair:Save()
+	end
+	MenuCallbackHandler.callback_ach_crosshairs_general_hide_while_running = function(self,item)
+		local value = item:value() == "on"
+		AdvancedCrosshair.settings.crosshair_hide_while_running = value
+		AdvancedCrosshair:Save()
+	end
+	MenuCallbackHandler.callback_ach_crosshairs_general_hide_while_meleeing = function(self,item)
+		local value = item:value() == "on"
+		AdvancedCrosshair.settings.crosshair_hide_while_meleeing = value
+		AdvancedCrosshair:Save()
+	end
+	MenuCallbackHandler.callback_ach_crosshairs_general_hide_while_grenading = function(self,item)
+		local value = item:value() == "on"
+		AdvancedCrosshair.settings.crosshair_hide_while_grenading = value
+		AdvancedCrosshair:Save()
+	end
+	MenuCallbackHandler.callback_ach_crosshairs_general_hide_while_reloading = function(self,item)
+		local value = item:value() == "on"
+		AdvancedCrosshair.settings.crosshair_hide_while_reloading = value
 		AdvancedCrosshair:Save()
 	end
 	
@@ -5226,6 +5661,7 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 	end
 	MenuCallbackHandler.callback_ach_hitmarkers_close = function(self)
 		AdvancedCrosshair.clbk_remove_crosshair_preview()
+		AdvancedCrosshair:UnloadHitmarkers()
 	end
 	MenuCallbackHandler.callback_ach_hitmarkers_master_enable = function(self,item)
 		AdvancedCrosshair.settings.hitmarker_enabled = item:value() == "on"
@@ -5763,9 +6199,32 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 		)
 	end
 	
+	MenuCallbackHandler.callback_ach_menu_misc_enable_logs = function(self,item)
+		local enabled = item:value() == "on"
+		AdvancedCrosshair.settings.logs_enabled = enabled
+		AdvancedCrosshair:Save()
+	end
+	
 	MenuCallbackHandler.callback_ach_menu_misc_can_check_melee_headshots = function(self,item)
 		local enabled = item:value() == "on"
 		AdvancedCrosshair.settings.can_check_melee_headshots = enabled
+		AdvancedCrosshair:Save()
+	end
+	
+	MenuCallbackHandler.callback_ach_menu_misc_easter_eggs_enabled = function(self,item)
+		local enabled = item:value() == "on"
+		AdvancedCrosshair.settings.easter_eggs_enabled = enabled
+		
+		if enabled then 
+			if os.date("%d/%m") == "1/4" then 
+				AdvancedCrosshair._cache.HITMARKER_RAIN_ENABLED = true
+			else
+				AdvancedCrosshair._cache.HITMARKER_RAIN_ENABLED = false
+			end
+		else
+			AdvancedCrosshair._cache.HITMARKER_RAIN_ENABLED = false
+		end
+		
 		AdvancedCrosshair:Save()
 	end
 	
@@ -5782,34 +6241,19 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 		AdvancedCrosshair:Save()
 	end
 	
-	MenuCallbackHandler.callback_ach_menu_compat_compatibility_playerstandard_startactionequipweapon = function(self,item)
-		local enabled = item:value() == "on"
-		AdvancedCrosshair.settings.compatibility_hook_playerstandard_startactionequipweapon = enabled
-		AdvancedCrosshair:Save()
+	MenuCallbackHandler.callback_ach_menu_compat_compatibility_playerstandard_startactionequipweapon = function(self,item) --deprecated in v33
 	end
 	
-	MenuCallbackHandler.callback_ach_menu_compat_compatibility_playerstandard_onsteelsight = function(self,item)
-		local enabled = item:value() == "on"
-		AdvancedCrosshair.settings.compatibility_hook_playerstandard_onsteelsight = enabled
-		AdvancedCrosshair:Save()
+	MenuCallbackHandler.callback_ach_menu_compat_compatibility_playerstandard_onsteelsight = function(self,item) --deprecated in v33
 	end
 	
-	MenuCallbackHandler.callback_ach_menu_compat_compatibility_playermovementstate_enter = function(self,item)
-		local enabled = item:value() == "on"
-		AdvancedCrosshair.settings.compatibility_hook_playermovementstate_enter = enabled
-		AdvancedCrosshair:Save()
+	MenuCallbackHandler.callback_ach_menu_compat_compatibility_playermovementstate_enter = function(self,item) --deprecated in v33
 	end
 	
-	MenuCallbackHandler.callback_ach_menu_compat_compatibility_newraycastweaponbase_togglefiremode = function(self,item)
-		local enabled = item:value() == "on"
-		AdvancedCrosshair.settings.compatibility_hook_newraycastweaponbase_togglefiremode = enabled
-		AdvancedCrosshair:Save()
+	MenuCallbackHandler.callback_ach_menu_compat_compatibility_newraycastweaponbase_togglefiremode = function(self,item) --deprecated in v33
 	end
 	
-	MenuCallbackHandler.callback_ach_menu_compat_compatibility_newraycastweaponbase_resetcachedgadget = function(self,item)
-		local enabled = item:value() == "on"
-		AdvancedCrosshair.settings.compatibility_hook_newraycastweaponbase_resetcachedgadget = enabled
-		AdvancedCrosshair:Save()
+	MenuCallbackHandler.callback_ach_menu_compat_compatibility_newraycastweaponbase_resetcachedgadget = function(self,item) --deprecated in v33
 	end
 	
 	MenuCallbackHandler.callback_ach_menu_compat_compatibility_copdamage_damagemelee = function(self,item)
@@ -5999,10 +6443,6 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 		AdvancedCrosshair._colorpicker = AdvancedCrosshair._colorpicker or ColorPicker:new("advancedcrosshairs",{},callback(AdvancedCrosshair,AdvancedCrosshair,"set_colorpicker_menu"))
 	end
 	
-	MenuHelper:LoadFromJsonFile(AdvancedCrosshair.path .. "menu/menu_main.json", AdvancedCrosshair, AdvancedCrosshair.settings)
-	MenuHelper:LoadFromJsonFile(AdvancedCrosshair.path .. "menu/menu_crosshairs.json", AdvancedCrosshair, AdvancedCrosshair.settings)
-	MenuHelper:LoadFromJsonFile(AdvancedCrosshair.path .. "menu/menu_hitmarkers.json", AdvancedCrosshair, AdvancedCrosshair.settings)
-	MenuHelper:LoadFromJsonFile(AdvancedCrosshair.path .. "menu/menu_hitsounds.json", AdvancedCrosshair, AdvancedCrosshair.settings)
 	MenuHelper:LoadFromJsonFile(AdvancedCrosshair.path .. "menu/menu_compat.json", AdvancedCrosshair, AdvancedCrosshair.settings)
 	MenuHelper:LoadFromJsonFile(AdvancedCrosshair.path .. "menu/menu_misc.json", AdvancedCrosshair, AdvancedCrosshair.settings)
 	MenuHelper:LoadFromJsonFile(AdvancedCrosshair.path .. "menu/menu_reset.json", AdvancedCrosshair, AdvancedCrosshair.settings)
@@ -6040,7 +6480,11 @@ function AdvancedCrosshair.clbk_hitmarker_preview(preview_data)
 			return
 		end
 		local hitmarker_data = AdvancedCrosshair._hitmarker_data[hitmarker_id]
-	
+		
+		if not AdvancedCrosshair:ShouldAlwaysLoadAssets() then
+			AdvancedCrosshair:LoadPartsAssets(hitmarker_data.parts)
+		end
+		
 		local menupanel = fullscreen_ws:panel()
 		local preview_panel = menupanel:child("ach_preview")
 		if not alive(preview_panel) then 
@@ -6104,7 +6548,8 @@ function AdvancedCrosshair.clbk_hitmarker_preview(preview_data)
 		if not (panel and alive(panel)) then
 			panel = preview_panel:panel({
 				alpha = (hitmarker_data.alpha or 1) * hitmarker_setting.alpha,
-				name = panel_name
+				name = panel_name,
+				layer = 999
 			})
 		end
 		
@@ -6161,11 +6606,17 @@ function AdvancedCrosshair.clbk_create_crosshair_preview(crosshair_setting)
 		local menupanel = fullscreen_ws:panel()
 		
 		local crosshair_data = AdvancedCrosshair._crosshair_data[crosshair_id] or AdvancedCrosshair._crosshair_data[AdvancedCrosshair.DEFAULT_CROSSHAIR_OPTIONS.crosshair_id]
+		
+		if not AdvancedCrosshair:ShouldAlwaysLoadAssets() then
+			AdvancedCrosshair:LoadPartsAssets(crosshair_data.parts)
+		end
+		
 		if alive(menupanel:child("ach_preview")) then 
 			menupanel:remove(menupanel:child("ach_preview"))
 		end
 		local preview_panel = menupanel:panel({
-			name = "ach_preview"
+			name = "ach_preview", 
+			layer = 999
 		})
 		local screenshot_bg = preview_panel:bitmap({
 			name = "screenshot_bg",
@@ -6207,7 +6658,7 @@ function AdvancedCrosshair.clbk_create_crosshair_preview(crosshair_setting)
 		})
 		AdvancedCrosshair.crosshair_preview_data = {
 			panel = preview_panel,
-			parts = AdvancedCrosshair:CreateCrosshair(crosshair_preview_panel,crosshair_data,crosshair_setting.scale),
+			parts = AdvancedCrosshair:CreateCrosshair(crosshair_preview_panel,crosshair_data,crosshair_setting),
 			crosshair_id = crosshair_id,
 			bloom = 0
 		}
@@ -6285,8 +6736,8 @@ AdvancedCrosshair:log("menumanager.lua loading complete")
 --MenuKitRenderer
 
 --allow "none" as an option for menu backgrounds, so that players can see the crosshair/hitmarker that they are customizing
---[[
-MenuPauseRenderer.orig_set_bg_area = MenuPauseRenderer.orig_set_bg_area or MenuPauseRenderer.set_bg_area
+local orig_set_bg_area = MenuPauseRenderer.set_bg_area
+MenuPauseRenderer.orig_set_bg_area = MenuPauseRenderer.orig_set_bg_area or orig_set_bg_area
 function MenuPauseRenderer:set_bg_area(area, ...)
     if self._menu_bg and area == "none" then
         self._menu_bg:set_size(0,0)

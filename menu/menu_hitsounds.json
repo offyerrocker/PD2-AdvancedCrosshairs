@@ -1,9 +1,0 @@
-{
-	"menu_id" : "ach_menu_hitsounds",
-	"parent_menu_id" : "ach_menu_main",
-	"title" : "menu_ach_hitsounds_menu_title",
-	"back_callback" : "callback_ach_hitsounds_close",
-	"focus_changed_callback" : "callback_ach_hitsounds_focus",
-	"items" : [
-	]
-}

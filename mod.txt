@@ -3,11 +3,22 @@
 	"description" : "This isn't your average everyday crosshair!",
 	"author" : "Offyerrocker",
 	"contact" : "Discord: Offyerrocker#3878",
-	"version" : "19",
+	"version" : "34",
 	"blt_version" : 2,
 	"priority" : 7,
 	"color" : "0 128 255",
-	"DISABLED_image" : "icon.png",
+	"image" : "icon.png",
+	"keybinds" : [
+		{
+			"keybind_id" : "ach_crosshairs_toggle_crosshair_visibility",
+			"name" : "menu_ach_toggle_crosshair_visibility_title",
+			"description" : "menu_ach_toggle_crosshair_visibility_desc",
+			"script_path" : "lua/keybind_toggle_crosshair.lua",
+			"run_in_menu" : false,
+			"run_in_game" : true,
+			"localized" : true
+		}
+	],
 	"hooks" : [
 		{
 			"hook_id" : "lib/managers/menumanager",
@@ -20,18 +31,6 @@
 		{
 			"hook_id" : "lib/managers/hud/hudhitconfirm",
 			"script_path" : "lua/hudhitconfirm.lua"
-		},
-		{
-			"hook_id" : "lib/units/beings/player/states/playerstandard",
-			"script_path" : "lua/playerstandard.lua"
-		},
-		{
-			"hook_id" : "lib/units/beings/player/states/playermovementstate",
-			"script_path" : "lua/playermovementstate.lua"
-		},
-		{
-			"hook_id" : "lib/units/weapons/newraycastweaponbase",
-			"script_path" : "lua/newraycastweaponbase.lua"
 		},
 		{
 			"hook_id" : "lib/units/enemies/cop/copdamage",

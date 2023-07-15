@@ -1,9 +1,0 @@
-{
-	"menu_id" : "ach_menu_main",
-	"parent_menu_id" : "blt_options",
-	"title" : "menu_ach_hitmarkers_menu_main_title",
-	"back_callback" : "callback_ach_main_close",
-	"focus_changed_callback" : "callback_ach_main_focus",
-	"items" : [
-	]
-}
