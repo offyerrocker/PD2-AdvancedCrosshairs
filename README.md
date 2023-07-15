@@ -15,6 +15,7 @@ INSTALLATION:
 2. Launch the game. You are now ready to use ACH and install addons.
 
 ==**Add-on Installation Instructions:**==
+
 Addon folders should be installed in one of the following folders, according to the type of addon:
 
 /mods/saves/ACH Addons/Crosshairs/
