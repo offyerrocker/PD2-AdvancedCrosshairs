@@ -2,10 +2,14 @@
 
 -- option to allow hitsounds for sentries
 -- more hitsound options 
-	--separate option for sentries
+	--separate option for sentries/non-player damage
+	-- crits
+	-- melee
+
 
 -- override by slot (needs menu options)
 -- override by weapon id (needs menu options)
+	-- ranc_heavy_machine_gun 
 
 --migrate the more obscure options to "Advanced Settings" menus
 
@@ -39,21 +43,14 @@
 -- better workaround for copmelee + integrate suppressdoublesound to cop melee damage
 
 -- hitmarker data overrides for some settings such as force worldposition hitmarkers
--- fullscreen/halfscreen/none bg menus for all preview-related menus
-
--- option to add tf2 crit indicators? (must mesh with current settings to avoid menu fatigue)
--- option for separate melee hitsound? (must mesh with current settings to avoid menu fatigue)
 
 -- halo reach head aim crosshair dot
 -- import special halo reach crosshair + add option to pass relevant data to all crosshairs
 -- bloom delay/add values per crosshair
 
 --toggle hitmarker scaling with world distance at world position?
-	--would require updating size at every frame and updating during animate function
-	
--- test burstfire support
+
 -- hide character + bg menu like how blt mods menu does (and fails to restore after hitting back lol)
---vehicle crosshair
 
 
 
