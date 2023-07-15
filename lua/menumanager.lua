@@ -1367,7 +1367,7 @@ function AdvancedCrosshair:AddCustomHitmarker(id,data)
 end
 
 function AdvancedCrosshair:ShouldAlwaysLoadAssets()
-	return true
+	return false
 end
 
 function AdvancedCrosshair:LoadHitmarkerAddons(addons_dir)
@@ -1571,6 +1571,54 @@ function AdvancedCrosshair:LoadHitsoundAddons(addons_dir)
 	end
 end
 
+
+function AdvancedCrosshair:UnloadHitmarkers()
+
+end
+
+function AdvancedCrosshair:UnloadCrosshairs()
+	--[[ todo
+	collect all used crosshair ids
+	
+	for all registered crosshairs:
+		if crosshair is not used,
+			if crosshair is loaded,
+				unload crosshair
+	
+	for all used crosshairs:
+		if crosshair is not loaded,
+			load crosshair
+	
+	
+	--]]
+end
+
+
+function AdvancedCrosshair:LoadPartsAssets(parts)
+	-- for each part,
+	-- if not loaded, load it
+	
+	local bl_filemgr = BeardLib.managers.file
+	local pending_parts = {}
+	local file_extension = "texture"
+	local texture_ids = Idstring(file_extension)
+	for part_index,part in pairs(parts) do 
+		local texture_path = part.texture_path
+		if texture_path then
+			if bl_filemgr:Has(texture_ids,part.texture) then
+				-- already loaded
+			elseif pending_parts[texture_path] then
+				-- already loading
+			else
+				-- load it
+				pending_parts[texture_path] = true
+				bl_filemgr:AddFile(texture_ids,Idstring(part.texture),texture_path .. "." .. file_extension)
+			end
+		else
+			-- does not require load
+		end
+	end
+end
 
 Hooks:Register("ACH_LoadAddon_Crosshair") 
 Hooks:Register("ACH_LoadAddon_Hitmarker") 
@@ -2533,6 +2581,9 @@ function AdvancedCrosshair:CreateCrosshair(panel,data,user_settings)
 	user_settings = user_settings or {}
 	local scale_setting = (user_settings.scale or 1)
 	local color = data.color or (user_settings.color and Color(user_settings.color))
+	if not self:ShouldAlwaysLoadAssets() then
+		self:LoadPartsAssets(data.parts)
+	end
 	for i,part_data in ipairs(data.parts) do 
 		local scale = scale_setting * (data.scale or 1)
 		local x = (part_data.x or 0) * scale
@@ -2731,6 +2782,9 @@ end
 function AdvancedCrosshair:CreateHitmarker(panel,data)
 	local results = {}
 	local scale_setting = data.scale or 1
+	if not self:ShouldAlwaysLoadAssets() then
+		self:LoadPartsAssets(data.parts)
+	end
 	for i,part_data in ipairs(data.parts) do 
 		local scale = scale_setting * (part_data.scale or 1)
 		local x = (part_data.x or 0) * scale
@@ -3556,7 +3610,7 @@ function AdvancedCrosshair:GetCrosshairType(slot,weapon_id,category,firemode,is_
 	if not result then 
 		if category then 
 			if not (self.settings.crosshairs[category] and self.settings.crosshairs[category][firemode]) then 
-				self:log("ERROR: GetCrosshairType() Bad category " .. tostring(category) .. "/firemode " .. tostring(firemode))
+				self:log("ERROR: GetCrosshairType() Bad category [" .. tostring(category) .. "] / firemode [" .. tostring(firemode) .. "]")
 				return self.DEFAULT_CROSSHAIR_OPTIONS.crosshair_id
 			end
 			
@@ -5175,6 +5229,7 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 	
 	MenuCallbackHandler.callback_ach_crosshairs_close = function(self)
 		AdvancedCrosshair.clbk_remove_crosshair_preview()
+		AdvancedCrosshair:UnloadCrosshairs()
 	end
 	MenuCallbackHandler.callback_ach_crosshairs_categories_close = function(self)
 	end
@@ -5517,6 +5572,7 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 	end
 	MenuCallbackHandler.callback_ach_hitmarkers_close = function(self)
 		AdvancedCrosshair.clbk_remove_crosshair_preview()
+		AdvancedCrosshair:UnloadHitmarkers()
 	end
 	MenuCallbackHandler.callback_ach_hitmarkers_master_enable = function(self,item)
 		AdvancedCrosshair.settings.hitmarker_enabled = item:value() == "on"
@@ -6331,7 +6387,11 @@ function AdvancedCrosshair.clbk_hitmarker_preview(preview_data)
 			return
 		end
 		local hitmarker_data = AdvancedCrosshair._hitmarker_data[hitmarker_id]
-	
+		
+		if not AdvancedCrosshair:ShouldAlwaysLoadAssets() then
+			AdvancedCrosshair:LoadPartsAssets(hitmarker_data.parts)
+		end
+		
 		local menupanel = fullscreen_ws:panel()
 		local preview_panel = menupanel:child("ach_preview")
 		if not alive(preview_panel) then 
@@ -6450,6 +6510,11 @@ function AdvancedCrosshair.clbk_create_crosshair_preview(crosshair_setting)
 		local menupanel = fullscreen_ws:panel()
 		
 		local crosshair_data = AdvancedCrosshair._crosshair_data[crosshair_id] or AdvancedCrosshair._crosshair_data[AdvancedCrosshair.DEFAULT_CROSSHAIR_OPTIONS.crosshair_id]
+		
+		if not AdvancedCrosshair:ShouldAlwaysLoadAssets() then
+			AdvancedCrosshair:LoadPartsAssets(crosshair_data.parts)
+		end
+		
 		if alive(menupanel:child("ach_preview")) then 
 			menupanel:remove(menupanel:child("ach_preview"))
 		end

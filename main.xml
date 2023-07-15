@@ -5,10 +5,4 @@
 		<loc file="schinese.txt" language="schinese" />
 		<loc file="russian.txt" language="russian" />
 	</Localization>
-	<AddFiles directory="assets">
-		<texture path="guis/textures/advanced_crosshairs/destiny_hitmarker"/>
-		<texture path="guis/textures/advanced_crosshairs/crosshair_circle_128"/>
-		<texture path="guis/textures/advanced_crosshairs/tf2_crit_text"/>
-		<texture path="guis/textures/advanced_crosshairs/ar_crosshair_2"/>
-	</AddFiles>
 </mod>
