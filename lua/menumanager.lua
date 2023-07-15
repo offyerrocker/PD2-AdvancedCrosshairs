@@ -6333,12 +6333,17 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 	MenuCallbackHandler.callback_ach_reset_focus = function(self,focused)
 		--
 	end
+	MenuCallbackHandler.callback_ach_menu_misc_enable_assets_always_loaded = function(self,item)
+		local enabled = item:value() == "on" and true or false
+		AdvancedCrosshair.settings.assets_always_loaded_enabled = enabled
+		AdvancedCrosshair:Save()
+	end
 	MenuCallbackHandler.callback_ach_misc_close = function(self)
 	
 	end
 	MenuCallbackHandler.callback_ach_misc_focus = function(self,item)
 	end
-	
+
 	MenuCallbackHandler.callback_ach_compat_close = function(self,item)
 		AdvancedCrosshair:ApplyCompatibilityFixes()
 	end
@@ -6638,7 +6643,6 @@ end
 
 --allow "none" as an option for menu backgrounds, so that players can see the crosshair/hitmarker that they are customizing
 local orig_set_bg_area = MenuPauseRenderer.set_bg_area
-MenuPauseRenderer.orig_set_bg_area = MenuPauseRenderer.orig_set_bg_area or orig_set_bg_area
 function MenuPauseRenderer:set_bg_area(area, ...)
     if self._menu_bg and area == "none" then
         self._menu_bg:set_size(0,0)
@@ -6651,7 +6655,7 @@ function MenuPauseRenderer:set_bg_area(area, ...)
 		if self._blur_bg then
 			self._blur_bg:set_x(0)
 		end
-        return self:orig_set_bg_area(area,...)
+        return orig_set_bg_area(self,area,...)
     end
 end
 
