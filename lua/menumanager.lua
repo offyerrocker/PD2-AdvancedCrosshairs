@@ -1125,8 +1125,10 @@ function AdvancedCrosshair:LoadAddonXML(foldername,full_addon_path)
 	local path_util = BeardLib.Utils.Path
 	local bl_framework_base = BeardLib.Frameworks.Base
 	local bl_framework_base_class = FrameworkBase
-	local bl_menus_mods = BeardLib.Menus.Mods
 	local file_util = _G.FileIO
+	
+	local bl_menus_mods -- = BeardLib.Menus and BeardLib.Menus.Mods
+	--temporarily disabled because it inexplicably broke as soon as i pushed the branch live i guess
 	
 	local xml_file_path = path_util:Combine(full_addon_path,self.addon_xml_file_name)
 	if file_util:FileExists(Application:nice_path(xml_file_path)) then 
@@ -1146,9 +1148,8 @@ function AdvancedCrosshair:LoadAddonXML(foldername,full_addon_path)
 				
 				--visually add the new beardlib mod to the menu list
 				if bl_menus_mods then
-					--temporarily disabled because it inexplicably broke as soon as i pushed the branch live i guess
 					if not game_state_machine or GameStateFilters.menu[game_state_machine:current_state_name()] then
---						bl_menus_mods:AddMod(mod,bl_framework_base)
+						bl_menus_mods:AddMod(mod,bl_framework_base)
 					end
 				end
 			end
@@ -1220,7 +1221,7 @@ function AdvancedCrosshair:LoadCrosshairAddons(addons_dir)
 	local file_util = _G.FileIO
 	local bl_framework_base = BeardLib.Frameworks.Base
 	local bl_framework_base_class = FrameworkBase
-	local bl_menus_mods = BeardLib.Menus.Mods
+	--local bl_menus_mods = BeardLib.Menus.Mods
 	
 	local function load_addon_textures(addon_path,foldername,parts)
 		for part_index,part in ipairs(parts) do 
@@ -1366,7 +1367,7 @@ function AdvancedCrosshair:LoadHitmarkerAddons(addons_dir)
 	local file_util = _G.FileIO
 	local bl_framework_base = BeardLib.Frameworks.Base
 	local bl_framework_base_class = FrameworkBase
-	local bl_menus_mods = BeardLib.Menus.Mods
+	--local bl_menus_mods = BeardLib.Menus.Mods
 	
 	local function load_addon_textures(addon_path,foldername,parts)
 		for part_index,part in ipairs(parts) do 
