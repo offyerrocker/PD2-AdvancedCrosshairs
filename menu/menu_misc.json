@@ -20,6 +20,19 @@
 		},
 		{
 			"type" : "toggle",
+			"id" : "ach_menu_misc_enable_assets_always_loaded",
+			"title" : "menu_ach_menu_misc_enable_assets_always_loaded_title",
+			"description" : "menu_ach_menu_misc_enable_assets_always_loaded_desc",
+			"callback" : "callback_ach_menu_misc_enable_assets_always_loaded",
+			"value" : "assets_always_loaded_enabled"
+		},
+		{
+			"type" : "divider",
+			"id" : "ach_menu_misc_div_4",
+			"size" : 16
+		},
+		{
+			"type" : "toggle",
 			"id" : "ach_menu_misc_can_check_melee_headshots",
 			"title" : "menu_ach_menu_misc_can_check_melee_headshots_title",
 			"description" : "menu_ach_menu_misc_can_check_melee_headshots_desc",

@@ -248,7 +248,8 @@
 	"menu_ach_reset_all_settings_prompt_confirm_desc" : "确定要重置所有设置？\n所有设置将被重置回默认",
 	"menu_ach_reset_all_settings_prompt_success_title" : "所有设置已重置",
 	"menu_ach_reset_all_settings_prompt_success_desc" : "所有设置都已重置为默认值\n重新启动游戏或劫案使更改生效",
-	
+	"menu_ach_menu_misc_enable_assets_always_loaded_title" : "Always load all assets on startup",
+	"menu_ach_menu_misc_enable_assets_always_loaded_desc" : "If enabled, loads all crosshair/hitmarker textures for each addon upon game startup. Requires restart.\n(Not recommended)",
 	
 	
 	"menu_ach_prompt_missing_colorpicker_title" : "需要安装着色器mod",

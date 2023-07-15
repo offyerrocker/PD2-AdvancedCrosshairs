@@ -248,7 +248,8 @@
 	"menu_ach_reset_all_settings_prompt_confirm_desc" : "Are you sure you want to reset your settings?\nAll settings will be set back to the defaults.",
 	"menu_ach_reset_all_settings_prompt_success_title" : "Successfully reset all settings",
 	"menu_ach_reset_all_settings_prompt_success_desc" : "All settings have been reset to their default values.\nPlease restart the game or heist day for menu changes to take effect.\nThank you for flying Air Offyerrocker, and have a nice day.",
-	
+	"menu_ach_menu_misc_enable_assets_always_loaded_title" : "Always load all assets on startup",
+	"menu_ach_menu_misc_enable_assets_always_loaded_desc" : "If enabled, loads all crosshair/hitmarker textures for each addon upon game startup. Requires restart.\n(Not recommended)",
 	
 	
 	"menu_ach_prompt_missing_colorpicker_title" : "Color Picker mod installation required",

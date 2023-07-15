@@ -226,6 +226,7 @@ AdvancedCrosshair.default_settings = {
 	hitmarker_enabled = true,
 	hitsound_enabled = false,
 	easter_eggs_enabled = true, --enables hitmarker rain (currently the only easter egg)
+	assets_always_loaded_enabled = false,
 	compatibility_auto_detection = true,
 	compatibility_hook_playermanager_checkskill = false,
 	compatibility_hook_playerstandard_onsteelsight = false, --deprecated in v33
@@ -1367,7 +1368,7 @@ function AdvancedCrosshair:AddCustomHitmarker(id,data)
 end
 
 function AdvancedCrosshair:ShouldAlwaysLoadAssets()
-	return false
+	return self.settings.assets_always_loaded_enabled
 end
 
 function AdvancedCrosshair:LoadHitmarkerAddons(addons_dir)

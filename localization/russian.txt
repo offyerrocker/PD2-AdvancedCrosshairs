@@ -248,7 +248,8 @@
 	"menu_ach_reset_all_settings_prompt_confirm_desc" : "Вы уверены, что хотите обнулить все настройки?\nВсе настройки будут возвращены на стандартные.",
 	"menu_ach_reset_all_settings_prompt_success_title" : "Все настройки успешно обнулены",
 	"menu_ach_reset_all_settings_prompt_success_desc" : "Все настройки были успешно обнулены.\nДля вступления в силу требуется перезапуск ограбления.\nСпасибо, что выбираете наши моды!",
-	
+	"menu_ach_menu_misc_enable_assets_always_loaded_title" : "Always load all assets on startup",
+	"menu_ach_menu_misc_enable_assets_always_loaded_desc" : "If enabled, loads all crosshair/hitmarker textures for each addon upon game startup. Requires restart.\n(Not recommended)",
 	
 	
 	"menu_ach_prompt_missing_colorpicker_title" : "Требуется мод Color Picker!",
