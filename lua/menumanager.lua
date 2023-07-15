@@ -1180,7 +1180,9 @@ function AdvancedCrosshair:AddCustomCrosshair(id,data)
 						local file_extension = part.file_extension or extension
 						part.texture = final_path
 						--and by that I mean pawn off the work of loading your addon textures to BeardLib, which will pawn off the work to SuperBLT, which w
-						BeardLib.managers.file:AddFile(Idstring(extension),Idstring(final_path),part.texture_path .. "." .. file_extension)
+						if self:ShouldAlwaysLoadAssets() then
+							BeardLib.managers.file:AddFile(Idstring(extension),Idstring(final_path),part.texture_path .. "." .. file_extension)
+						end
 					else
 						self:log("Error: Invalid texture/texture path when reading crosshair part data for part #" .. tostring(part_index) .. " in addon: " .. tostring(id).. ". Aborting addon.")
 						return
@@ -1326,14 +1328,16 @@ function AdvancedCrosshair:AddCustomHitmarker(id,data)
 						local final_path = path_util:Combine(self.TEXTURE_PATH,folder_name,filename)
 						part.texture = final_path
 						local file_extension = part.file_extension or extension
-						BeardLib.managers.file:AddFile(Idstring(extension),Idstring(final_path),part.texture_path .. "." .. file_extension)
+						if self:ShouldAlwaysLoadAssets() then
+							BeardLib.managers.file:AddFile(Idstring(extension),Idstring(final_path),part.texture_path .. "." .. file_extension)
+						end
 					else
 						self:log("Error: Invalid texture/texture path when reading hitmarker part data for part #" .. tostring(part_index) .. " in addon: " .. tostring(id).. ". Aborting addon.")
 						return
 					end
 				end
 			else
-				self:log("Error: Could not load crosshair add-on (" .. tostring(id) .. "). Reason: Invalid parts data type: " .. tostring(data.parts) .. " (table expected, got " .. type(data) .. ")") 
+				self:log("Error: Could not load hitmarker add-on (" .. tostring(id) .. "). Reason: Invalid parts data type: " .. tostring(data.parts) .. " (table expected, got " .. type(data) .. ")") 
 				return
 			end
 			if data.name_id then 
@@ -1360,6 +1364,10 @@ function AdvancedCrosshair:AddCustomHitmarker(id,data)
 			self:log("Hitmarker addon data invalid: " .. tostring(data))
 		end
 	end
+end
+
+function AdvancedCrosshair:ShouldAlwaysLoadAssets()
+	return true
 end
 
 function AdvancedCrosshair:LoadHitmarkerAddons(addons_dir)
@@ -2277,11 +2285,16 @@ end
 	--**********************--
 --these should only run once, when the player spawns
 function AdvancedCrosshair:Init()
-	BeardLib:AddUpdater("advancedcrosshairs_update",callback(AdvancedCrosshair,AdvancedCrosshair,"Update"),true)
---	managers.hud:remove_updator("advancedcrosshairs_update")
---	managers.hud:add_updator("advancedcrosshairs_update",callback(AdvancedCrosshair,AdvancedCrosshair,"Update"))
---	managers.hud:add_updator("advc_create_hud_delayed",callback(AdvancedCrosshair,AdvancedCrosshair,"CreateHUD"))
-	BeardLib:AddUpdater("advc_create_hud_delayed",callback(AdvancedCrosshair,AdvancedCrosshair,"CreateHUD"))
+	if BeardLib then
+		BeardLib:AddUpdater("advancedcrosshairs_update",callback(AdvancedCrosshair,AdvancedCrosshair,"Update"),true)
+		BeardLib:AddUpdater("advc_create_hud_delayed",callback(AdvancedCrosshair,AdvancedCrosshair,"CreateHUD"))
+	else
+		managers.hud:remove_updator("advancedcrosshairs_update")
+		managers.hud:remove_updator("advc_create_hud_delayed")
+		managers.hud:add_updator("advancedcrosshairs_update",callback(AdvancedCrosshair,AdvancedCrosshair,"Update"))
+		managers.hud:add_updator("advc_create_hud_delayed",callback(AdvancedCrosshair,AdvancedCrosshair,"CreateHUD"))
+	end
+	
 	if blt.xaudio then
         blt.xaudio.setup()
 	end
@@ -2308,12 +2321,16 @@ function AdvancedCrosshair:CreateHUD(t,dt) --try to create hud each run until bo
 		end
 		self:ApplyCompatibilityFixes()
 		
-		BeardLib:RemoveUpdater("advc_create_hud_delayed")
---		managers.hud:add_updator("advancedcrosshairs_update",callback(AdvancedCrosshair,AdvancedCrosshair,"Update"))
 		self:CreateCrosshairPanel(hud.panel)
 		self:CreateCrosshairs()
 		
-		BeardLib:AddUpdater("ach_update_crosshair",callback(self,self,"UpdateCrosshair"))
+		if BeardLib then
+			BeardLib:RemoveUpdater("advc_create_hud_delayed")
+			BeardLib:AddUpdater("ach_update_crosshair",callback(self,self,"UpdateCrosshair"))
+		else
+			managers.hud:remove_updator("advancedcrosshairs_update",callback(AdvancedCrosshair,AdvancedCrosshair,"Update"))
+			managers.hud:add_updator("advancedcrosshairs_update",callback(AdvancedCrosshair,AdvancedCrosshair,"Update"))
+		end
 	end
 end
 
