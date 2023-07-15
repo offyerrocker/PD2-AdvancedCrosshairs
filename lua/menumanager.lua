@@ -431,7 +431,7 @@ AdvancedCrosshair.path = ModPath
 AdvancedCrosshair.hitsound_path = AdvancedCrosshair.path .. "assets/snd/hitsounds/"
 AdvancedCrosshair.save_path = SavePath
 AdvancedCrosshair.save_data_path = AdvancedCrosshair.save_path .. "AdvancedCrosshair.txt"
-AdvancedCrosshair.TEXTURE_PATH = "guis/textures/advanced_crosshairs/"
+AdvancedCrosshair.TEXTURE_PATH = "guis/textures/advanced_crosshairs/" --this is the internal asset path that is prefixed to addons' assets
 AdvancedCrosshair.mod_overrides_path = "PAYDAY 2/assets/mod_overrides/"
 
 --init QuickAnimate util
@@ -6557,7 +6557,8 @@ end
 --MenuKitRenderer
 
 --allow "none" as an option for menu backgrounds, so that players can see the crosshair/hitmarker that they are customizing
-MenuPauseRenderer.orig_set_bg_area = MenuPauseRenderer.orig_set_bg_area or MenuPauseRenderer.set_bg_area
+local orig_set_bg_area = MenuPauseRenderer.set_bg_area
+MenuPauseRenderer.orig_set_bg_area = MenuPauseRenderer.orig_set_bg_area or orig_set_bg_area
 function MenuPauseRenderer:set_bg_area(area, ...)
     if self._menu_bg and area == "none" then
         self._menu_bg:set_size(0,0)
