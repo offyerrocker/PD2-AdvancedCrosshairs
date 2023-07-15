@@ -1,9 +1,9 @@
 		--todo list, loosely sorted by descending priority:
 
---sort firemode menus consistently according to VALID_WEAPON_FIREMODES 
+-- option to allow hitsounds for sentries
+-- more hitsound options 
+	--separate option for sentries
 
-
--- akimbo crosshair support
 -- override by slot (needs menu options)
 -- override by weapon id (needs menu options)
 
