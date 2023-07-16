@@ -426,7 +426,8 @@ end
 AdvancedCrosshair.settings = table.deep_map_copy(AdvancedCrosshair.default_settings)
 
 AdvancedCrosshair.path = ModPath
-AdvancedCrosshair.hitsound_path = AdvancedCrosshair.path .. "assets/snd/hitsounds/"
+AdvancedCrosshair.assets_path = AdvancedCrosshair.path .. "assets/"
+AdvancedCrosshair.hitsound_path = AdvancedCrosshair.assets_path .. "snd/hitsounds/"
 AdvancedCrosshair.save_path = SavePath
 AdvancedCrosshair.save_data_path = AdvancedCrosshair.save_path .. "AdvancedCrosshair.txt"
 AdvancedCrosshair.TEXTURE_PATH = "guis/textures/advanced_crosshairs/" --this is the internal asset path that is prefixed to addons' assets
@@ -473,8 +474,23 @@ AdvancedCrosshair._cache = {
 	is_in_steelsight = false --only set/used when compatibility mode for "playerstandard on steelsight" is enabled
 }
 
---do not change this. refer to the github wiki if you want to add custom crosshairs to this mod (see: AdvancedCrosshair.url_ach_github)
+--do not change this. refer to the github wiki if you want to add custom crosshairs to this mod (see above for the link)
 AdvancedCrosshair._crosshair_data = {
+	none = {
+		name_id = "menu_crosshair_none",
+		parts = {
+			{
+				texture = "",
+				alpha = 0,
+				UNRECOLORABLE = true
+			}
+		}
+	}
+}
+
+AdvancedCrosshair._hitmarker_data = {}
+
+AdvancedCrosshair._default_crosshairs = {
 	pdth_classic = {
 		name_id = "menu_crosshair_pdth_classic",
 		bloom_func = function(index,bitmap,data)
@@ -539,20 +555,10 @@ AdvancedCrosshair._crosshair_data = {
 				}
 			}
 		}
-	},
-	none = {
-		name_id = "menu_crosshair_none",
-		parts = {
-			{
-				texture = "",
-				alpha = 0,
-				UNRECOLORABLE = true
-			}
-		}
 	}
 }
 
-AdvancedCrosshair._hitmarker_data = {
+AdvancedCrosshair._default_hitmarkers = {
 --please note that the same animation hit_func is called when previewing it from the menu
 --so, when you are making your own hitmarker animation functions,
 --remember either to not depend too heavily on the attack_data or result tables,
@@ -567,7 +573,7 @@ AdvancedCrosshair._hitmarker_data = {
 	--if you do specify a custom animation function, you will have to provide the alpha fadeout yourself (unless you want your crosshair to disappear suddenly instead of fading out)
 		parts = {
 			{ --reused from plasma rifle crosshairs
-				texture = "guis/textures/advanced_crosshairs/destiny_hitmarker",
+				texture_path = AdvancedCrosshair.assets_path .. "guis/textures/advanced_crosshairs/destiny_hitmarker",
 				w = 2,
 				h = 6,
 				angle = -45,
@@ -575,7 +581,7 @@ AdvancedCrosshair._hitmarker_data = {
 				distance = 6
 			},
 			{
-				texture = "guis/textures/advanced_crosshairs/destiny_hitmarker",
+				texture_path = AdvancedCrosshair.assets_path .. "guis/textures/advanced_crosshairs/destiny_hitmarker",
 				w = 2,
 				h = 6,
 				angle = 45,
@@ -583,7 +589,7 @@ AdvancedCrosshair._hitmarker_data = {
 				distance = 6
 			},
 			{
-				texture = "guis/textures/advanced_crosshairs/destiny_hitmarker",
+				texture_path = AdvancedCrosshair.assets_path .. "guis/textures/advanced_crosshairs/destiny_hitmarker",
 				w = 2,
 				h = 6,
 				angle = 135,
@@ -591,7 +597,7 @@ AdvancedCrosshair._hitmarker_data = {
 				distance = 6
 			},
 			{
-				texture = "guis/textures/advanced_crosshairs/destiny_hitmarker",
+				texture_path = AdvancedCrosshair.assets_path .. "guis/textures/advanced_crosshairs/destiny_hitmarker",
 				w = 2,
 				h = 6,
 				angle = -135,
@@ -625,7 +631,7 @@ AdvancedCrosshair._hitmarker_data = {
 		hit_anim_distance = 6,
 		parts = {
 			{
-				texture = "guis/textures/advanced_crosshairs/destiny_hitmarker",
+				texture_path = AdvancedCrosshair.assets_path .. "guis/textures/advanced_crosshairs/destiny_hitmarker",
 				w = 2,
 				h = 6,
 				angle = -45,
@@ -633,7 +639,7 @@ AdvancedCrosshair._hitmarker_data = {
 				distance = 6
 			},
 			{
-				texture = "guis/textures/advanced_crosshairs/destiny_hitmarker",
+				texture_path = AdvancedCrosshair.assets_path .. "guis/textures/advanced_crosshairs/destiny_hitmarker",
 				w = 2,
 				h = 6,
 				angle = 45,
@@ -641,7 +647,7 @@ AdvancedCrosshair._hitmarker_data = {
 				distance = 6
 			},
 			{
-				texture = "guis/textures/advanced_crosshairs/destiny_hitmarker",
+				texture_path = AdvancedCrosshair.assets_path .. "guis/textures/advanced_crosshairs/destiny_hitmarker",
 				w = 2,
 				h = 6,
 				angle = 135,
@@ -649,7 +655,7 @@ AdvancedCrosshair._hitmarker_data = {
 				distance = 6
 			},
 			{
-				texture = "guis/textures/advanced_crosshairs/destiny_hitmarker",
+				texture_path = AdvancedCrosshair.assets_path .. "guis/textures/advanced_crosshairs/destiny_hitmarker",
 				w = 2,
 				h = 6,
 				angle = -135,
@@ -662,7 +668,7 @@ AdvancedCrosshair._hitmarker_data = {
 		name_id = "menu_hitmarker_gtfo_hit",
 		parts = {
 			{
-				texture = "guis/textures/advanced_crosshairs/ar_crosshair_2",
+				texture_path = AdvancedCrosshair.assets_path .. "guis/textures/advanced_crosshairs/ar_crosshair_2",
 				w = 2,
 				h = 18,
 				angle = 0,
@@ -670,7 +676,7 @@ AdvancedCrosshair._hitmarker_data = {
 				distance = 16
 			},
 			{
-				texture = "guis/textures/advanced_crosshairs/ar_crosshair_2",
+				texture_path = AdvancedCrosshair.assets_path .. "guis/textures/advanced_crosshairs/ar_crosshair_2",
 				w = 2,
 				h = 18,
 				angle = 90,
@@ -678,7 +684,7 @@ AdvancedCrosshair._hitmarker_data = {
 				distance = 16
 			},
 			{
-				texture = "guis/textures/advanced_crosshairs/ar_crosshair_2",
+				texture_path = AdvancedCrosshair.assets_path .. "guis/textures/advanced_crosshairs/ar_crosshair_2",
 				w = 2,
 				h = 18,
 				angle = 180,
@@ -686,7 +692,7 @@ AdvancedCrosshair._hitmarker_data = {
 				distance = 16
 			},
 			{
-				texture = "guis/textures/advanced_crosshairs/ar_crosshair_2",
+				texture_path = AdvancedCrosshair.assets_path .. "guis/textures/advanced_crosshairs/ar_crosshair_2",
 				w = 2,
 				h = 18,
 				angle = 270,
@@ -694,7 +700,7 @@ AdvancedCrosshair._hitmarker_data = {
 				distance = 16
 			},
 			{
-				texture = "guis/textures/advanced_crosshairs/ar_crosshair_2",
+				texture_path = AdvancedCrosshair.assets_path .. "guis/textures/advanced_crosshairs/ar_crosshair_2",
 				w = 2,
 				h = 20,
 				angle = 45,
@@ -702,7 +708,7 @@ AdvancedCrosshair._hitmarker_data = {
 				distance = 22
 			},
 			{
-				texture = "guis/textures/advanced_crosshairs/ar_crosshair_2",
+				texture_path = AdvancedCrosshair.assets_path .. "guis/textures/advanced_crosshairs/ar_crosshair_2",
 				w = 2,
 				h = 20,
 				angle = 135,
@@ -710,7 +716,7 @@ AdvancedCrosshair._hitmarker_data = {
 				distance = 22
 			},
 			{
-				texture = "guis/textures/advanced_crosshairs/ar_crosshair_2",
+				texture_path = AdvancedCrosshair.assets_path .. "guis/textures/advanced_crosshairs/ar_crosshair_2",
 				w = 2,
 				h = 20,
 				angle = 225,
@@ -718,7 +724,7 @@ AdvancedCrosshair._hitmarker_data = {
 				distance = 22
 			},
 			{
-				texture = "guis/textures/advanced_crosshairs/ar_crosshair_2",
+				texture_path = AdvancedCrosshair.assets_path .. "guis/textures/advanced_crosshairs/ar_crosshair_2",
 				w = 2,
 				h = 20,
 				angle = 315,
@@ -742,7 +748,7 @@ AdvancedCrosshair._hitmarker_data = {
 		end,
 		parts = {
 			{
-				texture = "guis/textures/advanced_crosshairs/ar_crosshair_2",
+				texture_path = AdvancedCrosshair.assets_path .. "guis/textures/advanced_crosshairs/ar_crosshair_2",
 				w = 2,
 				h = 18,
 				angle = 0,
@@ -750,7 +756,7 @@ AdvancedCrosshair._hitmarker_data = {
 				distance = 16
 			},
 			{
-				texture = "guis/textures/advanced_crosshairs/ar_crosshair_2",
+				texture_path = AdvancedCrosshair.assets_path .. "guis/textures/advanced_crosshairs/ar_crosshair_2",
 				w = 2,
 				h = 18,
 				angle = 90,
@@ -758,7 +764,7 @@ AdvancedCrosshair._hitmarker_data = {
 				distance = 16
 			},
 			{
-				texture = "guis/textures/advanced_crosshairs/ar_crosshair_2",
+				texture_path = AdvancedCrosshair.assets_path .. "guis/textures/advanced_crosshairs/ar_crosshair_2",
 				w = 2,
 				h = 18,
 				angle = 180,
@@ -766,7 +772,7 @@ AdvancedCrosshair._hitmarker_data = {
 				distance = 16
 			},
 			{
-				texture = "guis/textures/advanced_crosshairs/ar_crosshair_2",
+				texture_path = AdvancedCrosshair.assets_path .. "guis/textures/advanced_crosshairs/ar_crosshair_2",
 				w = 2,
 				h = 18,
 				angle = 270,
@@ -774,7 +780,7 @@ AdvancedCrosshair._hitmarker_data = {
 				distance = 16
 			},
 			{
-				texture = "guis/textures/advanced_crosshairs/ar_crosshair_2",
+				texture_path = AdvancedCrosshair.assets_path .. "guis/textures/advanced_crosshairs/ar_crosshair_2",
 				w = 2,
 				h = 20,
 				angle = 45,
@@ -782,7 +788,7 @@ AdvancedCrosshair._hitmarker_data = {
 				distance = 22
 			},
 			{
-				texture = "guis/textures/advanced_crosshairs/ar_crosshair_2",
+				texture_path = AdvancedCrosshair.assets_path .. "guis/textures/advanced_crosshairs/ar_crosshair_2",
 				w = 2,
 				h = 20,
 				angle = 135,
@@ -790,7 +796,7 @@ AdvancedCrosshair._hitmarker_data = {
 				distance = 22
 			},
 			{
-				texture = "guis/textures/advanced_crosshairs/ar_crosshair_2",
+				texture_path = AdvancedCrosshair.assets_path .. "guis/textures/advanced_crosshairs/ar_crosshair_2",
 				w = 2,
 				h = 20,
 				angle = 225,
@@ -798,7 +804,7 @@ AdvancedCrosshair._hitmarker_data = {
 				distance = 22
 			},
 			{
-				texture = "guis/textures/advanced_crosshairs/ar_crosshair_2",
+				texture_path = AdvancedCrosshair.assets_path .. "guis/textures/advanced_crosshairs/ar_crosshair_2",
 				w = 2,
 				h = 20,
 				angle = 315,
@@ -839,7 +845,7 @@ AdvancedCrosshair._hitmarker_data = {
 		name_id = "menu_hitmarker_generic_hit",
 		parts = {
 			{
-				texture = "guis/textures/advanced_crosshairs/ar_crosshair_2",
+				texture_path = AdvancedCrosshair.assets_path .. "guis/textures/advanced_crosshairs/ar_crosshair_2",
 				w = 2,
 				h = 16,
 				angle = 45,
@@ -847,7 +853,7 @@ AdvancedCrosshair._hitmarker_data = {
 				distance = 8
 			},
 			{
-				texture = "guis/textures/advanced_crosshairs/ar_crosshair_2",
+				texture_path = AdvancedCrosshair.assets_path .. "guis/textures/advanced_crosshairs/ar_crosshair_2",
 				w = 2,
 				h = 16,
 				angle = 135,
@@ -855,7 +861,7 @@ AdvancedCrosshair._hitmarker_data = {
 				distance = 8
 			},
 			{
-				texture = "guis/textures/advanced_crosshairs/ar_crosshair_2",
+				texture_path = AdvancedCrosshair.assets_path .. "guis/textures/advanced_crosshairs/ar_crosshair_2",
 				w = 2,
 				h = 16,
 				angle = 225,
@@ -863,7 +869,7 @@ AdvancedCrosshair._hitmarker_data = {
 				distance = 8
 			},
 			{
-				texture = "guis/textures/advanced_crosshairs/ar_crosshair_2",
+				texture_path = AdvancedCrosshair.assets_path .. "guis/textures/advanced_crosshairs/ar_crosshair_2",
 				w = 2,
 				h = 16,
 				angle = 315,
@@ -888,7 +894,7 @@ AdvancedCrosshair._hitmarker_data = {
 		end,
 		parts = {
 			{
-				texture = "guis/textures/advanced_crosshairs/ar_crosshair_2",
+				texture_path = AdvancedCrosshair.assets_path .. "guis/textures/advanced_crosshairs/ar_crosshair_2",
 				w = 2,
 				h = 16,
 				angle = 45,
@@ -896,7 +902,7 @@ AdvancedCrosshair._hitmarker_data = {
 				distance = 8
 			},
 			{
-				texture = "guis/textures/advanced_crosshairs/ar_crosshair_2",
+				texture_path = AdvancedCrosshair.assets_path .. "guis/textures/advanced_crosshairs/ar_crosshair_2",
 				w = 2,
 				h = 16,
 				angle = 135,
@@ -904,7 +910,7 @@ AdvancedCrosshair._hitmarker_data = {
 				distance = 8
 			},
 			{
-				texture = "guis/textures/advanced_crosshairs/ar_crosshair_2",
+				texture_path = AdvancedCrosshair.assets_path .. "guis/textures/advanced_crosshairs/ar_crosshair_2",
 				w = 2,
 				h = 16,
 				angle = 225,
@@ -912,7 +918,7 @@ AdvancedCrosshair._hitmarker_data = {
 				distance = 8
 			},
 			{
-				texture = "guis/textures/advanced_crosshairs/ar_crosshair_2",
+				texture_path = AdvancedCrosshair.assets_path .. "guis/textures/advanced_crosshairs/ar_crosshair_2",
 				w = 2,
 				h = 16,
 				angle = 315,
@@ -944,7 +950,7 @@ AdvancedCrosshair._hitmarker_data = {
 		WANDER_SPEED = 13, --pixels per second, approx
 		parts = {
 			{
-				texture = "guis/textures/advanced_crosshairs/tf2_crit_text",
+				texture_path = AdvancedCrosshair.assets_path .. "guis/textures/advanced_crosshairs/tf2_crit_text",
 				w = 136 / 1.5,
 				h = 76 / 1.5,
 				angle = 0,
@@ -956,7 +962,7 @@ AdvancedCrosshair._hitmarker_data = {
 		}
 	}
 }
-
+	
 AdvancedCrosshair._hitsound_data = {
 	none = {
 		name_id = "menu_hitsound_none",
@@ -1125,7 +1131,7 @@ function AdvancedCrosshair:LoadAddonXML(foldername,full_addon_path)
 	local bl_framework_base_class = FrameworkBase
 	local file_util = _G.FileIO
 	
-	local bl_menus_mods -- = BeardLib.Menus and BeardLib.Menus.Mods
+	local bl_menus_mods = BeardLib.Menus and BeardLib.Menus.Mods
 	--temporarily disabled because it inexplicably broke as soon as i pushed the branch live i guess
 	
 	local xml_file_path = path_util:Combine(full_addon_path,self.addon_xml_file_name)
@@ -1221,7 +1227,6 @@ function AdvancedCrosshair:LoadCrosshairAddons(addons_dir)
 	local file_util = _G.FileIO
 	local bl_framework_base = BeardLib.Frameworks.Base
 	local bl_framework_base_class = FrameworkBase
-	--local bl_menus_mods = BeardLib.Menus.Mods
 	
 	local function load_addon_textures(addon_path,foldername,parts)
 		for part_index,part in ipairs(parts) do 
@@ -1241,8 +1246,8 @@ function AdvancedCrosshair:LoadCrosshairAddons(addons_dir)
 				local is_advanced
 				local addon_lua_file_path = path_util:Combine(full_addon_path,self.addon_lua_file_name)
 				
-				--load the addon xml file as if it were a beardlib mod (if xml file is present)
-				self:LoadAddonXML(foldername,full_addon_path)
+				-- load the addon xml file as if it were a beardlib mod (if xml file is present)
+				--self:LoadAddonXML(foldername,full_addon_path)
 			
 				if file_util:FileExists(addon_lua_file_path) then
 					is_advanced = true
@@ -1364,16 +1369,11 @@ function AdvancedCrosshair:AddCustomHitmarker(id,data)
 	end
 end
 
-function AdvancedCrosshair:ShouldAlwaysLoadAssets()
-	return self.settings.assets_always_loaded_enabled
-end
-
 function AdvancedCrosshair:LoadHitmarkerAddons(addons_dir)
 	local path_util = BeardLib.Utils.Path
 	local file_util = _G.FileIO
 	local bl_framework_base = BeardLib.Frameworks.Base
 	local bl_framework_base_class = FrameworkBase
-	--local bl_menus_mods = BeardLib.Menus.Mods
 	
 	local function load_addon_textures(addon_path,foldername,parts)
 		for part_index,part in ipairs(parts) do 
@@ -1393,8 +1393,8 @@ function AdvancedCrosshair:LoadHitmarkerAddons(addons_dir)
 				local is_advanced
 				local addon_lua_file_path = path_util:Combine(full_addon_path,self.addon_lua_file_name)
 				
-				--load the addon xml file as if it were a beardlib mod (if xml file is present)
-				self:LoadAddonXML(foldername,full_addon_path)
+				-- load the addon xml file as if it were a beardlib mod (if xml file is present)
+				--self:LoadAddonXML(foldername,full_addon_path)
 					
 				if file_util:FileExists(addon_lua_file_path) then 
 					is_advanced = true
@@ -1498,8 +1498,8 @@ function AdvancedCrosshair:LoadHitsoundAddons(addons_dir)
 				local is_advanced
 				local addon_lua_file_path = path_util:Combine(full_addon_path,self.addon_lua_file_name)
 				
-				--load the addon xml file as if it were a beardlib mod (if xml file is present)
-				self:LoadAddonXML(foldername,full_addon_path)
+				-- load the addon xml file as if it were a beardlib mod (if xml file is present)
+				--self:LoadAddonXML(foldername,full_addon_path)
 				
 				if file_util:FileExists(Application:nice_path(addon_lua_file_path)) then
 					is_advanced = true
@@ -1571,7 +1571,7 @@ end
 
 
 function AdvancedCrosshair:UnloadHitmarkers()
-
+	
 end
 
 function AdvancedCrosshair:UnloadCrosshairs()
@@ -1775,6 +1775,10 @@ function AdvancedCrosshair:SortAddons(reference_table,organization)
 		end
 		return result,result_by_localized
 	end
+end
+
+function AdvancedCrosshair:ShouldAlwaysLoadAssets()
+	return self.settings.assets_always_loaded_enabled
 end
 
 
@@ -2780,9 +2784,6 @@ end
 function AdvancedCrosshair:CreateHitmarker(panel,data)
 	local results = {}
 	local scale_setting = data.scale or 1
-	if not self:ShouldAlwaysLoadAssets() then
-		self:LoadPartsAssets(data.parts)
-	end
 	for i,part_data in ipairs(data.parts) do 
 		local scale = scale_setting * (part_data.scale or 1)
 		local x = (part_data.x or 0) * scale
@@ -2919,6 +2920,10 @@ function AdvancedCrosshair:ActivateHitmarker(attack_data)
 		return
 	end
 	local hitmarker_data = self._hitmarker_data[hitmarker_id]
+	
+	if not self:ShouldAlwaysLoadAssets() then
+		self:LoadPartsAssets(hitmarker_data.parts)
+	end
 	
 	local color = hitmarker_setting.bodyshot_color
 	if headshot and crit then 
@@ -3769,7 +3774,19 @@ end)
 
 Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus", function(menu_manager, nodes)
 
-	AdvancedCrosshair:log("Loading addons...")
+	AdvancedCrosshair:log("Loading default addons...")
+	
+	for id,data in pairs(AdvancedCrosshair._default_crosshairs) do 
+		AdvancedCrosshair:AddCustomCrosshair(id,data)
+	end
+	
+	AdvancedCrosshair:log("Loading custom addons...")
+	
+	for id,data in pairs(AdvancedCrosshair._default_hitmarkers) do 
+		AdvancedCrosshair:AddCustomHitmarker(id,data)
+	end
+	
+	
 	Hooks:Call("ACH_LoadAllAddons")
 	AdvancedCrosshair:LoadAllAddons() --load custom crosshairs, hitmarkers, and hitsounds
 
