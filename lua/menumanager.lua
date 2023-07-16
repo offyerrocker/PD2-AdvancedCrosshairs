@@ -1118,11 +1118,11 @@ function AdvancedCrosshair:LoadAllAddons()
 	self:LoadHitmarkerAddons(self.ADDON_PATHS.hitmarkers)
 	self:LoadHitsoundAddons(self.ADDON_PATHS.hitsounds)
 	
-	local modsmenu = BeardLib.Menus.Mods
-	if modsmenu then
-		--organize the list of beardlib mods now that any mods from ACH have been added
-		modsmenu._list:AlignItems(true)
-	end
+--	local modsmenu = BeardLib.Menus.Mods
+--	if modsmenu then
+--		--organize the list of beardlib mods now that any mods from ACH have been added
+--		modsmenu._list:AlignItems(true)
+--	end
 end
 
 function AdvancedCrosshair:LoadAddonXML(foldername,full_addon_path)
