@@ -3780,12 +3780,11 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		AdvancedCrosshair:AddCustomCrosshair(id,data)
 	end
 	
-	AdvancedCrosshair:log("Loading custom addons...")
-	
 	for id,data in pairs(AdvancedCrosshair._default_hitmarkers) do 
 		AdvancedCrosshair:AddCustomHitmarker(id,data)
 	end
 	
+	AdvancedCrosshair:log("Loading custom addons...")
 	
 	Hooks:Call("ACH_LoadAllAddons")
 	AdvancedCrosshair:LoadAllAddons() --load custom crosshairs, hitmarkers, and hitsounds
