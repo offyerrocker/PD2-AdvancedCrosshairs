@@ -3191,86 +3191,92 @@ function AdvancedCrosshair:UpdateCrosshair(t,dt,override_params)
 	end
 	override_params = override_params or {}
 	
-	local player = managers.player:local_player()
-	if player then 
-		local hidden = false
-		
-		local current_state = override_params.current_state or player:movement():current_state()
-		local state_name = override_params.state_name or player:movement():current_state_name()
-		local is_in_steelsight = current_state:in_steelsight() 
-		
-		local inventory = player:inventory()
-		local equipped_index = inventory:equipped_selection()
-		local equipped_unit = inventory:equipped_unit()
-		
-		if equipped_unit then 
-			local current_firemode = equipped_unit:base():fire_mode()
-			local weapon_base = equipped_unit:base()
-						
-			--for the burstfire mod
-			--probably obsolete now that burstfire is a game feature
-			if weapon_base.in_burst_mode and weapon_base:in_burst_mode() then
-				current_firemode = "burst"
-			end
+	local gsm = _G.game_state_machine
+	if gsm and gsm:verify_game_state(GameStateFilters.any_ingame) then
+		local player = managers.player:local_player()
+		if alive(player) then 
+			local hidden = false
 			
-			local new_current_data
+			local current_state = override_params.current_state or player:movement():current_state()
+			local state_name = override_params.state_name or player:movement():current_state_name()
+			local is_in_steelsight = current_state:in_steelsight() 
 			
-			local weapon_data = self._cache.weapons[tostring(equipped_unit:key())]
-			if not weapon_data then 
-	--			self:log("ERROR! Weapon data for weapon " .. tostring(weapon_base:get_name_id()) .. " in slot " .. tostring(equipped_index) .. " not found!",{color=Color.red})
---this can happen at the start of the heist when the playerstate is changed for the first time, before AdvancedCrosshair is initialized
-				return
-			end
-			--fire_mode
-			local underbarrel_base = weapon_base:gadget_overrides_weapon_functions()
-			if underbarrel_base then 
-				local underbarrel = weapon_data.underbarrels[tostring(underbarrel_base)]
-				if underbarrel then 
-					current_firemode = underbarrel_base:fire_mode()
-					new_current_data = underbarrel.firemodes[current_firemode]
+			local inventory = player:inventory()
+			local equipped_index = inventory:equipped_selection()
+			local equipped_unit = inventory:equipped_unit()
+			
+			if equipped_unit then 
+				local current_firemode = equipped_unit:base():fire_mode()
+				local weapon_base = equipped_unit:base()
+							
+				--for the burstfire mod
+				--probably obsolete now that burstfire is a game feature
+				if weapon_base.in_burst_mode and weapon_base:in_burst_mode() then
+					current_firemode = "burst"
+				end
+				
+				local new_current_data
+				
+				local weapon_data = self._cache.weapons[tostring(equipped_unit:key())]
+				if not weapon_data then 
+		--			self:log("ERROR! Weapon data for weapon " .. tostring(weapon_base:get_name_id()) .. " in slot " .. tostring(equipped_index) .. " not found!",{color=Color.red})
+	--this can happen at the start of the heist when the playerstate is changed for the first time, before AdvancedCrosshair is initialized
+					return
+				end
+				--fire_mode
+				local underbarrel_base = weapon_base:gadget_overrides_weapon_functions()
+				if underbarrel_base then 
+					local underbarrel = weapon_data.underbarrels[tostring(underbarrel_base)]
+					if underbarrel then 
+						current_firemode = underbarrel_base:fire_mode()
+						new_current_data = underbarrel.firemodes[current_firemode]
+					end
+				end
+				current_firemode = override_params.firemode or current_firemode
+
+				new_current_data = new_current_data or weapon_data.firemodes[current_firemode]
+				
+				if new_current_data and (new_current_data ~= self._cache.current_crosshair_data) then 
+					self._cache.current_crosshair_data.panel:hide()
+					self._cache.current_crosshair_data = new_current_data
+					
+				end
+				
+				local ads_behavior = self._cache.current_crosshair_data.settings.ads_behavior
+				if ads_behavior == 2 and is_in_steelsight then 
+					hidden = true
+				elseif ads_behavior == 3 and not is_in_steelsight then
+					hidden = true
+				elseif self.settings.crosshair_hide_while_interacting and (current_state:_interacting() or current_state._use_item_expire_t) then
+					hidden = true
+				elseif self.settings.crosshair_hide_while_meleeing and current_state:_is_meleeing() then
+					hidden = true
+				elseif self.settings.crosshair_hide_while_grenading and current_state:_is_throwing_projectile() then
+					hidden = true
+	--			elseif is_changing_weapon then 
+	--				hidden = true
+				elseif self.settings.crosshair_hide_while_reloading and current_state:_is_reloading() then
+					hidden = true
+				elseif self.settings.crosshair_hide_while_running and current_state:running() and not weapon_base:run_and_shoot_allowed() then 
+					hidden = true
+				end
+				
+	--			hidden = hidden or current_state:_is_reloading() or current_state:_changing_weapon() or current_state:_is_meleeing() or current_state._use_item_expire_t or current_state:_interacting() or current_state:_is_throwing_projectile() or current_state:_is_deploying_bipod() or current_state._menu_closed_fire_cooldown > 0 or current_state:is_switching_stances()
+
+				local state_allowed = self:CrosshairAllowedInState(state_name)
+				if state_allowed ~= nil then 
+					hidden = hidden or not state_allowed
 				end
 			end
-			current_firemode = override_params.firemode or current_firemode
-
-			new_current_data = new_current_data or weapon_data.firemodes[current_firemode]
 			
-			if new_current_data and (new_current_data ~= self._cache.current_crosshair_data) then 
-				self._cache.current_crosshair_data.panel:hide()
-				self._cache.current_crosshair_data = new_current_data
-				
-			end
 			
-			local ads_behavior = self._cache.current_crosshair_data.settings.ads_behavior
-			if ads_behavior == 2 and is_in_steelsight then 
-				hidden = true
-			elseif ads_behavior == 3 and not is_in_steelsight then
-				hidden = true
-			elseif self.settings.crosshair_hide_while_interacting and (current_state:_interacting() or current_state._use_item_expire_t) then
-				hidden = true
-			elseif self.settings.crosshair_hide_while_meleeing and current_state:_is_meleeing() then
-				hidden = true
-			elseif self.settings.crosshair_hide_while_grenading and current_state:_is_throwing_projectile() then
-				hidden = true
---			elseif is_changing_weapon then 
---				hidden = true
-			elseif self.settings.crosshair_hide_while_reloading and current_state:_is_reloading() then
-				hidden = true
-			elseif self.settings.crosshair_hide_while_running and current_state:running() and not weapon_base:run_and_shoot_allowed() then 
-				hidden = true
-			end
 			
---			hidden = hidden or current_state:_is_reloading() or current_state:_changing_weapon() or current_state:_is_meleeing() or current_state._use_item_expire_t or current_state:_interacting() or current_state:_is_throwing_projectile() or current_state:_is_deploying_bipod() or current_state._menu_closed_fire_cooldown > 0 or current_state:is_switching_stances()
-
-			local state_allowed = self:CrosshairAllowedInState(state_name)
-			if state_allowed ~= nil then 
-				hidden = hidden or not state_allowed
-			end
+			self._cache.current_crosshair_data.panel:set_visible(not hidden)
+			return
 		end
-		
-		
-		
-		self._cache.current_crosshair_data.panel:set_visible(not hidden)
-		
+	end
+	if self._cache.current_crosshair_data and self._cache.current_crosshair_data.panel and alive(self._cache.current_crosshair_data.panel) then
+		self._cache.current_crosshair_data.panel:set_visible(false)
 	end
 end
 
