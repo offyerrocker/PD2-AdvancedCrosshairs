@@ -281,6 +281,8 @@ AdvancedCrosshair.default_settings = {
 	crosshair_hide_while_grenading = false,
 	crosshair_hide_while_reloading = false,
 	crosshair_hide_while_running = false,
+	crosshair_hide_while_inspecting = false,
+	crosshair_hide_while_hitmarker = false,
 	crosshair_weapon_id_overrides = { --no menu yet
 	--EG:
 --		deagle = {
@@ -2849,7 +2851,6 @@ function AdvancedCrosshair:RemoveHitmarkerByIndex(index)
 end
 
 function AdvancedCrosshair:ActivateHitmarker(attack_data)
---unit is just passed because it's called from Message.OnEnemyShot, i don't actually need it
 	local limit_behavior = self:GetHitmarkerLimitBehavior()
 	if (#self._cache.hitmarkers >= self:GetHitmarkerMaxCount()) then 
 		--unlike hitsounds, hitmarkers are already managed in update(), so we just need to check the table count
@@ -3253,8 +3254,11 @@ function AdvancedCrosshair:UpdateCrosshair(t,dt,override_params)
 					hidden = true
 				elseif self.settings.crosshair_hide_while_grenading and current_state:_is_throwing_projectile() then
 					hidden = true
+				elseif self.settings.crosshair_hide_while_inspecting and current_state:_is_cash_inspecting(t) then
+					hidden = true
+				elseif self.settings.crosshair_hide_while_hitmarker and #self._cache.hitmarkers > 0 then
+					hidden = true
 	--			elseif is_changing_weapon then 
-	--				hidden = true
 				elseif self.settings.crosshair_hide_while_reloading and current_state:_is_reloading() then
 					hidden = true
 				elseif self.settings.crosshair_hide_while_running and current_state:running() and not weapon_base:run_and_shoot_allowed() then 
@@ -4605,7 +4609,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		id = "ach_crosshairs_general_divider_1",
 		size = 16,
 		menu_id = AdvancedCrosshair.crosshairs_menu_id,
-		priority = 16
+		priority = 18
 	})
 	MenuHelper:AddToggle({
 		id = "ach_crosshairs_general_master_enable",
@@ -4614,7 +4618,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		callback = "callback_ach_crosshairs_general_master_enable",
 		value = AdvancedCrosshair.settings.crosshair_enabled,
 		menu_id = AdvancedCrosshair.crosshairs_menu_id,
-		priority = 15
+		priority = 17
 	})
 	
 	MenuHelper:AddMultipleChoice({
@@ -4630,7 +4634,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		},
 		value = AdvancedCrosshair.settings.crosshair_outofrange_mode,
 		menu_id = AdvancedCrosshair.crosshairs_menu_id,
-		priority = 14
+		priority = 16
 	})
 	
 	
@@ -4641,7 +4645,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		callback = "callback_ach_crosshairs_general_enable_shake",
 		value = AdvancedCrosshair.settings.use_shake,
 		menu_id = AdvancedCrosshair.crosshairs_menu_id,
-		priority = 13
+		priority = 15
 	})
 	MenuHelper:AddToggle({
 		id = "ach_crosshairs_general_enable_use_movement_bloom",
@@ -4650,7 +4654,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		callback = "callback_ach_crosshairs_general_enable_movement_bloom",
 		value = AdvancedCrosshair.settings.use_movement_bloom,
 		menu_id = AdvancedCrosshair.crosshairs_menu_id,
-		priority = 12
+		priority = 14
 	})
 	MenuHelper:AddToggle({
 		id = "ach_crosshairs_general_enable_dynamic_color",
@@ -4659,7 +4663,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		callback = "callback_ach_crosshairs_general_enable_dynamic_color",
 		value = AdvancedCrosshair.settings.use_color,
 		menu_id = AdvancedCrosshair.crosshairs_menu_id,
-		priority = 11
+		priority = 13
 	})
 	MenuHelper:AddButton({
 		id = "ach_crosshairs_general_set_dynamic_color_enemy",
@@ -4667,7 +4671,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		desc = "menu_ach_crosshairs_general_set_dynamic_color_enemy_desc",
 		callback = "callback_ach_crosshairs_general_set_dynamic_color_enemy",
 		menu_id = AdvancedCrosshair.crosshairs_menu_id,
-		priority = 10
+		priority = 12
 	})
 	MenuHelper:AddButton({
 		id = "ach_crosshairs_general_set_dynamic_color_civilian",
@@ -4675,7 +4679,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		desc = "menu_ach_crosshairs_general_set_dynamic_color_civilian_desc",
 		callback = "callback_ach_crosshairs_general_set_dynamic_color_civilian",
 		menu_id = AdvancedCrosshair.crosshairs_menu_id,
-		priority = 9
+		priority = 11
 	})
 	MenuHelper:AddButton({
 		id = "ach_crosshairs_general_set_dynamic_color_teammate",
@@ -4683,7 +4687,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		desc = "menu_ach_crosshairs_general_set_dynamic_color_teammate_desc",
 		callback = "callback_ach_crosshairs_general_set_dynamic_color_teammate",
 		menu_id = AdvancedCrosshair.crosshairs_menu_id,
-		priority = 8
+		priority = 10
 	})
 	MenuHelper:AddButton({
 		id = "ach_crosshairs_general_set_dynamic_color_misc",
@@ -4691,7 +4695,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		desc = "menu_ach_crosshairs_general_set_dynamic_color_misc_desc",
 		callback = "callback_ach_crosshairs_general_set_dynamic_color_misc",
 		menu_id = AdvancedCrosshair.crosshairs_menu_id,
-		priority = 7
+		priority = 9
 	})
 	
 	
@@ -4699,7 +4703,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		id = "ach_crosshairs_general_divider_2",
 		size = 16,
 		menu_id = AdvancedCrosshair.crosshairs_menu_id,
-		priority = 6
+		priority = 8
 	})
 	
 	MenuHelper:AddToggle({
@@ -4709,7 +4713,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		callback = "callback_ach_crosshairs_general_hide_while_interacting",
 		value = AdvancedCrosshair.settings.crosshair_hide_while_interacting,
 		menu_id = AdvancedCrosshair.crosshairs_menu_id,
-		priority = 5
+		priority = 7
 	})
 	MenuHelper:AddToggle({
 		id = "ach_crosshair_general_hide_when_meleeing",
@@ -4718,7 +4722,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		callback = "callback_ach_crosshairs_general_hide_while_meleeing",
 		value = AdvancedCrosshair.settings.crosshair_hide_while_meleeing,
 		menu_id = AdvancedCrosshair.crosshairs_menu_id,
-		priority = 4
+		priority = 6
 	})
 	MenuHelper:AddToggle({
 		id = "ach_crosshair_general_hide_when_grenading",
@@ -4727,7 +4731,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		callback = "callback_ach_crosshairs_general_hide_while_grenading",
 		value = AdvancedCrosshair.settings.crosshair_hide_while_grenading,
 		menu_id = AdvancedCrosshair.crosshairs_menu_id,
-		priority = 3
+		priority = 5
 	})
 	MenuHelper:AddToggle({
 		id = "ach_crosshair_general_hide_when_reloading",
@@ -4736,7 +4740,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		callback = "callback_ach_crosshairs_general_hide_while_reloading",
 		value = AdvancedCrosshair.settings.crosshair_hide_while_reloading,
 		menu_id = AdvancedCrosshair.crosshairs_menu_id,
-		priority = 2
+		priority = 4
 	})
 	MenuHelper:AddToggle({
 		id = "ach_crosshair_general_hide_when_running",
@@ -4744,6 +4748,24 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		desc = "menu_ach_crosshair_general_hide_when_running_desc",
 		callback = "callback_ach_crosshairs_general_hide_while_running",
 		value = AdvancedCrosshair.settings.crosshair_hide_while_running,
+		menu_id = AdvancedCrosshair.crosshairs_menu_id,
+		priority = 3
+	})
+	MenuHelper:AddToggle({
+		id = "ach_crosshair_general_hide_when_inspecting",
+		title = "menu_ach_crosshair_general_hide_when_inspecting_title",
+		desc = "menu_ach_crosshair_general_hide_when_inspecting_desc",
+		callback = "callback_ach_crosshairs_general_hide_while_inspecting",
+		value = AdvancedCrosshair.settings.crosshair_hide_while_inspecting,
+		menu_id = AdvancedCrosshair.crosshairs_menu_id,
+		priority = 2
+	})
+	MenuHelper:AddToggle({
+		id = "ach_crosshair_general_hide_when_hitmarker",
+		title = "menu_ach_crosshair_general_hide_when_hitmarker_title",
+		desc = "menu_ach_crosshair_general_hide_when_hitmarker_desc",
+		callback = "callback_ach_crosshairs_general_hide_while_hitmarker",
+		value = AdvancedCrosshair.settings.crosshair_hide_while_hitmarker,
 		menu_id = AdvancedCrosshair.crosshairs_menu_id,
 		priority = 1
 	})
@@ -5482,6 +5504,16 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 	MenuCallbackHandler.callback_ach_crosshairs_general_hide_while_reloading = function(self,item)
 		local value = item:value() == "on"
 		AdvancedCrosshair.settings.crosshair_hide_while_reloading = value
+		AdvancedCrosshair:Save()
+	end
+	MenuCallbackHandler.callback_ach_crosshairs_general_hide_while_inspecting = function(self,item)
+		local value = item:value() == "on"
+		AdvancedCrosshair.settings.crosshair_hide_while_inspecting = value
+		AdvancedCrosshair:Save()
+	end
+	MenuCallbackHandler.callback_ach_crosshairs_general_hide_while_hitmarker = function(self,item)
+		local value = item:value() == "on"
+		AdvancedCrosshair.settings.crosshair_hide_while_hitmarker = value
 		AdvancedCrosshair:Save()
 	end
 	

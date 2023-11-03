@@ -76,6 +76,10 @@
 	"menu_ach_crosshair_general_hide_when_reloading_desc" :  "If enabled, crosshair will be hidden when reloading.",
 	"menu_ach_crosshair_general_hide_when_running_title" :  "Hide when Sprinting",
 	"menu_ach_crosshair_general_hide_when_running_desc" :  "If enabled, crosshair will be hidden when running, unless the player has the appropriate skill to fire while running.",
+	"menu_ach_crosshair_general_hide_when_inspecting_title" :  "Hide when Inspecting Weapon",
+	"menu_ach_crosshair_general_hide_when_inspecting_desc" :  "If enabled, crosshair will be hidden when inspecting a weapon.",
+	"menu_ach_crosshair_general_hide_when_hitmarker_title" :  "Hide when Hitmarkers are playing",
+	"menu_ach_crosshair_general_hide_when_hitmarker_desc" :  "If enabled, crosshair will be hidden when a hitmarker is visible.",
 	
 	"menu_ach_hitmarkers_master_enable_title" : "Enable Hitmarkers",
 	"menu_ach_hitmarkers_master_enable_desc" : "If true, shows a hitmarker when hitting an enemy",
