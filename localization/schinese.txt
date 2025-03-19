@@ -178,7 +178,7 @@
 	"menu_ach_hitsounds_set_kill_headshot_volume_desc" : "选择这个音效的响度",
 	"menu_ach_hitsounds_set_kill_bodyshot_crit_type_title" : "击杀: 身体暴击击杀音效",
 	"menu_ach_hitsounds_set_kill_bodyshot_crit_type_desc" : "设置身体暴击击杀敌人时的音效",
-	"menu_ach_hitsounds_set_kill_bodyshot_crit_volume_title" : "命中: 身体暴击音效",
+	"menu_ach_hitsounds_set_kill_bodyshot_crit_volume_title" : "击杀: 身体暴击音效",
 	"menu_ach_hitsounds_set_kill_bodyshot_crit_volume_desc" : "选择这个音效的响度",
 	"menu_ach_hitsounds_set_kill_headshot_crit_type_title" : "击杀: 爆头暴击音效",
 	"menu_ach_hitsounds_set_kill_headshot_crit_type_desc" : "设置爆头暴击击杀音效",

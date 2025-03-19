@@ -178,7 +178,7 @@
 	"menu_ach_hitsounds_set_kill_headshot_volume_desc" : "Choose how loud this hitsound will be",
 	"menu_ach_hitsounds_set_kill_bodyshot_crit_type_title" : "Kill: Bodyshot Crit Sound",
 	"menu_ach_hitsounds_set_kill_bodyshot_crit_type_desc" : "The sound that plays when you hit a lethal critical bodyshot",
-	"menu_ach_hitsounds_set_kill_bodyshot_crit_volume_title" : "Hit: Bodyshot Crit Volume",
+	"menu_ach_hitsounds_set_kill_bodyshot_crit_volume_title" : "Kill: Bodyshot Crit Volume",
 	"menu_ach_hitsounds_set_kill_bodyshot_crit_volume_desc" : "Choose how loud this hitsound will be",
 	"menu_ach_hitsounds_set_kill_headshot_crit_type_title" : "Kill: Headshot Crit Sound",
 	"menu_ach_hitsounds_set_kill_headshot_crit_type_desc" : "The sound that plays when you hit a lethal critical headshot",
