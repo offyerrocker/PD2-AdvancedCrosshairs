@@ -1966,7 +1966,6 @@ function AdvancedCrosshair:ApplyCompatibilityFixes()
 		self:OnPlayerManagerCheckSkills(managers.player)
 	end
 	
-	self:ApplyCompatibility_CopDamage_RollCriticalHit(self:UseCompatibility_CopDamageRollCrit())
 	self:ApplyCompatibility_CopDamage_DamageMelee(self:UseCompatibility_CopDamageMelee())
 	self:ApplyCompatibility_NewRaycastWeaponBaseResetCachedGadget(self:UseCompatibility_NewRaycastWeaponBaseResetCachedGadget())
 end
@@ -2005,26 +2004,8 @@ function AdvancedCrosshair:ApplyCompatibility_CopDamage_DamageMelee(enabled)
 	end
 end
 
+-- deprecated in v40; critical_hit is now added as a flag to attack_data in vanilla 
 function AdvancedCrosshair:ApplyCompatibility_CopDamage_RollCriticalHit(enabled)
-	if CopDamage then 
-		local orig_roll_crit = CopDamage._ach_orig_roll_critical_hit
-		if not (orig_roll_crit and type(orig_roll_crit) == "function") then 
-			orig_roll_crit = CopDamage.roll_critical_hit
-			CopDamage._ach_orig_roll_critical_hit = orig_roll_crit
-		end
-		
-		if enabled then 
-			function CopDamage.roll_critical_hit(dmg_ext,attack_data,...)
-				local result = {orig_roll_crit(dmg_ext,attack_data,...)}
-				if attack_data then 
-					attack_data.ach_crit = result[1]
-				end
-				return unpack(result)
-			end
-		else
-			CopDamage.roll_critical_hit = orig_roll_crit
-		end
-	end
 end
 
 function AdvancedCrosshair:ApplyCompatibility_NewRaycastWeaponBaseToggleFiremode(enabled) --deprecated in v33
@@ -2873,7 +2854,7 @@ function AdvancedCrosshair:ActivateHitmarker(attack_data)
 	local result_type = result and result.type
 	local pos = attack_data.pos
 	local headshot = attack_data.headshot or attack_data.ach_headshot
-	local crit = attack_data.crit or attack_data.ach_crit --flag indicating crit is added from the mod, not here in vanilla
+	local crit = attack_data.crit or attack_data.critical_hit
 
 	local outofrange_display_mode = self:GetHitmarkerRangeMode()
 
@@ -3020,7 +3001,7 @@ function AdvancedCrosshair:GetHitsoundData(attack_data)
 	local result = attack_data.result
 	local result_type = result and result.type
 	local headshot = attack_data.headshot or attack_data.ach_headshot
-	local crit = attack_data.crit or attack_data.ach_crit --note that the flag indicating crit is added from the mod via copbase, not here in vanilla
+	local crit = attack_data.crit or attack_data.critical_hit
 	local volume
 	local snd_name
 	
@@ -3074,7 +3055,7 @@ function AdvancedCrosshair:ActivateHitsound(attack_data,unit,no_pause)
 	local snd_path,volume = self:GetHitsoundData(attack_data)
 	if snd_path then 
 		local snd_path_2,volume_2
-		if (not self:ShouldSuppressDoubleSound()) and (attack_data.ach_crit or attack_data.headshot or attack_data.ach_headshot) then 
+		if (not self:ShouldSuppressDoubleSound()) and (attack_data.critical_hit or attack_data.headshot or attack_data.ach_headshot) then 
 			snd_path_2,volume_2 = self:GetHitsoundData({
 				result = {
 					type = attack_data.result and attack_data.result.type or "hurt"
