@@ -144,6 +144,7 @@
 	
 	"menu_ach_hitsounds_master_enable_title" : "Включить звуки",
 	"menu_ach_hitsounds_master_enable_desc" : "Включить звуки при попадании",
+	"menu_ach_hitsounds_set_suppress_doublesound_enabled_title" : "Suppress Double Hitsounds",	"menu_ach_hitsounds_set_suppress_doublesound_enabled_desc" : "If true, prevents playing the \"hit\" sound when you score a kill or critical hit.",
 	"menu_ach_hitsounds_set_limit_behavior_title" : "Ограничение звуков",
 	"menu_ach_hitsounds_set_limit_behavior_desc" : "Каким образом ограничивать количество звуков",
 	"menu_ach_hitsounds_max_count_title" : "Максимальное количество звуков",

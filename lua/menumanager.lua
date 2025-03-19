@@ -80,6 +80,8 @@ AdvancedCrosshair.url_ach_mws = "https://modworkshop.net/mod/29585"
 AdvancedCrosshair.addon_xml_file_name = "mod.xml"
 AdvancedCrosshair.addon_lua_file_name = "addon.lua"
 AdvancedCrosshair.addons_readme_txt = "README - generated from AdvancedCrosshair v2 - \n\nThis directory is where you can install add-on folders for Crosshairs, Hitmarkers, or Hitsounds.\nThese must be folders, no archives or files- .texture, .zip, .7zip, .tar, etc. will not be read!\nTo install add-ons, place the add-on folder(s) in one of the three subfolders according to the type of add-on- NOT directly in the same folder as this file.\n\nPlease refer to the documentation for more information: \n$LINK\n\nP.S. You can safely delete this readme file if you wish. It will only be re-generated on launch if ACH is installed and the ACH Addons folder is removed.\nHave a nice day!"
+
+AdvancedCrosshair.CLEAN_SOUNDS_THRESHOLD = 15 -- when this many or greater total sound sources (open or closed) are present in cache, clean the cache of any dead/closed sound sources on hitsound event
 AdvancedCrosshair.HITMARKER_RAIN_SPAWN_DELAY_INTERVAL_MIN = 0.01 --seconds
 AdvancedCrosshair.HITMARKER_RAIN_SPAWN_DELAY_INTERVAL_MAX = 0.1 --seconds
 AdvancedCrosshair.HITMARKER_RAIN_TRAVEL_DURATION_MAX = 1 --seconds
@@ -3051,6 +3053,30 @@ function AdvancedCrosshair:GetHitsoundData(attack_data)
 	return snd_path,volume
 end
 
+function AdvancedCrosshair:CleanHitsounds()
+	local sources = self._cache.sound_sources
+	local num_sources = #sources
+	for i=num_sources,1,-1 do 
+		local sound_source = sources[i]
+		if (not sound_source) or sound_source:is_closed() then
+			table.remove(sources,i)
+			num_sources = num_sources - 1
+		end
+	end
+	return num_sources
+end
+
+function AdvancedCrosshair:RemoveOldestHitsound()
+	local replaced_source = table.remove(self._cache.sound_sources,1)
+	if replaced_source then
+		replaced_source:set_volume(0)
+	--	replaced_source:stop()
+		replaced_source:close()
+		replaced_source._buffer:close()
+	end
+	return replaced_source
+end
+
 function AdvancedCrosshair:ActivateHitsound(attack_data,unit,no_pause)
 	local snd_path,volume = self:GetHitsoundData(attack_data)
 	if snd_path then 
@@ -3063,36 +3089,41 @@ function AdvancedCrosshair:ActivateHitsound(attack_data,unit,no_pause)
 				headshot = false,
 				crit = false,
 			})
+			if snd_path_2 == snd_path then 
+				-- if both sounds would be identical, 
+				-- only play the first one, 
+				-- as playing the same sound at increased volume probably isn't desirable for most people
+				snd_path_2 = nil
+				volume_2 = nil
+			end
 			--note: secondary hitsounds can temporarily exceed the hitsound count since i consider them part of the primary hitsound
 		end
 		
+		local num_sources = #self._cache.sound_sources
+		-- if this many sound sources are in the table,
+		-- clean any closed sound sources, regardless of settings
 		local limit_behavior = self:GetHitsoundLimitBehavior()
-		
-		if not snd_path then 
-			return
+		if (limit_behavior == 1) or (num_sources >= self.CLEAN_SOUNDS_THRESHOLD) then 
+			num_sources = self:CleanHitsounds()
 		end
-		local max_sounds_count = self:GetHitsoundMaxCount()
-		if #self._cache.sound_sources >= max_sounds_count then 
-			local available_slot
-			for i,sound_source in ipairs(self._cache.sound_sources) do 
-				if (limit_behavior == 1) and (i >= max_sounds_count) then
-					--no sound slots available
-					return
-				end
-				if (not sound_source) or sound_source:is_closed() then 
-					available_slot = i
-					break
-				end
+		if limit_behavior == 3 then -- no limit
+			-- carry on then
+		elseif limit_behavior == 1 then -- hard cap (don't play if over limit)
+			if num_sources >= self:GetHitsoundMaxCount() then 
+				-- if at user setting cap, don't play hitsounds
+				return
 			end
-			if available_slot then 
-				--don't operate on the table until out of the for loop
-				table.remove(self._cache.sound_sources,available_slot)
-			elseif limit_behavior == 2 then 
-				local replaced_source = table.remove(self._cache.sound_sources,1)
-				replaced_source:set_volume(0)
---				replaced_source:stop()
-				replaced_source:close()
-				replaced_source._buffer:close()
+		elseif limit_behavior == 2 then -- replace oldest
+			local overage = num_sources - self:GetHitsoundMaxCount()
+			if snd_path_2 then
+				-- need to account for an extra sound slot requirement if playing two sounds
+				overage = overage + 1
+			end
+			if overage >= 0 then
+			-- remove sounds until there's space
+				for i=0,overage,1 do 
+					self:RemoveOldestHitsound()
+				end
 			end
 		end
 		
@@ -4784,6 +4815,16 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		callback = "callback_ach_hitsounds_master_enable",
 		value = AdvancedCrosshair.settings.hitsound_enabled,
 		menu_id = AdvancedCrosshair.hitsounds_menu_id,
+		priority = 30
+	})
+	
+	MenuHelper:AddToggle({
+		id = "ach_hitsounds_set_suppress_doublesound_enabled",
+		title = "menu_ach_hitsounds_set_suppress_doublesound_enabled_title",
+		desc = "menu_ach_hitsounds_set_suppress_doublesound_enabled_desc",
+		callback = "callback_ach_hitsounds_set_suppress_doublesound_enabled",
+		value = AdvancedCrosshair.settings.hitsound_suppress_doublesound,
+		menu_id = AdvancedCrosshair.hitsounds_menu_id,
 		priority = 29
 	})
 	
@@ -5883,6 +5924,10 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 	end
 	MenuCallbackHandler.callback_ach_hitsounds_master_enable = function(self,item)
 		AdvancedCrosshair.settings.hitsound_enabled = item:value() == "on"
+		AdvancedCrosshair:Save()
+	end
+	MenuCallbackHandler.callback_ach_hitsounds_set_suppress_doublesound_enabled = function(self,item)
+		AdvancedCrosshair.settings.hitsound_suppress_doublesound = item:value() == "on"
 		AdvancedCrosshair:Save()
 	end
 	MenuCallbackHandler.callback_ach_hitsounds_set_positional_enabled = function(self,item)

@@ -144,6 +144,8 @@
 	
 	"menu_ach_hitsounds_master_enable_title" : "Enable Hitsounds",
 	"menu_ach_hitsounds_master_enable_desc" : "If true, plays a sound when hitting an enemy",
+	"menu_ach_hitsounds_set_suppress_doublesound_enabled_title" : "Suppress Double Hitsounds",
+	"menu_ach_hitsounds_set_suppress_doublesound_enabled_desc" : "If true, prevents playing the \"hit\" sound when you score a kill or critical hit.",
 	"menu_ach_hitsounds_set_limit_behavior_title" : "Hitsound Cap",
 	"menu_ach_hitsounds_set_limit_behavior_desc" : "Control how the hitsound count cap behaves",
 	"menu_ach_hitsounds_max_count_title" : "Maximum Hitsound Count",
