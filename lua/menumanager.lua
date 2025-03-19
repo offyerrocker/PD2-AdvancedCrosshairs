@@ -2334,7 +2334,8 @@ function AdvancedCrosshair:Init()
         blt.xaudio.setup()
 	end
 	if self:IsEasterEggsEnabled() then
-		if os.date("%d/%m") == "1/4" then 
+		local datea = os.date("*t",os.time()) -- get it? date data? i'm an underappreciated comedic genius in my time
+		if datea.month == 4 and datea.day == 1 then -- trigger on april fool's
 			self._cache.HITMARKER_RAIN_ENABLED = true
 		end
 	end
