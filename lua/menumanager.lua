@@ -3067,9 +3067,21 @@ function AdvancedCrosshair:CleanHitsounds()
 	return num_sources
 end
 
+function AdvancedCrosshair:RemoveAllHitsounds()
+	for i=#self._cache.sound_sources,1,-1 do 
+		local replaced_source = table.remove(self._cache.sound_sources,1)
+		if replaced_source and not replaced_source:is_closed() then
+			replaced_source:set_volume(0)
+		--	replaced_source:stop()
+			replaced_source:close()
+			replaced_source._buffer:close()
+		end
+	end
+end
+
 function AdvancedCrosshair:RemoveOldestHitsound()
 	local replaced_source = table.remove(self._cache.sound_sources,1)
-	if replaced_source then
+	if replaced_source and not replaced_source:is_closed() then
 		replaced_source:set_volume(0)
 	--	replaced_source:stop()
 		replaced_source:close()
@@ -3189,6 +3201,9 @@ function AdvancedCrosshair:ClearCache(skip_destroy)
 			end
 		end
 	end
+	
+	self:RemoveAllHitsounds()
+	
 	cache.player_unit = nil
 	cache.underbarrel = {}
 --	cache.weapons = {}
