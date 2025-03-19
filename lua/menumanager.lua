@@ -2404,12 +2404,15 @@ function AdvancedCrosshair:CreateCrosshairs()
 	local player = managers.player:local_player()
 	local inventory = player:inventory()
 	local equipped_unit = inventory:equipped_unit()
+	local done_any
 	for i,selection_data in pairs(inventory:available_selections()) do 
 		self:CreateCrosshairByWeapon(selection_data.unit,i)
 		if selection_data.unit == equipped_unit then 
 			self._cache.current_crosshair_data = self._cache.weapons[tostring(equipped_unit:key())].firemodes[equipped_unit:base():fire_mode()]
 		end
+		done_any = true
 	end
+	return done_any
 end
 
 function AdvancedCrosshair:RemoveCrosshairByWeapon(unit)
@@ -2444,8 +2447,9 @@ function AdvancedCrosshair:RemoveAllCrosshairs(queue_recreation)
 		BeardLib:RemoveUpdater("ach_queue_crosshair_creation")
 		BeardLib:AddUpdater("ach_queue_crosshair_creation",function(t,dt)
 			if alive(managers.player:local_player()) and alive(self._crosshair_panel) then 
-				self:CreateCrosshairs()
-				BeardLib:RemoveUpdater("ach_queue_crosshair_creation")
+				if self:CreateCrosshairs() then
+					BeardLib:RemoveUpdater("ach_queue_crosshair_creation")
+				end
 			end
 		end)
 	end
