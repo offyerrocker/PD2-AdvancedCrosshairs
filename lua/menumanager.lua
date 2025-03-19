@@ -475,7 +475,10 @@ AdvancedCrosshair._cache = {
 	hitmarkers = {},
 	num_hitmarkers = 0,
 	sound_sources = {},
-	is_in_steelsight = false --only set/used when compatibility mode for "playerstandard on steelsight" is enabled
+	is_in_steelsight = false, --only set/used when compatibility mode for "playerstandard on steelsight" is enabled
+	HITMARKER_RAIN_ENABLED = nil, -- bool; if true, allow easter egg where hitmarkers have a chance to "rain" down from the top of the screen on kill, and flash "MOM GET THE CAMERA" on screen
+	_hitmarker_rain_count_remaining = nil, -- int; number of rain hitmarkers left to spawn
+	_next_hitmarker_rain_t = nil -- float; time delay to next rain hitmarker spawn
 }
 
 --do not change this. refer to the github wiki if you want to add custom crosshairs to this mod (see above for the link)
@@ -2095,7 +2098,7 @@ function AdvancedCrosshair:OnPlayerManagerCheckSkills(pm,...)
 			end
 		)
 		pm._listener_holder:remove("advancedcrosshair_OnEnterCustody")
-		pm._listener_holder:add("advancedcrosshair_OnEnterCustody",{pm._custody_state},callback(AdvancedCrosshair,AdvancedCrosshair,"OnPlayerManagerOnEnterCustody"))
+		pm._listener_holder:add("advancedcrosshair_OnEnterCustody",{pm._custody_state},callback(self,self,"OnPlayerManagerOnEnterCustody"))
 	end
 end
 
@@ -2342,8 +2345,8 @@ function AdvancedCrosshair:Init()
 end
 
 function AdvancedCrosshair:OnPlayerManagerOnEnterCustody(player_unit)
-	AdvancedCrosshair:ClearCache()
-	AdvancedCrosshair:RemoveAllCrosshairs(true)
+	self:ClearCache()
+	self:RemoveAllCrosshairs(true)
 end
 
 function AdvancedCrosshair:CreateHUD(t,dt) --try to create hud each run until both required elements are initiated.
@@ -3000,6 +3003,8 @@ function AdvancedCrosshair:OnEnemyHit(unit,attack_data)
 	end
 end
 
+-- hitsounds
+
 function AdvancedCrosshair:GetHitsoundData(attack_data)
 	local result = attack_data.result
 	local result_type = result and result.type
@@ -3181,6 +3186,7 @@ function AdvancedCrosshair:ActivateHitsound(attack_data,unit,no_pause)
 	end
 	
 end
+
 
 function AdvancedCrosshair:ClearCache(skip_destroy)
 	local cache = self._cache
