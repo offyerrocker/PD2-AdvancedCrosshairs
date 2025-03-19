@@ -33,14 +33,6 @@
 			"description" : "menu_ach_menu_compat_compatibility_copdamage_damagemelee_desc",
 			"callback" : "callback_ach_menu_compat_compatibility_copdamage_damagemelee",
 			"value" : "compatibility_hook_copdamage_damagemelee"
-		},
-		{
-			"type" : "toggle",
-			"id" : "ach_menu_compat_compatibility_copdamage_rollcriticalhit",
-			"title" : "menu_ach_menu_compat_compatibility_copdamage_rollcriticalhit_title",
-			"description" : "menu_ach_menu_compat_compatibility_copdamage_rollcriticalhit_desc",
-			"callback" : "callback_ach_menu_compat_compatibility_copdamage_rollcriticalhit",
-			"value" : "compatibility_hook_copdamage_rollcriticalhit"
 		}
 	]
 }
