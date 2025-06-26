@@ -272,6 +272,7 @@ AdvancedCrosshair.default_settings = {
 	crosshair_outofrange_mode = 1,
 	crosshair_all_override = false,
 	crosshair_stability = 1,
+	crosshair_shake_round_position = true, -- rounds crosshair panel position to nearest integer to prevent image filtering artifacts with pixel-perfect crosshairs
 	crosshair_enemy_color = "e11a1a",
 	crosshair_civilian_color = "7ff77f",
 	crosshair_teammate_color = "0171ff",
@@ -2673,6 +2674,9 @@ function AdvancedCrosshair:SetCrosshairScale(scale_mul,scale_setting_override)
 end
 
 function AdvancedCrosshair:SetCrosshairCenter(x,y)
+	if self.settings.crosshair_shake_round_position then
+		x,y = math.round(x),math.round(y)
+	end
 	self._crosshair_panel:set_center(x,y)
 end
 
