@@ -5364,7 +5364,7 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 	MenuCallbackHandler.callback_ach_crosshairs_general_enable_shake = function(self,item)
 		AdvancedCrosshair.settings.use_shake = item:value() == "on"
 		if alive(AdvancedCrosshair._crosshair_panel) then 
-			AdvancedCrosshair:SetCrosshairCenter(AdvancedCrosshair._panel:center())
+			AdvancedCrosshair:SetCrosshairCenter(AdvancedCrosshair._panel:w()/2,AdvancedCrosshair._panel:h()/2)
 		end
 		AdvancedCrosshair:Save()
 	end
