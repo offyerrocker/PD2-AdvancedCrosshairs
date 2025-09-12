@@ -1118,9 +1118,9 @@ end
 --simple custom add-ons should simply be added inside the mods/saves/AdvancedCrosshairs folder, and this mod will take care of adding them
 
 function AdvancedCrosshair:LoadAllAddons()
-	if not BeardLib.Frameworks.Base then 
-		self:log("Error loading addon xml: BeardLib AddFramework missing!")
-	end
+--	if not BeardLib.Frameworks.Base then 
+--		self:log("Error loading addon xml: BeardLib AddFramework missing!")
+--	end
 	
 	self:LoadCrosshairAddons(self.ADDON_PATHS.crosshairs)
 	self:LoadHitmarkerAddons(self.ADDON_PATHS.hitmarkers)
@@ -1133,7 +1133,7 @@ function AdvancedCrosshair:LoadAllAddons()
 --	end
 end
 
-function AdvancedCrosshair:LoadAddonXML(foldername,full_addon_path)
+function AdvancedCrosshair:LoadAddonXML(foldername,full_addon_path) -- not used
 	local path_util = BeardLib.Utils.Path
 	local bl_framework_base = BeardLib.Frameworks.Base
 	local bl_framework_base_class = FrameworkBase
@@ -1179,6 +1179,7 @@ function AdvancedCrosshair:AddCustomCrosshair(id,data)
 		if type(data) == "table" then 
 			local path_util = BeardLib.Utils.Path
 			local extension = "texture"
+			local texture_ids = Idstring(extension)
 			data.is_addon = true
 			if type(data.parts) == "table" then 
 				for part_index,part in ipairs(data.parts) do 
@@ -1193,7 +1194,7 @@ function AdvancedCrosshair:AddCustomCrosshair(id,data)
 						part.texture = final_path
 						--and by that I mean pawn off the work of loading your addon textures to BeardLib, which will pawn off the work to SuperBLT, which w
 						if self:ShouldAlwaysLoadAssets() then
-							BeardLib.managers.file:AddFile(Idstring(extension),Idstring(final_path),part.texture_path .. "." .. file_extension)
+							BLT.AssetManager:CreateEntry(Idstring(final_path), texture_ids, part.texture_path .. "." .. file_extension)
 						end
 					else
 						self:log("Error: Invalid texture/texture path when reading crosshair part data for part #" .. tostring(part_index) .. " in addon: " .. tostring(id).. ". Aborting addon.")
@@ -1233,8 +1234,6 @@ end
 function AdvancedCrosshair:LoadCrosshairAddons(addons_dir)
 	local path_util = BeardLib.Utils.Path
 	local file_util = _G.FileIO
-	local bl_framework_base = BeardLib.Frameworks.Base
-	local bl_framework_base_class = FrameworkBase
 	
 	local function load_addon_textures(addon_path,foldername,parts)
 		for part_index,part in ipairs(parts) do 
@@ -1327,6 +1326,7 @@ function AdvancedCrosshair:AddCustomHitmarker(id,data)
 		if type(data) == "table" then 
 			local path_util = BeardLib.Utils.Path
 			local extension = "texture"
+			local texture_ids = Idstring(extension)
 			data.is_addon = true
 			if type(data.parts) == "table" then 
 				for part_index,part in ipairs(data.parts) do 
@@ -1340,7 +1340,7 @@ function AdvancedCrosshair:AddCustomHitmarker(id,data)
 						part.texture = final_path
 						local file_extension = part.file_extension or extension
 						if self:ShouldAlwaysLoadAssets() then
-							BeardLib.managers.file:AddFile(Idstring(extension),Idstring(final_path),part.texture_path .. "." .. file_extension)
+							BLT.AssetManager:CreateEntry(Idstring(final_path), texture_ids, part.texture_path .. "." .. file_extension)
 						end
 					else
 						self:log("Error: Invalid texture/texture path when reading hitmarker part data for part #" .. tostring(part_index) .. " in addon: " .. tostring(id).. ". Aborting addon.")
@@ -1380,8 +1380,6 @@ end
 function AdvancedCrosshair:LoadHitmarkerAddons(addons_dir)
 	local path_util = BeardLib.Utils.Path
 	local file_util = _G.FileIO
-	local bl_framework_base = BeardLib.Frameworks.Base
-	local bl_framework_base_class = FrameworkBase
 	
 	local function load_addon_textures(addon_path,foldername,parts)
 		for part_index,part in ipairs(parts) do 
@@ -1604,21 +1602,17 @@ function AdvancedCrosshair:LoadPartsAssets(parts)
 	-- for each part,
 	-- if not loaded, load it
 	
-	local bl_filemgr = BeardLib.managers.file
 	local pending_parts = {}
 	local file_extension = "texture"
 	local texture_ids = Idstring(file_extension)
 	for part_index,part in pairs(parts) do 
 		local texture_path = part.texture_path
 		if texture_path then
-			if bl_filemgr:Has(texture_ids,part.texture) then
-				-- already loaded
-			elseif pending_parts[texture_path] then
-				-- already loading
-			else
-				-- load it
-				pending_parts[texture_path] = true
-				bl_filemgr:AddFile(texture_ids,Idstring(part.texture),texture_path .. "." .. file_extension)
+			local file_path = texture_path .. "." .. file_extension
+			if not pending_parts[file_path] then
+				-- only attempt to load a given file once
+				pending_parts[file_path] = true
+				BLT.AssetManager:CreateEntry(Idstring(part.texture), texture_ids, file_path)
 			end
 		else
 			-- does not require load
