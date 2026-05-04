@@ -12,7 +12,7 @@
 			"description" : "menu_ach_menu_compat_compatibility_auto_detection_desc",
 			"callback" : "callback_ach_menu_compat_compatibility_auto_detection",
 			"value" : "compatibility_auto_detection"
-		},
+		}
 		{
 			"type" : "divider",
 			"id" : "ach_menu_compat_div_1",
@@ -33,6 +33,14 @@
 			"description" : "menu_ach_menu_compat_compatibility_copdamage_damagemelee_desc",
 			"callback" : "callback_ach_menu_compat_compatibility_copdamage_damagemelee",
 			"value" : "compatibility_hook_copdamage_damagemelee"
+		},
+		{
+			"type" : "toggle",
+			"id" : "ach_menu_compat_compatibility_hook_ecmjammerbase_detectandgivedmg",
+			"title" : "menu_ach_menu_compat_compatibility_hook_ecmjammerbase_detectandgivedmg_title",
+			"description" : "menu_ach_menu_compat_compatibility_hook_ecmjammerbase_detectandgivedmg_desc",
+			"callback" : "callback_ach_menu_compat_compatibility_ecmjammerbase_detectandgivedmg",
+			"value" : "compatibility_hook_ecmjammerbase_detectandgivedmg"
 		}
 	]
 }

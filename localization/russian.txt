@@ -144,13 +144,16 @@
 	
 	"menu_ach_hitsounds_master_enable_title" : "Включить звуки",
 	"menu_ach_hitsounds_master_enable_desc" : "Включить звуки при попадании",
-	"menu_ach_hitsounds_set_suppress_doublesound_enabled_title" : "Suppress Double Hitsounds",	"menu_ach_hitsounds_set_suppress_doublesound_enabled_desc" : "If true, prevents playing the \"hit\" sound when you score a kill or critical hit.",
+	"menu_ach_hitsounds_set_suppress_doublesound_enabled_title" : "Suppress Double Hitsounds",
+	"menu_ach_hitsounds_set_suppress_doublesound_enabled_desc" : "If true, prevents playing the \"hit\" sound when you score a kill or critical hit.",
 	"menu_ach_hitsounds_set_limit_behavior_title" : "Ограничение звуков",
 	"menu_ach_hitsounds_set_limit_behavior_desc" : "Каким образом ограничивать количество звуков",
 	"menu_ach_hitsounds_max_count_title" : "Максимальное количество звуков",
 	"menu_ach_hitsounds_max_count_desc" : "Максимальное количество одновременных звуков (Округляется)",
 	"menu_ach_hitsounds_set_melee_enabled_title" : "Звуки ближнего боя",
 	"menu_ach_hitsounds_set_melee_enabled_desc" : "Проигрывать звуки при попадании холодного оружия",
+	"menu_ach_hitsounds_set_ecmjammer_enabled_title" : "Enable ECM/PECM Jammer Triggers",
+	"menu_ach_hitsounds_set_ecmjammer_enabled_desc" : "If true, ECM Jammer and Pocket ECM Jammer ticks can trigger hitsounds",
 	"menu_ach_hitsounds_set_hit_bodyshot_type_title" : "Звук попадания в тело",
 	"menu_ach_hitsounds_set_hit_bodyshot_type_desc" : "Звук, который проигрывается при нелетальном попадании в тело",
 	"menu_ach_hitsounds_set_positional_enabled_title" : "Позиционные звуки",
@@ -210,6 +213,8 @@
 	"menu_ach_menu_compat_compatibility_copdamage_damagemelee_desc" : "Исправляет возможные проблемы с отображением попаданий оружия ближнего боя.",
 	"menu_ach_menu_compat_compatibility_copdamage_rollcriticalhit_title" : "CopDamage:roll_critical_hit()",
 	"menu_ach_menu_compat_compatibility_copdamage_rollcriticalhit_desc" : "Исправляет возможные проблемы с отображением критических попаданий.",
+	"menu_ach_menu_compat_compatibility_hook_ecmjammerbase_detectandgivedmg_title" : "ECMJammerBase._detect_and_give_dmg()",
+	"menu_ach_menu_compat_compatibility_hook_ecmjammerbase_detectandgivedmg_desc" : "If true, disables the hook that allows ACH to filter out ECM/PECM Feedback hits from playing hitsounds/hitmarkers.\nEnable this toggle if you are having compatibility issues with mods related to ECM/PECM Feedback.",
 	
 	
 	

@@ -144,13 +144,16 @@
 	
 	"menu_ach_hitsounds_master_enable_title" : "开启命中音效",
 	"menu_ach_hitsounds_master_enable_desc" : "如开启，则在命中敌人时添加命中音效",
-	"menu_ach_hitsounds_set_suppress_doublesound_enabled_title" : "Suppress Double Hitsounds",	"menu_ach_hitsounds_set_suppress_doublesound_enabled_desc" : "If true, prevents playing the \"hit\" sound when you score a kill or critical hit.",
+	"menu_ach_hitsounds_set_suppress_doublesound_enabled_title" : "Suppress Double Hitsounds",
+	"menu_ach_hitsounds_set_suppress_doublesound_enabled_desc" : "If true, prevents playing the \"hit\" sound when you score a kill or critical hit.",
 	"menu_ach_hitsounds_set_limit_behavior_title" : "击中音效",
 	"menu_ach_hitsounds_set_limit_behavior_desc" : "控制击中音效上限",
 	"menu_ach_hitsounds_max_count_title" : "击中音效上下限",
 	"menu_ach_hitsounds_max_count_desc" : "击中音效上限 (四舍五入至最近整数)",
 	"menu_ach_hitsounds_set_melee_enabled_title" : "允许近战触发",
 	"menu_ach_hitsounds_set_melee_enabled_desc" : "如开启,近战可触发近战音效",
+	"menu_ach_hitsounds_set_ecmjammer_enabled_title" : "Enable ECM/PECM Jammer Triggers",
+	"menu_ach_hitsounds_set_ecmjammer_enabled_desc" : "If true, ECM Jammer and Pocket ECM Jammer ticks can trigger hitsounds",
 	"menu_ach_hitsounds_set_hit_bodyshot_type_title" : "击中: 身体音效",
 	"menu_ach_hitsounds_set_hit_bodyshot_type_desc" : "设置击中身体未击杀时音效",
 	"menu_ach_hitsounds_set_positional_enabled_title" : "Enable Positional Hitsounds",
@@ -210,6 +213,8 @@
 	"menu_ach_menu_compat_compatibility_copdamage_damagemelee_desc" : "Fixes potential issues with melee hit detection.",
 	"menu_ach_menu_compat_compatibility_copdamage_rollcriticalhit_title" : "CopDamage:roll_critical_hit()",
 	"menu_ach_menu_compat_compatibility_copdamage_rollcriticalhit_desc" : "Fixes potential compatibility issues with detecting critical hits on enemies.",
+	"menu_ach_menu_compat_compatibility_hook_ecmjammerbase_detectandgivedmg_title" : "ECMJammerBase._detect_and_give_dmg()",
+	"menu_ach_menu_compat_compatibility_hook_ecmjammerbase_detectandgivedmg_desc" : "If true, disables the hook that allows ACH to filter out ECM/PECM Feedback hits from playing hitsounds/hitmarkers.\nEnable this toggle if you are having compatibility issues with mods related to ECM/PECM Feedback.",
 	
 	
 	

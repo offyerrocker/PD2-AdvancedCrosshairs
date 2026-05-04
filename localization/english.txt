@@ -91,6 +91,8 @@
 	"menu_ach_hitmarkers_set_max_count_desc" : "Max number of concurrent hitmarkers (Rounded to nearest integer)",
 	"menu_ach_hitmarkers_set_melee_enabled_title" : "Allow Melee Triggers",
 	"menu_ach_hitmarkers_set_melee_enabled_desc" : "If true, melee hits can trigger hitmarkers",
+	"menu_ach_hitmarkers_set_ecmfeedback_enabled_title" : "Enable ECM/PECM Jammer Triggers",
+	"menu_ach_hitmarkers_set_ecmfeedback_enabled_desc" : "If true, ECM Jammer and Pocket ECM Jammer ticks can trigger hitmarkers.\n(ECMJammerBase._detect_and_give_dmg() option must be disabled in Compatibility settings)",
 	"menu_ach_hitmarkers_hit_set_bitmap_title" : "Hit: Set Hitmarker Type",
 	"menu_ach_hitmarkers_hit_set_bitmap_desc" : "Which hitmarker to show",
 	"menu_ach_hitmarkers_hit_set_alpha_title" : "Hit: Set Alpha",
@@ -152,6 +154,8 @@
 	"menu_ach_hitsounds_max_count_desc" : "Max number of concurrent hitsounds (Rounded to nearest integer)",
 	"menu_ach_hitsounds_set_melee_enabled_title" : "Allow Melee Triggers",
 	"menu_ach_hitsounds_set_melee_enabled_desc" : "If true, melee hits can trigger hitsounds",
+	"menu_ach_hitsounds_set_ecmfeedback_enabled_title" : "Enable ECM/PECM Jammer Triggers",
+	"menu_ach_hitsounds_set_ecmfeedback_enabled_desc" : "If true, ECM Jammer and Pocket ECM Jammer ticks can trigger hitsounds.\n(ECMJammerBase._detect_and_give_dmg() option must be disabled in Compatibility settings)",
 	"menu_ach_hitsounds_set_hit_bodyshot_type_title" : "Hit: Bodyshot Sound",
 	"menu_ach_hitsounds_set_hit_bodyshot_type_desc" : "The sound that plays when you hit a non-lethal bodyshot",
 	"menu_ach_hitsounds_set_positional_enabled_title" : "Enable Positional Hitsounds",
@@ -211,7 +215,8 @@
 	"menu_ach_menu_compat_compatibility_copdamage_damagemelee_desc" : "Fixes potential issues with melee hit detection.",
 	"menu_ach_menu_compat_compatibility_copdamage_rollcriticalhit_title" : "CopDamage:roll_critical_hit()",
 	"menu_ach_menu_compat_compatibility_copdamage_rollcriticalhit_desc" : "Fixes potential compatibility issues with detecting critical hits on enemies.",
-	
+	"menu_ach_menu_compat_compatibility_hook_ecmjammerbase_detectandgivedmg_title" : "ECMJammerBase._detect_and_give_dmg()",
+	"menu_ach_menu_compat_compatibility_hook_ecmjammerbase_detectandgivedmg_desc" : "If true, disables the hook that allows ACH to filter out ECM/PECM Feedback hits.\nEnable this toggle if you are having compatibility issues with mods related to ECM/PECM Feedback.",
 	
 	
 	"menu_ach_menu_misc_title" : "Misc...",

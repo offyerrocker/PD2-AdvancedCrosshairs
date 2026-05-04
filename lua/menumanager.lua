@@ -235,6 +235,7 @@ AdvancedCrosshair.default_settings = {
 	compatibility_hook_copdamage_rollcriticalhit = false,
 	compatibility_hook_newraycastweaponbase_togglefiremode = false, --deprecated in v33
 	compatibility_hook_newraycastweaponbase_resetcachedgadget = false, --deprecated in v33
+	compatibility_hook_ecmjammerbase_detectandgivedmg = false, --misleading variable name- if true, DISABLES the ACH detection hook for ECM jammer damage, so ACH will not be able to disable hitsounds from ECM jammers (if hitsounds are enabled)
 	can_check_melee_headshots = false,
 	allow_messages = 1, -- (unused) 1: yes; 2: yes but no compatibility messages; 3: do not. none. never. get out of my house. die.
 	palettes = { --for colorpicker
@@ -307,6 +308,7 @@ AdvancedCrosshair.default_settings = {
 --		}
 	},
 	hitmarker_allow_melee = true,
+	hitmarker_allow_ecmfeedback = true,
 	hitmarker_outofrange_mode = 2,
 	hitmarker_max_count = 5,
 	hitmarker_limit_behavior = 1,
@@ -329,6 +331,7 @@ AdvancedCrosshair.default_settings = {
 	hitmarker_kill_headshot_color = "ff0000",
 	hitmarker_kill_headshot_crit_color = "ff00ff",
 	hitsound_allow_melee = true,
+	hitsound_allow_ecmfeedback = true,
 	hitsound_limit_behavior = 1,
 	hitsound_max_count = 1,
 	hitsound_hit_bodyshot_id = "tf2_hit",
@@ -1703,6 +1706,10 @@ end
 function AdvancedCrosshair:UseCompatibility_NewRaycastWeaponBaseResetCachedGadget() --deprecated in v33
 end
 
+function AdvancedCrosshair:UseCompatibility_ECMJammerFeedback()
+	return self.settings.compatibility_hook_ecmjammerbase_detectandgivedmg
+end
+
 function AdvancedCrosshair:IsEasterEggsEnabled()
 	return self.settings.easter_eggs_enabled
 end
@@ -2192,6 +2199,9 @@ end
 function AdvancedCrosshair:AllowMeleeHitmarkers()
 	return self.settings.hitmarker_allow_melee
 end
+function AdvancedCrosshair:AllowECMJammerHitmarkers()
+	return self.settings.hitmarker_allow_ecmfeedback
+end
 
 	--Hitsounds
 function AdvancedCrosshair:IsHitsoundEnabled()
@@ -2215,6 +2225,9 @@ function AdvancedCrosshair:AllowMeleeHitsounds()
 	return self.settings.hitsound_allow_melee
 end
 
+function AdvancedCrosshair:AllowECMFeedbackHitsounds()
+	return self.settings.hitsound_allow_ecmfeedback
+end
 --************************************************--
 		--hud animate functions
 --************************************************--
@@ -2990,13 +3003,18 @@ end
 function AdvancedCrosshair:OnEnemyHit(unit,attack_data)
 	if attack_data.attacker_unit and (attack_data.attacker_unit == managers.player:local_player()) then 
 		local variant = attack_data.variant
-		if self:IsHitmarkerEnabled() and (self:AllowMeleeHitmarkers() or variant ~= "melee") then
-			self:ActivateHitmarker(attack_data)
+		if self:IsHitmarkerEnabled() then
+			if (self:AllowMeleeHitmarkers() or variant ~= "melee") and (attack_data.ach_source ~= "ecm" or self:AllowECMJammerHitmarkers()) then
+				self:ActivateHitmarker(attack_data)
+			end
 		end
-		if self:IsHitsoundEnabled() and (self:AllowMeleeHitsounds() or variant ~= "melee") then 
-			AdvancedCrosshair:ActivateHitsound(attack_data,unit)
-			--screw your existing argument order, i'm a loose cannon who got nothing to lose and don't play by the rules
+		if self:IsHitsoundEnabled() then
+			if (self:AllowMeleeHitsounds() or variant ~= "melee") and (attack_data.ach_source ~= "ecm" or self:AllowECMFeedbackHitsounds()) then 
+				-- note swapped argument order: (unit,attack_data) --> (attack_data,unit)
+				AdvancedCrosshair:ActivateHitsound(attack_data,unit)
+			end
 		end
+		
 		if self._cache.HITMARKER_RAIN_ENABLED and attack_data and attack_data.result and attack_data.result.type == "death" then 
 			if (not self._cache._hitmarker_rain_count_remaining) and (math.random() <= self.HITMARKER_RAIN_PROC_CHANCE) then 
 				self:StartHitmarkerRain()
@@ -3939,7 +3957,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		callback = "callback_ach_hitmarkers_master_enable",
 		value = AdvancedCrosshair.settings.hitmarker_enabled,
 		menu_id = AdvancedCrosshair.hitmarkers_menu_id,
-		priority = 31
+		priority = 32
 	})
 	
 	MenuHelper:AddMultipleChoice({
@@ -3955,7 +3973,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		},
 		value = AdvancedCrosshair.settings.hitmarker_outofrange_mode,
 		menu_id = AdvancedCrosshair.hitmarkers_menu_id,
-		priority = 30
+		priority = 31
 	})
 	
 	MenuHelper:AddToggle({
@@ -3965,7 +3983,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		callback = "callback_ach_hitmarkers_set_3d_enabled",
 		value = AdvancedCrosshair.settings.use_hitpos,
 		menu_id = AdvancedCrosshair.hitmarkers_menu_id,
-		priority = 29
+		priority = 30
 	})
 	
 	MenuHelper:AddToggle({
@@ -3974,6 +3992,16 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		desc = "menu_ach_hitmarkers_set_melee_enabled_desc",
 		callback = "callback_ach_hitmarkers_set_melee_enabled",
 		value = AdvancedCrosshair.settings.hitmarker_allow_melee,
+		menu_id = AdvancedCrosshair.hitmarkers_menu_id,
+		priority = 29
+	})
+	
+	MenuHelper:AddToggle({
+		id = "ach_hitmarkers_set_ecmfeedback_enabled",
+		title = "menu_ach_hitmarkers_set_ecmfeedback_enabled_title",
+		desc = "menu_ach_hitmarkers_set_ecmfeedback_enabled_desc",
+		callback = "callback_ach_hitmarkers_set_ecmfeedback_enabled",
+		value = AdvancedCrosshair.settings.hitmarker_allow_ecmfeedback,
 		menu_id = AdvancedCrosshair.hitmarkers_menu_id,
 		priority = 28
 	})
@@ -4839,7 +4867,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		callback = "callback_ach_hitsounds_master_enable",
 		value = AdvancedCrosshair.settings.hitsound_enabled,
 		menu_id = AdvancedCrosshair.hitsounds_menu_id,
-		priority = 30
+		priority = 31
 	})
 	
 	MenuHelper:AddToggle({
@@ -4849,7 +4877,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		callback = "callback_ach_hitsounds_set_suppress_doublesound_enabled",
 		value = AdvancedCrosshair.settings.hitsound_suppress_doublesound,
 		menu_id = AdvancedCrosshair.hitsounds_menu_id,
-		priority = 29
+		priority = 30
 	})
 	
 	MenuHelper:AddToggle({
@@ -4858,6 +4886,16 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "ach_MenuManagerPopulateCustomMenus"
 		desc = "menu_ach_hitsounds_set_melee_enabled_desc",
 		callback = "callback_ach_hitsounds_set_melee_enabled",
 		value = AdvancedCrosshair.settings.hitmarker_allow_melee,
+		menu_id = AdvancedCrosshair.hitsounds_menu_id,
+		priority = 29
+	})
+	
+	MenuHelper:AddToggle({
+		id = "ach_hitsounds_set_ecmfeedback_enabled",
+		title = "menu_ach_hitsounds_set_ecmfeedback_enabled_title",
+		desc = "menu_ach_hitsounds_set_ecmfeedback_enabled_desc",
+		callback = "callback_ach_hitsounds_set_ecmfeedback_enabled",
+		value = AdvancedCrosshair.settings.hitsound_allow_ecmfeedback,
 		menu_id = AdvancedCrosshair.hitsounds_menu_id,
 		priority = 28
 	})
@@ -5693,6 +5731,11 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 		AdvancedCrosshair.settings.hitmarker_allow_melee = item:value() == "on"
 		AdvancedCrosshair:Save()
 	end
+	
+	MenuCallbackHandler.callback_ach_hitmarkers_set_ecmfeedback_enabled = function(self,item)
+		AdvancedCrosshair.settings.hitmarker_allow_ecmfeedback = item:value() == "on"
+		AdvancedCrosshair:Save()
+	end
 	MenuCallbackHandler.callback_ach_hitmarkers_set_max_count = function(self,item)
 		AdvancedCrosshair.settings.hitmarker_max_count = math.round(tonumber(item:value()))
 		AdvancedCrosshair:Save()
@@ -5968,6 +6011,10 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 	end
 	MenuCallbackHandler.callback_ach_hitsounds_set_melee_enabled = function(self,item)
 		AdvancedCrosshair.settings.hitsound_allow_melee = item:value() == "on"
+		AdvancedCrosshair:Save()
+	end
+	MenuCallbackHandler.callback_ach_hitsounds_set_ecmfeedback_enabled = function(self,item)
+		AdvancedCrosshair.settings.hitsound_allow_ecmfeedback = item:value() == "on"
 		AdvancedCrosshair:Save()
 	end
 	MenuCallbackHandler.callback_ach_hitsounds_set_hit_bodyshot_type = function(self,item)
@@ -6251,6 +6298,12 @@ Hooks:Add("MenuManagerInitialize", "ach_initmenu", function(menu_manager)
 	MenuCallbackHandler.callback_ach_menu_compat_compatibility_playermanager_checkskill = function(self,item)
 		local enabled = item:value() == "on"
 		AdvancedCrosshair.settings.compatibility_hook_playermanager_checkskill = enabled
+		AdvancedCrosshair:Save()
+	end
+	
+	MenuCallbackHandler.callback_ach_menu_compat_compatibility_ecmjammerbase_detectandgivedmg = function(self,item)
+		local enabled = item:value() == "on"
+		AdvancedCrosshair.settings.compatibility_hook_ecmjammerbase_detectandgivedmg = enabled
 		AdvancedCrosshair:Save()
 	end
 	
