@@ -1975,6 +1975,16 @@ function AdvancedCrosshair:ApplyCompatibilityFixes()
 	
 	self:ApplyCompatibility_CopDamage_DamageMelee(self:UseCompatibility_CopDamageMelee())
 	self:ApplyCompatibility_NewRaycastWeaponBaseResetCachedGadget(self:UseCompatibility_NewRaycastWeaponBaseResetCachedGadget())
+	
+	-- support for Pick Up Weapons by Hoppip
+	if PickUpWeaponInteractionExt then
+		Hooks:PostHook(PickUpWeaponInteractionExt,"interact","ach_pickupweapon_dropweapon",function(_self,player)
+			-- note: since this has no return value,
+			-- it cannot detect whether the interaction was successful;
+			-- in other words, it will always recreate the crosshairs on attempted interaction
+			self:CreateCrosshairs()
+		end)
+	end
 end
 
 function AdvancedCrosshair:ApplyCompatibility_PlayerMovementStateEnter(enabled) --deprecated in v33
