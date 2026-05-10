@@ -1,4 +1,4 @@
-if not AdvancedCrosshair:UseCompatibility_ECMJammerFeedback() then
+if AdvancedCrosshair and not AdvancedCrosshair:UseCompatibility_ECMJammerFeedback() then
 	-- only change is adding a special flag to the attack_data so that it is excluded from triggering ACH hits
 	local tmp_vec1 = Vector3()
 	Hooks:OverrideFunction(ECMJammerBase,"_detect_and_give_dmg",function(hit_pos, device_unit, user_unit, range)
